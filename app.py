@@ -20,6 +20,7 @@ import base64
 import threading
 import requests
 import urllib.parse
+import textwrap
 from datetime import datetime, timezone
 import xml.etree.ElementTree as ET
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -149,7 +150,7 @@ def send_tg_album(chat_id, image_paths, caption=""):
 def render_instagram_carousel(topic_title, carousel_text):
     """
     Renders 6 ultra-clean, dark mode Instagram carousel slides (1080x1350 vertical aspect ratio).
-    Uses Roboto-Bold & Roboto-Regular for agency-grade typography.
+    Uses Roboto-Bold & Roboto-Regular for agency-grade typography with automated multi-line word-wrap.
     Delivered directly as an album to Telegram.
     """
     font_bold_path = "fonts/Roboto-Bold.ttf"
@@ -158,32 +159,44 @@ def render_instagram_carousel(topic_title, carousel_text):
     try:
         f_badge = ImageFont.truetype(font_bold_path, 28)
         f_brand = ImageFont.truetype(font_bold_path, 30)
-        f_title = ImageFont.truetype(font_bold_path, 54)
-        f_body = ImageFont.truetype(font_reg_path, 34)
-        f_footer = ImageFont.truetype(font_bold_path, 26)
+        f_title = ImageFont.truetype(font_bold_path, 56)
+        f_body = ImageFont.truetype(font_reg_path, 38)
+        f_footer = ImageFont.truetype(font_bold_path, 28)
     except Exception:
         f_badge = f_brand = f_title = f_body = f_footer = ImageFont.load_default()
 
     slides_data = [
-        ("THE BIG SHIFT", f"{topic_title[:80]}\n\nStop doing this the old way. A new AI model just flipped the industry.", "Swipe >>"),
-        ("THE PROBLEM", "99% of creators & business owners are wasting 4+ hours every day on repetitive manual work.\n\nHere is how to automate it in seconds.", "Why it matters >>"),
-        ("HOW IT WORKS", "No tech jargon. Plain English breakdown so simple a 12-year-old gets it.\n\nIt replaces 3 separate complex tools into 1 unified pipeline.", "The secret triad >>"),
-        ("THE SIGNATURE TRIAD", "INPUT: Your raw data or simple prompt\nPROMPT: Jayant's System Architecture\nOUTPUT: Production-ready client deliverable", "Practical ROI >>"),
-        ("BUSINESS IMPACT", "What used to take 3 days and an expensive agency now takes 30 seconds inside your business.", "Final step >>"),
-        ("TAKE ACTION", "Save this post for later.\n\nWhatsApp +91 78800 56262 or DM 'AUDIT' for a free 15-minute AI implementation roadmap.", "Jayant's AI Lab HQ")
+        ("STOP DOING THIS\nMANUALLY IN 2026",
+         f"{topic_title[:80]}\n\n99% of people are still wasting 4 hours every single day writing code, emails, and content from scratch.\n\nHere is how to automate the entire process in 30 seconds.",
+         "Swipe for the breakthrough >>"),
+        ("THE BIG SHIFT\nYOU CANNOT IGNORE",
+         "What used to require 3 separate complex tools and an expensive agency is now unified into a single AI pipeline.",
+         "How it works >>"),
+        ("HOW IT WORKS\n(ZERO JARGON)",
+         "Plain English breakdown so simple a 12-year-old gets it.\n\nIt connects your daily data directly to the latest reasoning models with zero setup required.",
+         "The secret triad >>"),
+        ("THE SIGNATURE TRIAD\nTHAT CHANGES IT ALL",
+         "INPUT: Raw voice note or messy notes\n\nPROMPT: Jayant's System Architecture\n\nOUTPUT: Production-ready client deliverable",
+         "Real business ROI >>"),
+        ("BUSINESS IMPACT\nAND REAL ROI",
+         "1. Cut manual research time by 85%\n2. Generate client-ready deliverables in under 1 minute\n3. Deploy 24/7 without needing your laptop turned on",
+         "Final action step >>"),
+        ("WANT THIS WORKING\nFOR YOUR BUSINESS?",
+         "Save this post for later.\n\nSend a WhatsApp to +91 78800 56262 or DM 'AUDIT' for a free 15-minute AI implementation roadmap.",
+         "Jayant's AI Lab HQ")
     ]
 
     timestamp = int(time.time())
     generated_paths = []
 
-    for idx, (headline, body, footer_hint) in enumerate(slides_data, 1):
+    for idx, (headline, raw_body, footer_hint) in enumerate(slides_data, 1):
         img = Image.new("RGB", (1080, 1350), color="#080c14")
         draw = ImageDraw.Draw(img)
 
-        # Outer rounded frame
-        draw.rounded_rectangle([(40, 40), (1040, 1310)], radius=24, outline="#1e293b", width=3)
+        # Outer rounded border
+        draw.rounded_rectangle([(40, 40), (1040, 1310)], radius=28, outline="#1e293b", width=3)
 
-        # Top Pill Badge
+        # Top Badge Pill
         draw.rounded_rectangle([(80, 80), (460, 150)], radius=35, fill="#0f2338", outline="#0284c7", width=2)
         draw.text((110, 98), f"AI STRATEGY  |  {idx}/6", font=f_badge, fill="#38bdf8")
 
@@ -191,11 +204,24 @@ def render_instagram_carousel(topic_title, carousel_text):
         draw.text((640, 100), "JAYANT'S AI LAB", font=f_brand, fill="#64748b")
 
         # Headline
-        draw.text((80, 240), headline, font=f_title, fill="#ffffff", spacing=14)
+        draw.text((80, 220), headline, font=f_title, fill="#ffffff", spacing=14)
 
-        # Content Container Card
-        draw.rounded_rectangle([(80, 480), (1000, 1140)], radius=20, fill="#0d1526", outline="#1e293b", width=2)
-        draw.text((120, 530), body, font=f_body, fill="#cbd5e1", spacing=22)
+        # Container Card
+        draw.rounded_rectangle([(80, 440), (1000, 1140)], radius=24, fill="#0d1526", outline="#1e293b", width=2)
+
+        # Body text with automated word-wrap
+        y_text = 490
+        for paragraph in raw_body.split("\n"):
+            if not paragraph.strip():
+                y_text += 24
+                continue
+            wrapped = textwrap.wrap(paragraph, width=32)
+            for line in wrapped:
+                if line.startswith("INPUT:") or line.startswith("PROMPT:") or line.startswith("OUTPUT:"):
+                    draw.text((120, y_text), line, font=f_body, fill="#38bdf8")
+                else:
+                    draw.text((120, y_text), line, font=f_body, fill="#cbd5e1")
+                y_text += 54
 
         # Footer
         draw.line([(80, 1190), (1000, 1190)], fill="#1e293b", width=2)
