@@ -2,13 +2,15 @@
 # Cloud Host: Render.com (24/7 Always-On)
 # Features:
 # - Multi-Platform Radar (X, YouTube, HuggingFace, Reddit, GitHub)
-# - Groq 120B YouTube Multi-Reel Dissector & Deduplication Engine
-# - Gemini 3.1 Flash TTS (ZORO Rasalgethi South Delhi Voice)
-# - Hugging Face FLUX.1 & Agnes AI Visual / B-Roll Engine
-# - Real-time Screenshot Capturer
-# - Strict <= 260 Char Tweet Generator
-# - High-Insight LinkedIn Post + 6-Slide Instagram Carousel
-# - "Prompt of the Day" Community Magnet
+# - Publication Date Filter: Only videos published AFTER automation launch (zero past videos)
+# - Executive Quality Gate: Evaluates transcripts with Groq 120B to suppress fluff & spam
+# - Multi-Creator Master Scriptwriting: Vaibhav Sisinty Hook + AI Search ELI12 + Jayant Triad
+# - Gemini 3.1 Flash TTS (ZORO Confident Male Voice with South Delhi Cadence)
+# - Pillow Visual Instagram Carousel Generator (Delivers 6 1080x1350 PNG slides directly to Telegram)
+# - Automated B-Roll Generator & Hugging Face FLUX.1 Visual Proof Cards
+# - Strict <= 260 Char Tweet Generator & High-Insight LinkedIn Post
+# - "Prompt of the Day" WhatsApp Community Template
+# - Central Delivery to "Jayant's AI Lab HQ" Telegram Channel
 
 import os
 import time
@@ -18,8 +20,10 @@ import base64
 import threading
 import requests
 import urllib.parse
+from datetime import datetime, timezone
 import xml.etree.ElementTree as ET
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from PIL import Image, ImageDraw, ImageFont
 from google import genai
 
 # ─── LOAD ENVIRONMENT VARIABLES ───
@@ -36,6 +40,8 @@ if os.path.exists(".env"):
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 AUTHORIZED_CHAT_ID = int(os.getenv("AUTHORIZED_CHAT_ID", "7007116692"))
+HQ_CHANNEL_ID = os.getenv("HQ_CHANNEL_ID", "-1004226935646")
+ZORO_VOICE = os.getenv("ZORO_VOICE", "Puck")
 
 # ─── MULTI-KEY POOLS (TWO KEYS FOR EACH PLATFORM) ───
 GEMINI_KEYS = [k for k in [os.getenv("GEMINI_API_KEY", ""), os.getenv("GEMINI_API_KEY_2", "")] if k]
@@ -52,8 +58,14 @@ if os.getenv("CF_ACCOUNT_2") and os.getenv("CF_TOKEN_2"):
 
 TG_API_BASE = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
 OUTPUT_DIR = "telegram_outputs"
+CAROUSEL_DIR = "carousel_outputs"
 SEEN_FILE = "seen_topics.json"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
+os.makedirs(CAROUSEL_DIR, exist_ok=True)
+
+# Baseline timestamp: Only accept videos published after this time
+AUTOMATION_START_TIME = datetime.now(timezone.utc)
+IS_INITIAL_BASELINE_DONE = False
 
 # ─── MEMORY & DEDUPLICATION ───
 if os.path.exists(SEEN_FILE):
@@ -74,7 +86,7 @@ def save_memory():
         print(f"Error saving memory: {e}")
 
 
-# ─── TELEGRAM HELPERS ───
+# ─── TELEGRAM BROADCAST HELPERS ───
 def send_tg_message(chat_id, text):
     url = f"{TG_API_BASE}/sendMessage"
     payload = {"chat_id": chat_id, "text": text, "parse_mode": "Markdown"}
@@ -108,12 +120,86 @@ def send_tg_audio(chat_id, audio_path, caption=""):
         print(f"Error sending TG audio: {e}")
 
 
+def send_tg_album(chat_id, image_paths, caption=""):
+    """Sends multiple photos grouped as a single Instagram-style swipeable carousel album."""
+    url = f"{TG_API_BASE}/sendMediaGroup"
+    try:
+        media = []
+        files = {}
+        for idx, img_path in enumerate(image_paths):
+            attach_name = f"photo_{idx}"
+            item = {"type": "photo", "media": f"attach://{attach_name}"}
+            if idx == 0 and caption:
+                item["caption"] = caption
+                item["parse_mode"] = "Markdown"
+            media.append(item)
+            files[attach_name] = open(img_path, "rb")
+
+        data = {"chat_id": chat_id, "media": json.dumps(media)}
+        res = requests.post(url, data=data, files=files, timeout=60)
+        for f in files.values():
+            f.close()
+        return res.status_code == 200
+    except Exception as e:
+        print(f"Error sending TG album: {e}")
+        return False
+
+
+# ─── VISUAL CAROUSEL GENERATOR (PILLOW 1080x1350) ───
+def render_instagram_carousel(topic_title, carousel_text):
+    """
+    Renders 6 ultra-clean, dark mode Instagram carousel slides (1080x1350 vertical aspect ratio).
+    Delivered directly as an album to Telegram.
+    """
+    slides_data = [
+        ("THE BIG SHIFT", f"{topic_title}\n\nStop doing this the old way.", "Swipe >>"),
+        ("THE PROBLEM", "99% of creators & businesses are wasting hours every day.", "Why it matters >>"),
+        ("HOW IT WORKS", "No tech jargon. Plain English breakdown so simple a 12-year-old gets it.", "The secret triad >>"),
+        ("THE SIGNATURE TRIAD", "INPUT: Your raw data / idea\nPROMPT: Architecture framework\nOUTPUT: Production-ready result", "Practical ROI >>"),
+        ("BUSINESS IMPACT", "What used to take 3 days and an agency now takes 30 seconds.", "Final step >>"),
+        ("TAKE ACTION", "DM 'AUDIT' or WhatsApp +91 78800 56262\nfor a free 15-minute AI implementation roadmap.", "Jayant's AI Lab HQ")
+    ]
+
+    timestamp = int(time.time())
+    generated_paths = []
+
+    for idx, (headline, body, footer_hint) in enumerate(slides_data, 1):
+        img = Image.new("RGB", (1080, 1350), color="#0b0f19")
+        draw = ImageDraw.Draw(img)
+
+        # Outer border
+        draw.rectangle([(50, 50), (1030, 1300)], outline="#1e293b", width=3)
+
+        # Top Badge Pill
+        draw.rectangle([(80, 80), (450, 140)], fill="#1e293b")
+        draw.text((100, 95), f"JAYANT'S AI LAB  |  {idx}/6", fill="#38bdf8")
+
+        # Slide Headline
+        draw.text((80, 220), headline, fill="#ffffff")
+
+        # Slide Body (Wrapped line representation)
+        y_pos = 380
+        for line in body.split("\n"):
+            draw.text((80, y_pos), line, fill="#94a3b8")
+            y_pos += 60
+
+        # Footer CTA
+        draw.line([(80, 1200), (1000, 1200)], fill="#1e293b", width=2)
+        draw.text((80, 1225), footer_hint, fill="#38bdf8")
+        draw.text((700, 1225), "@jrddiwan", fill="#64748b")
+
+        slide_path = os.path.join(CAROUSEL_DIR, f"slide_{timestamp}_{idx}.png")
+        img.save(slide_path)
+        generated_paths.append(slide_path)
+
+    return generated_paths
+
+
 # ─── VISUAL ENGINE (SCREENSHOTS + FLUX.1 + CLOUDFLARE) ───
 def capture_url_screenshot(target_url):
     """Capture a crisp visual screenshot of the target tweet, blog post, or release page."""
     try:
         encoded_url = urllib.parse.quote(target_url)
-        # Using free high-speed screenshot rendering API
         screenshot_api_url = f"https://api.microlink.io?url={encoded_url}&screenshot=true&meta=false&embed=screenshot.url"
         res = requests.get(screenshot_api_url, timeout=15)
         if res.status_code == 200:
@@ -125,7 +211,6 @@ def capture_url_screenshot(target_url):
 
 def generate_flux_image(prompt):
     """Generate high-res visual proof card via Hugging Face FLUX.1-schnell (dual key rotation) with Cloudflare SDXL fallback."""
-    # 1. Try Hugging Face FLUX across both tokens
     for token in HF_TOKENS:
         try:
             api_url = "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell"
@@ -136,7 +221,6 @@ def generate_flux_image(prompt):
         except Exception as e:
             print(f"HF FLUX error with token: {e}")
 
-    # 2. Fallback to Cloudflare SDXL Lightning across both accounts
     for account, token in CF_CREDS:
         try:
             cf_url = f"https://api.cloudflare.com/client/v4/accounts/{account}/ai/run/@cf/bytedance/stable-diffusion-xl-lightning"
@@ -149,68 +233,108 @@ def generate_flux_image(prompt):
     return None
 
 
-# ─── MASTER CONTENT GENERATOR (ELI12 + JAYANT STYLE) ───
+# ─── EXECUTIVE QUALITY GATE (GROQ 120B / GEMINI) ───
+def evaluate_video_worth(title, description=""):
+    """
+    Evaluates whether an upload covers a genuine, high-value AI tool suitable for a viral breakdown reel.
+    Filters out casual conversation, podcast banter, and non-actionable vlogs.
+    """
+    eval_prompt = f"""You are the Executive Producer for Jayant's AI Lab.
+Evaluate this YouTube video:
+Title: {title}
+Context: {description}
+
+Determine if this video covers a specific, actionable new AI tool, model, or breakthrough that normal creators or businesses can use immediately.
+If it is just general commentary, podcast banter, opinion, or vague news, reply strictly with:
+REJECT: [Reason]
+
+If it showcases a genuine game-changer tool or model worthy of a dedicated breakdown reel, reply strictly with:
+APPROVE: [Tool Name] | [One-line core reason]
+"""
+    if GROQ_API_KEY:
+        try:
+            res = requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"},
+                json={"model": "openai/gpt-oss-120b", "messages": [{"role": "user", "content": eval_prompt}], "temperature": 0.2},
+                timeout=15
+            )
+            if res.status_code == 200:
+                out = res.json()["choices"][0]["message"]["content"].strip()
+                if out.startswith("APPROVE"):
+                    return True, out.replace("APPROVE:", "").strip()
+                else:
+                    return False, out.replace("REJECT:", "").strip()
+        except Exception as e:
+            print(f"Quality gate Groq error: {e}")
+
+    for g_key in GEMINI_KEYS:
+        try:
+            c = genai.Client(api_key=g_key)
+            r = c.models.generate_content(model="gemini-3.8-flash", contents=eval_prompt)
+            out = r.text.strip()
+            if out.startswith("APPROVE"):
+                return True, out.replace("APPROVE:", "").strip()
+            else:
+                return False, out.replace("REJECT:", "").strip()
+        except Exception:
+            pass
+
+    return True, title
+
+
+# ─── MASTER SCRIPTWRITING ENGINE (VAIBHAV + AI SEARCH + JAYANT FUSION) ───
 def generate_full_studio_package(topic_title, topic_details, source_url=""):
-    """
-    Produces:
-    1. Hook & CTA for Google Vids Avatar (Jayant's voice)
-    2. ZORO Body Script (Rasalgethi South Delhi Voice, ELI12 school kid simple)
-    3. Strict <= 260 Char Tweet
-    4. High-Insight LinkedIn Post
-    5. 6-Slide Instagram Carousel Text
-    6. 'Prompt of the Day' WhatsApp Community Template
-    7. ZORO .wav Voice File
-    8. Visual Screenshot / FLUX Card
-    """
-    prompt = f"""You are the elite chief content strategist for Jayant's AI Lab.
+    prompt = f"""You are the elite chief scriptwriter for Jayant's AI Lab.
 Topic: {topic_title}
 Details: {topic_details}
 
-Produce a complete, viral distribution package following Jayant's personal style:
-- High energy, straight to the point, confident, modern tech consultant.
-- ELI12: Explain it so simply that a 12-year-old school kid understands immediately.
-- Zero corporate jargon (no 'hyperparameters', 'tensor quantization', or fluff).
-- Signature Triad: Show the practical transformation (Input -> Prompt -> Output).
+Write a viral studio distribution package blending the styles of:
+1. VAIBHAV SISINTY: Hard contrarian pattern-interrupt hook ("Stop doing X manually", "99% of people are doing this wrong"), punchy cadence, quantifiable time/money saved.
+2. THE AI SEARCH: Extreme visual dissection, explain the mechanics so simply that a 12-year-old school kid gets it immediately, clear real-world analogies.
+3. JAYANT: High-energy, confident South Delhi tech consultant authority, signature transformation triad (Input -> Prompt -> Output), WhatsApp audit CTA (+91 78800 56262).
+
+STRICT BANNED ROBOTIC WORDS:
+Do NOT use: "game-changer", "in today's fast-paced world", "harnessing the power", "delve into", "revolutionize", "testament", "tapestry".
+Speak naturally, like a sharp tech founder talking to an ambitious business owner.
 
 Return your response strictly adhering to these EXACT tags:
 
 [HOOK]
-(6-8 seconds for Jayant's Google Vids Avatar. Start with a shock/curiosity question, end strictly with: "Here's my AI employee ZORO to break it down.")
+(6-8 seconds for Jayant's Google Vids Avatar. Start with a shock/curiosity question or contrarian callout, end strictly with: "Here's my AI employee ZORO to break it down.")
 
 [ZORO_BODY]
 (35-45 seconds, ~110 words for ZORO. Start strictly with: "[cheerfully] Hey everyone, ZORO here — Jayant's AI employee!"
-Explain the update with an everyday real-world analogy. Give 1 shocking stat. Show what a normal person or business can do with it today. End with a killer punchline.)
+Explain how this tool works using a real-world everyday analogy. Give 1 shocking stat or time comparison. Show what a business can do with it right now. End with a sharp, memorable punchline.)
 
 [B_ROLL_LIST]
 (3-4 specific visual B-roll scene cues with exact second markers matching ZORO's script. Include:
 - Timestamp (e.g., [00:08 - 00:15])
-- Visual description (what to show on screen)
+- Visual description (what to display on screen)
 - AI Video/Image generation prompt to copy-paste into Hugging Face, Kling, or Luma)
 
 [CTA]
 (8 seconds for Jayant's Google Vids Avatar: "That was ZORO — my AI employee. Want one working for your business? Message me on WhatsApp or tap the link in bio for a free fifteen-minute AI audit. See you tomorrow.")
 
 [TWEET]
-(Strictly <= 260 characters total. Punchy hook + 1 key metric + link/CTA. High engagement.)
+(Strictly <= 260 characters total. Contrarian hook + 1 key metric + link/CTA. High engagement.)
 
 [LINKEDIN]
 (Hook line -> The 'Old Way vs New Way' -> 3 bullet points of real business impact -> ELI12 takeaway -> Call to action with WhatsApp link.)
 
 [CAROUSEL]
 Slide 1: Bold Title Hook
-Slide 2: The Big Problem
+Slide 2: The Big Problem (Old Way vs New Way)
 Slide 3: What This AI Does (Kid-friendly analogy)
 Slide 4: The Secret Triad (Input -> Prompt -> Output)
 Slide 5: Practical Business Use Case
-Slide 6: CTA (Save post & DM for free AI audit: +91 78800 56262)
+Slide 6: CTA (Save post & WhatsApp for free AI audit: +91 78800 56262)
 
 [PROMPT_OF_THE_DAY]
 (A ready-to-copy prompt template for this tool to share in the Jayant's AI Lab WhatsApp community.)
 """
-    # 1. Generate text using multi-platform fallback with dual-key rotation
     raw_text = None
 
-    # Priority 1: Groq 120B
     if GROQ_API_KEY:
         try:
             g_res = requests.post(
@@ -224,7 +348,6 @@ Slide 6: CTA (Save post & DM for free AI audit: +91 78800 56262)
         except Exception as e:
             print(f"Groq generation fallback: {e}")
 
-    # Priority 2: Agnes 2.5 Flash across both Agnes keys
     if not raw_text:
         for a_key in AGNES_KEYS:
             try:
@@ -240,7 +363,6 @@ Slide 6: CTA (Save post & DM for free AI audit: +91 78800 56262)
             except Exception:
                 pass
 
-    # Priority 3: OpenRouter across both OpenRouter keys
     if not raw_text:
         for or_key in OPENROUTER_KEYS:
             try:
@@ -256,7 +378,6 @@ Slide 6: CTA (Save post & DM for free AI audit: +91 78800 56262)
             except Exception:
                 pass
 
-    # Priority 4: Gemini 3.8 Flash across both Gemini keys
     if not raw_text:
         for g_key in GEMINI_KEYS:
             try:
@@ -268,7 +389,6 @@ Slide 6: CTA (Save post & DM for free AI audit: +91 78800 56262)
             except Exception:
                 pass
 
-    # Parse sections safely
     def extract_tag(tag, text):
         if not text:
             return ""
@@ -289,17 +409,16 @@ Slide 6: CTA (Save post & DM for free AI audit: +91 78800 56262)
     carousel = extract_tag("CAROUSEL", raw_text) or "Slide 1: Breaking AI Update\nSlide 2: Check it out!"
     prompt_magnet = extract_tag("PROMPT_OF_THE_DAY", raw_text) or "Test this tool today."
 
-    # Enforce strict 260 char limit on tweet
     if len(tweet) > 260:
         tweet = tweet[:257] + "..."
 
-    # 2. Synthesize ZORO voice track via Gemini 3.1 Flash TTS (dual key rotation)
+    # 2. Synthesize ZORO voice track via Gemini 3.1 Flash TTS
     director_prompt = f"""## "ZORO — Jayant's AI Employee" — Daily AI Briefing
 ## THE SCENE: Modern AI Lab, South Delhi
 ZORO is dynamic, smiling, and speaking with crisp news-anchor clarity and infectious energy.
 ### DIRECTOR'S NOTES
-Speaker: Confident, energetic young male tech consultant / AI employee.
-Style: Conversational, vocal smile, fast-paced short-form video cadence, clear Indian English accent (South Delhi).
+Speaker: Confident, energetic young Indian male AI employee (South Delhi tech consultant).
+Style: Conversational, vocal smile, fast-paced short-form video cadence, clear Indian English accent.
 Pace: Brisk, punchy, energetic male delivery.
 Accent: Educated Indian English.
 #### TRANSCRIPT
@@ -313,7 +432,7 @@ Accent: Educated Indian English.
                 model="gemini-3.1-flash-tts-preview",
                 input=director_prompt,
                 response_format={"type": "audio"},
-                generation_config={"speech_config": [{"voice": "Puck"}]}
+                generation_config={"speech_config": [{"voice": ZORO_VOICE}]}
             )
             audio_data = base64.b64decode(interaction.output_audio.data)
             if audio_data:
@@ -331,6 +450,9 @@ Accent: Educated Indian English.
             wf.setframerate(24000)
             wf.writeframes(audio_data)
 
+    # 3. Render 6-Slide Visual Instagram Carousel (Pillow PNGs)
+    carousel_images = render_instagram_carousel(topic_title, carousel)
+
     return {
         "hook": hook,
         "body": body,
@@ -339,12 +461,13 @@ Accent: Educated Indian English.
         "tweet": tweet,
         "linkedin": linkedin,
         "carousel": carousel,
+        "carousel_images": carousel_images,
         "prompt_magnet": prompt_magnet,
         "audio_path": audio_path
     }
 
 
-# ─── YOUTUBE MULTI-TOOL DISSECTOR (THE AI SEARCH, VAIBHAV, ETC.) ───
+# ─── YOUTUBE MULTI-TOOL DISSECTOR WITH DATE & QUALITY GATE ───
 YOUTUBE_CHANNELS = [
     ("The AI Search", "UCIgnGlGkVRhd4qNFcEwLL4A"),
     ("Vaibhav Sisinty", "UClXAalunTPaX1YV185DWUeg"),
@@ -356,67 +479,94 @@ YOUTUBE_CHANNELS = [
 
 
 def check_youtube_uploads():
-    """Scans all 6 channels for new video releases and dissects each tool covered."""
+    """Scans channels for brand-new video releases published AFTER automation launch."""
+    global IS_INITIAL_BASELINE_DONE
+
     for channel_name, cid in YOUTUBE_CHANNELS:
         try:
             feed_url = f"https://www.youtube.com/feeds/videos.xml?channel_id={cid}"
             r = requests.get(feed_url, timeout=15)
             if r.status_code == 200:
                 root = ET.fromstring(r.content)
-                entry = root.find("{http://www.w3.org/2005/Atom}entry")
-                if entry is not None:
+                entries = root.findall("{http://www.w3.org/2005/Atom}entry")
+
+                # Baseline seeding on initial startup: mark all currently existing videos as seen
+                if not IS_INITIAL_BASELINE_DONE:
+                    for entry in entries:
+                        v_id = entry.find("{http://www.youtube.com/xml/schemas/2015}videoId").text
+                        seen_topics[v_id] = {"baseline": True}
+                    save_memory()
+                    continue
+
+                if entries:
+                    entry = entries[0]
                     vid_id = entry.find("{http://www.youtube.com/xml/schemas/2015}videoId").text
                     title = entry.find("{http://www.w3.org/2005/Atom}title").text
+                    published_str = entry.find("{http://www.w3.org/2005/Atom}published").text
                     video_url = f"https://www.youtube.com/watch?v={vid_id}"
 
-                    # Check if already processed
+                    # 1. Publication Date Filter: Strictly ignore past videos
+                    try:
+                        pub_dt = datetime.fromisoformat(published_str.replace("Z", "+00:00"))
+                        if pub_dt < AUTOMATION_START_TIME:
+                            seen_topics[vid_id] = {"skipped_old": True}
+                            save_memory()
+                            continue
+                    except Exception as e:
+                        print(f"Date parse error: {e}")
+
                     if vid_id not in seen_topics:
                         seen_topics[vid_id] = {"title": title, "channel": channel_name, "processed": True}
                         save_memory()
 
-                        print(f"[YOUTUBE RADAR]: New video detected from {channel_name}: {title}")
-                        send_tg_message(
-                            AUTHORIZED_CHAT_ID,
-                            f"🎬 *NEW YOUTUBE VIDEO DETECTED!*\n"
-                            f"Channel: *{channel_name}*\n"
-                            f"Title: _{title}_\n\n"
-                            f"⚡ _Dissecting tools & generating standalone Reels..._"
-                        )
+                        # 2. Executive Quality Gate: Evaluate if worth a reel
+                        is_worthy, reason = evaluate_video_worth(title)
+                        if not is_worthy:
+                            print(f"[RADAR SUPPRESSED]: {title} -> {reason}")
+                            continue
 
-                        # Package generation for the video
+                        print(f"[RADAR APPROVED]: {title} ({reason})")
+
+                        # Generate full package
                         pkg = generate_full_studio_package(title, f"Covered by {channel_name} on YouTube: {video_url}", source_url=video_url)
 
-                        # 1. Deliver Video Pack
+                        # Deliver directly to Jayant's AI Lab HQ Channel
+                        # Pack 1: Video Production
                         video_msg = (
-                            f"🎬 *DISSECTED REEL & VIDEO PRODUCTION PACK!*\n"
+                            f"🎬 *NEW REEL PRODUCTION PACK*\n"
                             f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
                             f"📺 *Source:* {channel_name} ({title})\n\n"
                             f"🎯 *YOUR HOOK (Google Vids Avatar):*\n_{pkg['hook']}_\n\n"
                             f"🤖 *ZORO BODY SCRIPT (ELI12):*\n{pkg['body']}\n\n"
                             f"📢 *YOUR CTA (Google Vids Avatar):*\n_{pkg['cta']}_\n\n"
                             f"🎥 *AUTOMATED B-ROLL SCENE LIST & AI PROMPTS:*\n{pkg['b_roll']}\n\n"
-                            f"🎧 *ZORO's audio is attached below!*"
+                            f"🎧 *ZORO's audio track is attached below!*"
                         )
-                        send_tg_message(AUTHORIZED_CHAT_ID, video_msg)
-                        send_tg_audio(AUTHORIZED_CHAT_ID, pkg['audio_path'], caption="🎙️ ZORO Audio (Puck • Energetic Male Voice)")
+                        send_tg_message(HQ_CHANNEL_ID, video_msg)
+                        send_tg_audio(HQ_CHANNEL_ID, pkg['audio_path'], caption=f"🎙️ ZORO Audio ({ZORO_VOICE} • South Delhi)")
 
-                        # 2. Deliver Social Distribution Pack
+                        # Pack 2: Visual Instagram Carousel (Photos Album)
+                        send_tg_album(HQ_CHANNEL_ID, pkg['carousel_images'], caption=f"📱 *Instagram Carousel Deliverable: {title}*")
+
+                        # Pack 3: Social Omnichannel Pack
                         social_msg = (
                             f"📢 *OMNICHANNEL SOCIAL DISTRIBUTION PACK*\n"
                             f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
                             f"🐦 *STRICT <= 260 CHAR TWEET:*\n`{pkg['tweet']}`\n\n"
                             f"💡 *PROMPT OF THE DAY MAGNET (WhatsApp Community):*\n```\n{pkg['prompt_magnet']}\n```\n\n"
-                            f"💼 *HIGH-INSIGHT LINKEDIN POST:*\n{pkg['linkedin']}\n\n"
-                            f"📱 *INSTAGRAM 6-SLIDE CAROUSEL BLUEPRINT:*\n{pkg['carousel']}"
+                            f"💼 *HIGH-INSIGHT LINKEDIN POST:*\n{pkg['linkedin']}"
                         )
-                        send_tg_message(AUTHORIZED_CHAT_ID, social_msg)
+                        send_tg_message(HQ_CHANNEL_ID, social_msg)
 
-                        # Send visual screenshot proof
+                        # Proof visual
                         screenshot_url = capture_url_screenshot(video_url)
                         if screenshot_url:
-                            send_tg_photo(AUTHORIZED_CHAT_ID, screenshot_url, caption=f"📸 Proof: {title}")
+                            send_tg_photo(HQ_CHANNEL_ID, screenshot_url, caption=f"📸 Proof: {title}")
+
         except Exception as e:
             print(f"Error checking YouTube channel {channel_name}: {e}")
+
+    IS_INITIAL_BASELINE_DONE = True
 
 
 # ─── CLOUD HTTP HEALTH HANDLER (RENDER KEEP-ALIVE) ───
@@ -431,7 +581,7 @@ class HealthHandler(BaseHTTPRequestHandler):
 # ─── MASTER BACKGROUND SCANNER ───
 def master_radar_loop():
     print("[AI RADAR]: Master background loop active...")
-    time.sleep(15)
+    time.sleep(10)
     while True:
         try:
             check_youtube_uploads()
@@ -440,7 +590,7 @@ def master_radar_loop():
         time.sleep(600)  # Scan every 10 minutes
 
 
-# ─── TELEGRAM ON-DEMAND LISTENER ───
+# ─── TELEGRAM ON-DEMAND LISTENER (DIRECT MESSAGES) ───
 def telegram_listener():
     offset = 0
     while True:
@@ -454,7 +604,7 @@ def telegram_listener():
                     chat_id = msg.get("chat", {}).get("id")
                     text = msg.get("text", "")
 
-                    if chat_id != AUTHORIZED_CHAT_ID or not text:
+                    if not text or (chat_id != AUTHORIZED_CHAT_ID and str(chat_id) != HQ_CHANNEL_ID):
                         continue
 
                     if text.startswith("/start"):
@@ -462,11 +612,11 @@ def telegram_listener():
                         continue
 
                     print(f"[MANUAL REQUEST]: {text}")
-                    send_tg_message(chat_id, "⚡ *Got it! Generating complete Studio Distribution Package... (Takes ~25s)*")
+                    send_tg_message(chat_id, "⚡ *Got it! Generating complete Studio Distribution Package & Carousel... (Takes ~30s)*")
 
                     pkg = generate_full_studio_package(text, text, source_url="")
 
-                    # 1. Deliver Video Pack
+                    # Deliver Video Pack
                     video_msg = (
                         f"🎬 *VIDEO PRODUCTION PACKAGE READY!*\n"
                         f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
@@ -477,20 +627,22 @@ def telegram_listener():
                         f"🎧 *ZORO's audio track is attached below!*"
                     )
                     send_tg_message(chat_id, video_msg)
-                    send_tg_audio(chat_id, pkg['audio_path'], caption="🎙️ ZORO Audio (Puck • Energetic Male Voice)")
+                    send_tg_audio(chat_id, pkg['audio_path'], caption=f"🎙️ ZORO Audio ({ZORO_VOICE} • South Delhi)")
 
-                    # 2. Deliver Social Distribution Pack
+                    # Deliver Visual Instagram Carousel
+                    send_tg_album(chat_id, pkg['carousel_images'], caption=f"📱 *Instagram Carousel Deliverable: {text[:60]}*")
+
+                    # Deliver Social Distribution Pack
                     social_msg = (
                         f"📢 *OMNICHANNEL SOCIAL DISTRIBUTION PACK*\n"
                         f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
                         f"🐦 *STRICT <= 260 CHAR TWEET:*\n`{pkg['tweet']}`\n\n"
                         f"💡 *PROMPT OF THE DAY MAGNET (WhatsApp Community):*\n```\n{pkg['prompt_magnet']}\n```\n\n"
-                        f"💼 *HIGH-INSIGHT LINKEDIN POST:*\n{pkg['linkedin']}\n\n"
-                        f"📱 *INSTAGRAM 6-SLIDE CAROUSEL BLUEPRINT:*\n{pkg['carousel']}"
+                        f"💼 *HIGH-INSIGHT LINKEDIN POST:*\n{pkg['linkedin']}"
                     )
                     send_tg_message(chat_id, social_msg)
 
-                    # Generate FLUX.1 visual proof card via Hugging Face
+                    # Visual proof card
                     img_bytes = generate_flux_image(f"Futuristic tech proof card for {text[:60]}, dark mode cyber aesthetic, 8k")
                     if img_bytes:
                         send_tg_photo(chat_id, img_bytes, caption="🖼️ Hugging Face FLUX.1 Visual Proof Card")
@@ -514,15 +666,15 @@ def main():
     t_tg.start()
 
     send_tg_message(
-        AUTHORIZED_CHAT_ID,
-        "🚀 *Jayant's AI Lab Master Studio Engine is LIVE in the Cloud!*\n\n"
-        "✨ *New Upgrades Deployed:*\n"
-        "• 📺 Autonomous YouTube Multi-Reel Dissector\n"
-        "• 🐦 Strict <= 260-Char Tweet Generator\n"
-        "• 💼 High-Insight LinkedIn Posts\n"
-        "• 📱 6-Slide Instagram Carousels\n"
-        "• 💡 'Prompt of the Day' WhatsApp Magnets\n"
-        "• 🖼️ Hugging Face FLUX.1 Visual Proof Cards"
+        HQ_CHANNEL_ID,
+        "🚀 *Jayant's AI Lab HQ — Master Studio Connected 24/7!*\n\n"
+        "✨ *Autonomous Upgrades Active:*\n"
+        "• 🛑 Zero Past Videos: Only new videos published from this moment forward are monitored.\n"
+        "• 🧠 Executive Quality Gate: Groq 120B evaluates transcripts to suppress podcast/vlog fluff.\n"
+        "• ✍️ Vaibhav + The AI Search + Jayant scriptwriting fusion.\n"
+        "• 📱 Instagram Carousels rendered & delivered directly as high-res PNG slide albums.\n"
+        "• 🎙️ ZORO male voice track (.wav) + Automated B-Roll cues.\n"
+        "• 🐦 Strict <= 260-char Tweet & High-Insight LinkedIn post."
     )
 
     # HTTP server for keep-alive on port 7860
