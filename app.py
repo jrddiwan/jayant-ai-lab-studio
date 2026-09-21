@@ -13,12 +13,14 @@
 # - Central Delivery to "Jayant's AI Lab HQ" Telegram Channel
 
 import os
+import io
 import time
 import json
 import wave
 import base64
 import threading
 import requests
+import urllib.request
 import urllib.parse
 import textwrap
 from datetime import datetime, timezone
@@ -121,118 +123,202 @@ def send_tg_audio(chat_id, audio_path, caption=""):
         print(f"Error sending TG audio: {e}")
 
 
-def send_tg_album(chat_id, image_paths, caption=""):
-    """Sends multiple photos grouped as a single Instagram-style swipeable carousel album."""
+def send_tg_album(chat_id, images, caption=""):
+    """
+    Sends multiple photos grouped as a single Instagram-style swipeable carousel album.
+    Optimizes large PNGs to high-quality 92% JPEGs for fast, reliable upload without socket timeouts.
+    """
     url = f"{TG_API_BASE}/sendMediaGroup"
     try:
         media = []
         files = {}
-        for idx, img_path in enumerate(image_paths):
-            attach_name = f"photo_{idx}"
-            item = {"type": "photo", "media": f"attach://{attach_name}"}
+        for idx, img_ref in enumerate(images):
+            if isinstance(img_ref, str) and img_ref.startswith("http"):
+                item = {"type": "photo", "media": img_ref}
+            else:
+                attach_name = f"photo_{idx}"
+                item = {"type": "photo", "media": f"attach://{attach_name}"}
+                try:
+                    with Image.open(img_ref) as img:
+                        rgb_img = img.convert("RGB")
+                        buf = io.BytesIO()
+                        rgb_img.save(buf, format="JPEG", quality=92, optimize=True)
+                        img_bytes = buf.getvalue()
+                    files[attach_name] = (f"slide_{idx+1}.jpg", img_bytes, "image/jpeg")
+                except Exception:
+                    files[attach_name] = open(img_ref, "rb")
+
             if idx == 0 and caption:
                 item["caption"] = caption
                 item["parse_mode"] = "Markdown"
             media.append(item)
-            files[attach_name] = open(img_path, "rb")
 
-        data = {"chat_id": chat_id, "media": json.dumps(media)}
-        res = requests.post(url, data=data, files=files, timeout=60)
-        for f in files.values():
-            f.close()
-        return res.status_code == 200
+        if files:
+            data = {"chat_id": chat_id, "media": json.dumps(media)}
+            res = requests.post(url, data=data, files=files, timeout=90)
+            return res.status_code == 200
+        else:
+            res = requests.post(url, json={"chat_id": chat_id, "media": media}, timeout=90)
+            return res.status_code == 200
     except Exception as e:
         print(f"Error sending TG album: {e}")
         return False
 
 
-# ─── VISUAL CAROUSEL GENERATOR (PILLOW 1080x1350) ───
-def render_instagram_carousel(topic_title, carousel_text):
-    """
-    Renders 6 ultra-clean, dark mode Instagram carousel slides (1080x1350 vertical aspect ratio).
-    Uses Roboto-Bold & Roboto-Regular for agency-grade typography with automated multi-line word-wrap.
-    Delivered directly as an album to Telegram.
-    """
-    font_bold_path = "fonts/Roboto-Bold.ttf"
-    font_reg_path = "fonts/Roboto-Regular.ttf"
+def generate_agnes_image(prompt, save_path):
+    """Generates cinematic AI background art using Agnes AI (agnes-image-2.0-flash) with failover."""
+    for key in AGNES_KEYS:
+        try:
+            r = requests.post(
+                "https://apihub.agnes-ai.com/v1/images/generations",
+                headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+                json={
+                    "model": "agnes-image-2.0-flash",
+                    "prompt": f"{prompt}, dark atmospheric cinematic lighting, octane render, 8k, neon emerald green and obsidian dark mode, clean composition without text",
+                    "size": "1024x1024"
+                },
+                timeout=30
+            )
+            if r.status_code == 200:
+                data = r.json().get("data", [])
+                if data and data[0].get("url"):
+                    urllib.request.urlretrieve(data[0]["url"], save_path)
+                    return True
+        except Exception as e:
+            print(f"Agnes image error: {e}")
 
+    # Fallback to FLUX.1
+    raw_flux = generate_flux_image(f"{prompt}, dark cinematic octane render, 8k")
+    if raw_flux:
+        with open(save_path, "wb") as f:
+            f.write(raw_flux)
+        return True
+    return False
+
+
+def render_instagram_carousel(topic_title, topic_details):
+    """
+    Renders 6 ultra-crisp 1080x1350 glassmorphism Instagram carousel slides
+    matching C:\\jayant\\carousel_studio design: Anton + Inter + JetBrains Mono,
+    dark vignette, green accent lighting, and Agnes AI background art.
+    """
+    system_prompt = "You are the elite Instagram creative director for @ai.agent_jayant. Return ONLY valid JSON matching the schema."
+    user_prompt = f"""TOPIC: {topic_title}
+DETAILS: {topic_details}
+
+Create a viral 6-slide educational Instagram carousel:
+- Slide 1: High-impact contrarian hook about this AI breakthrough + green highlight phrase
+- Slide 2: The Old Way vs The New Way (the problem with traditional methods)
+- Slide 3: The Secret Architecture (how it actually works under the hood)
+- Slide 4: Real-World Business Compounding Leverage / Results
+- Slide 5: The Complete Blueprint Map / System checklist
+- Slide 6: Steal This Setup & Call to Action (WhatsApp audit CTA: +91 78800 56262)
+
+Return JSON:
+{{
+  "categoryTag": "SHORT CATEGORY (e.g. TYPE-SAFE AI, AUTONOMOUS AGENTS, SYSTEM ONE AI)",
+  "slides": [
+    {{
+      "id": 1,
+      "slideNum": "01 / 06",
+      "hookPill": "⚡ BREAKTHROUGH PARADIGM",
+      "title": "MAIN TITLE",
+      "titleGreen": "GREEN ACCENT.",
+      "subtitle": "Subtitle text explaining the slide.",
+      "tacticalHeading": "CORE SYSTEM SPECIFICATIONS",
+      "tacticalItems": ["Item 1", "Item 2", "Item 3", "Item 4"],
+      "imagePrompt": "Futuristic dark cyber server room, neon emerald green glowing accents, 8k, photorealistic",
+      "footerLeft": "SWIPE FOR ARCHITECTURE ➔",
+      "footerRight": "FOLLOW @ai.agent_jayant 🔖"
+    }}
+  ]
+}}
+"""
+    carousel_json = None
+    if GROQ_API_KEY:
+        try:
+            res = requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"},
+                json={
+                    "model": "openai/gpt-oss-120b",
+                    "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
+                    "response_format": {"type": "json_object"}
+                },
+                timeout=30
+            )
+            if res.status_code == 200:
+                carousel_json = json.loads(res.json()["choices"][0]["message"]["content"])
+        except Exception as e:
+            print(f"Groq carousel json error: {e}")
+
+    if not carousel_json:
+        for g_key in GEMINI_KEYS:
+            try:
+                c = genai.Client(api_key=g_key)
+                r = c.models.generate_content(
+                    model="gemini-3.8-flash",
+                    contents=f"{system_prompt}\n\n{user_prompt}",
+                    config={"response_mime_type": "application/json"}
+                )
+                carousel_json = json.loads(r.text)
+                break
+            except Exception:
+                pass
+
+    if not carousel_json or "slides" not in carousel_json:
+        return []
+
+    slides = carousel_json["slides"]
+    category = carousel_json.get("categoryTag", "AI BREAKTHROUGH")
+
+    ts = int(time.time())
+    bg1 = os.path.abspath(os.path.join(CAROUSEL_DIR, f"bg_hero_{ts}.png"))
+    bg2 = os.path.abspath(os.path.join(CAROUSEL_DIR, f"bg_arch_{ts}.png"))
+
+    p1 = slides[0].get("imagePrompt", f"Futuristic dark cybernetic AI core for {topic_title[:50]}, neon emerald green lighting")
+    p2 = slides[2].get("imagePrompt", f"Futuristic holographic AI architecture command center for {topic_title[:50]}, dark mode cyan green")
+
+    generate_agnes_image(p1, bg1)
+    generate_agnes_image(p2, bg2)
+
+    slide_paths = []
     try:
-        f_badge = ImageFont.truetype(font_bold_path, 28)
-        f_brand = ImageFont.truetype(font_bold_path, 30)
-        f_title = ImageFont.truetype(font_bold_path, 56)
-        f_body = ImageFont.truetype(font_reg_path, 38)
-        f_footer = ImageFont.truetype(font_bold_path, 28)
-    except Exception:
-        f_badge = f_brand = f_title = f_body = f_footer = ImageFont.load_default()
+        from playwright.sync_api import sync_playwright
+        template_path = os.path.abspath("carousel_template.html").replace("\\", "/")
 
-    slides_data = [
-        ("STOP DOING THIS\nMANUALLY IN 2026",
-         f"{topic_title[:80]}\n\n99% of people are still wasting 4 hours every single day writing code, emails, and content from scratch.\n\nHere is how to automate the entire process in 30 seconds.",
-         "Swipe for the breakthrough >>"),
-        ("THE BIG SHIFT\nYOU CANNOT IGNORE",
-         "What used to require 3 separate complex tools and an expensive agency is now unified into a single AI pipeline.",
-         "How it works >>"),
-        ("HOW IT WORKS\n(ZERO JARGON)",
-         "Plain English breakdown so simple a 12-year-old gets it.\n\nIt connects your daily data directly to the latest reasoning models with zero setup required.",
-         "The secret triad >>"),
-        ("THE SIGNATURE TRIAD\nTHAT CHANGES IT ALL",
-         "INPUT: Raw voice note or messy notes\n\nPROMPT: Jayant's System Architecture\n\nOUTPUT: Production-ready client deliverable",
-         "Real business ROI >>"),
-        ("BUSINESS IMPACT\nAND REAL ROI",
-         "1. Cut manual research time by 85%\n2. Generate client-ready deliverables in under 1 minute\n3. Deploy 24/7 without needing your laptop turned on",
-         "Final action step >>"),
-        ("WANT THIS WORKING\nFOR YOUR BUSINESS?",
-         "Save this post for later.\n\nSend a WhatsApp to +91 78800 56262 or DM 'AUDIT' for a free 15-minute AI implementation roadmap.",
-         "Jayant's AI Lab HQ")
-    ]
+        with sync_playwright() as p:
+            browser = p.chromium.launch()
+            page = browser.new_page(viewport={"width": 1080, "height": 1350}, device_scale_factor=2)
+            page.goto(f"file:///{template_path}")
 
-    timestamp = int(time.time())
-    generated_paths = []
+            for i, s in enumerate(slides):
+                idx = i + 1
+                bg_to_use = bg1 if idx <= 3 else bg2
+                payload = {
+                    "imagePath": bg_to_use.replace("\\", "/"),
+                    "categoryTag": category,
+                    "slideNum": s.get("slideNum", f"0{idx} / 0{len(slides)}"),
+                    "hookPill": s.get("hookPill", "⚡ AI BREAKTHROUGH"),
+                    "title": s.get("title", ""),
+                    "titleGreen": s.get("titleGreen", ""),
+                    "subtitle": s.get("subtitle", ""),
+                    "tacticalHeading": s.get("tacticalHeading", "CORE SPECIFICATIONS"),
+                    "tacticalItems": s.get("tacticalItems", []),
+                    "footerLeft": s.get("footerLeft", "SWIPE FOR NEXT ➔"),
+                    "footerRight": s.get("footerRight", "FOLLOW @ai.agent_jayant 🔖")
+                }
+                page.evaluate("(data) => setSlide(data)", payload)
+                page.wait_for_timeout(350)
+                out_file = os.path.abspath(os.path.join(CAROUSEL_DIR, f"slide_{ts}_{idx}.png"))
+                page.screenshot(path=out_file)
+                slide_paths.append(out_file)
 
-    for idx, (headline, raw_body, footer_hint) in enumerate(slides_data, 1):
-        img = Image.new("RGB", (1080, 1350), color="#080c14")
-        draw = ImageDraw.Draw(img)
+            browser.close()
+    except Exception as pe:
+        print(f"Playwright rendering error: {pe}")
 
-        # Outer rounded border
-        draw.rounded_rectangle([(40, 40), (1040, 1310)], radius=28, outline="#1e293b", width=3)
-
-        # Top Badge Pill
-        draw.rounded_rectangle([(80, 80), (460, 150)], radius=35, fill="#0f2338", outline="#0284c7", width=2)
-        draw.text((110, 98), f"AI STRATEGY  |  {idx}/6", font=f_badge, fill="#38bdf8")
-
-        # Brand Title
-        draw.text((640, 100), "JAYANT'S AI LAB", font=f_brand, fill="#64748b")
-
-        # Headline
-        draw.text((80, 220), headline, font=f_title, fill="#ffffff", spacing=14)
-
-        # Container Card
-        draw.rounded_rectangle([(80, 440), (1000, 1140)], radius=24, fill="#0d1526", outline="#1e293b", width=2)
-
-        # Body text with automated word-wrap
-        y_text = 490
-        for paragraph in raw_body.split("\n"):
-            if not paragraph.strip():
-                y_text += 24
-                continue
-            wrapped = textwrap.wrap(paragraph, width=32)
-            for line in wrapped:
-                if line.startswith("INPUT:") or line.startswith("PROMPT:") or line.startswith("OUTPUT:"):
-                    draw.text((120, y_text), line, font=f_body, fill="#38bdf8")
-                else:
-                    draw.text((120, y_text), line, font=f_body, fill="#cbd5e1")
-                y_text += 54
-
-        # Footer
-        draw.line([(80, 1190), (1000, 1190)], fill="#1e293b", width=2)
-        draw.text((80, 1225), footer_hint, font=f_footer, fill="#38bdf8")
-        draw.text((700, 1225), "@jrddiwan", font=f_footer, fill="#64748b")
-
-        slide_path = os.path.join(CAROUSEL_DIR, f"slide_{timestamp}_{idx}.png")
-        img.save(slide_path)
-        generated_paths.append(slide_path)
-
-    return generated_paths
+    return slide_paths
 
 
 # ─── VISUAL ENGINE (SCREENSHOTS + FLUX.1 + CLOUDFLARE) ───
@@ -640,7 +726,7 @@ def telegram_listener():
             if "result" in res:
                 for update in res["result"]:
                     offset = update["update_id"] + 1
-                    msg = update.get("message", {})
+                    msg = update.get("message") or update.get("channel_post") or {}
                     chat_id = msg.get("chat", {}).get("id")
                     text = msg.get("text", "")
 

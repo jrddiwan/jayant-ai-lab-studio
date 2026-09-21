@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1080, height=1350, initial-scale=1.0">
+  <title>AI Visual Carousel Studio | @ai.agent_jayant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #080A0F;
+      --card-bg: rgba(13, 17, 26, 0.82);
+      --card-border: rgba(255, 255, 255, 0.12);
+      --brand-green: #00D048;
+      --brand-cyan: #00F0FF;
+      --text-white: #FFFFFF;
+      --text-muted: #A1A1AA;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      width: 1080px;
+      height: 1350px;
+      background-color: var(--bg-dark);
+      font-family: 'Inter', sans-serif;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: var(--text-white);
+    }
+
+    #slideCanvas {
+      width: 1080px;
+      height: 1350px;
+      position: relative;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 60px 56px;
+      overflow: hidden;
+    }
+
+    /* Cinematic Lighting & Readability Overlays */
+    .overlay-vignette {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        180deg,
+        rgba(8, 10, 15, 0.85) 0%,
+        rgba(8, 10, 15, 0.25) 30%,
+        rgba(8, 10, 15, 0.35) 50%,
+        rgba(8, 10, 15, 0.88) 75%,
+        rgba(8, 10, 15, 0.98) 100%
+      );
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .overlay-glow {
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0, 208, 72, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+      bottom: 100px;
+      right: -100px;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .content-layer {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      justify-content: space-between;
+    }
+
+    /* Header Bar */
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(13, 17, 26, 0.85);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(12px);
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-weight: 800;
+      font-size: 16px;
+      letter-spacing: 0.5px;
+    }
+
+    .brand-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--brand-green);
+      box-shadow: 0 0 12px var(--brand-green);
+    }
+
+    .meta-tag {
+      background: rgba(0, 208, 72, 0.15);
+      border: 1px solid rgba(0, 208, 72, 0.35);
+      color: var(--brand-green);
+      font-weight: 800;
+      font-size: 14px;
+      letter-spacing: 1.5px;
+      padding: 10px 22px;
+      border-radius: 30px;
+      text-transform: uppercase;
+    }
+
+    .slide-num-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 800;
+      font-size: 16px;
+      background: rgba(13, 17, 26, 0.85);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(12px);
+      padding: 10px 20px;
+      border-radius: 30px;
+      color: #D4D4D8;
+    }
+
+    /* Main Lower-Third Content Section */
+    .main-body {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      max-width: 960px;
+    }
+
+    .hook-pill {
+      align-self: flex-start;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(12px);
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--brand-cyan);
+      text-transform: uppercase;
+    }
+
+    h1.slide-title {
+      font-family: 'Anton', sans-serif;
+      font-size: 76px;
+      line-height: 1.05;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+    }
+
+    h1.slide-title .accent {
+      color: var(--brand-green);
+      display: inline;
+    }
+
+    .slide-subtitle {
+      font-size: 24px;
+      font-weight: 500;
+      line-height: 1.55;
+      color: #E4E4E7;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9);
+      max-width: 920px;
+    }
+
+    /* Key Insights / Tactical Glass Cards */
+    .tactical-box {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 24px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 4px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+    }
+
+    .tactical-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--brand-green);
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+    }
+
+    .tactical-items {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .item-chip {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 16px;
+      font-weight: 600;
+      color: #F4F4F5;
+    }
+
+    .item-chip .chip-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--brand-green);
+    }
+
+    /* Footer Navigation & CTA */
+    .footer-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .footer-left {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 15px;
+      font-weight: 700;
+      color: #A1A1AA;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .footer-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--brand-green);
+      letter-spacing: 0.5px;
+    }
+  </style>
+</head>
+<body>
+  <div id="slideCanvas">
+    <div class="overlay-vignette"></div>
+    <div class="overlay-glow"></div>
+
+    <div class="content-layer">
+      <!-- HEADER -->
+      <div class="header-bar">
+        <div class="brand-pill">
+          <span class="brand-dot"></span>
+          @ai.agent_jayant
+        </div>
+        <div class="meta-tag" id="categoryTag">2030 AI AGENTS</div>
+        <div class="slide-num-badge" id="slideNum">01 / 06</div>
+      </div>
+
+      <!-- BODY -->
+      <div class="main-body">
+        <div class="hook-pill" id="hookPill">⚡ BREAKTHROUGH PARADIGM</div>
+        <h1 class="slide-title" id="slideTitle">
+          HOW TO DEPLOY <span class="accent">AUTONOMOUS SWARMS.</span>
+        </h1>
+        <p class="slide-subtitle" id="slideSubtitle">
+          The exact multi-model architecture powering self-healing codebases and 24/7 client systems.
+        </p>
+
+        <!-- TACTICAL HIGHLIGHT BOX -->
+        <div class="tactical-box" id="tacticalBox">
+          <div class="tactical-title">
+            <span>⚡</span> <span id="tacticalHeading">CORE SYSTEM CAPABILITIES</span>
+          </div>
+          <div class="tactical-items" id="tacticalItems">
+            <div class="item-chip"><span class="chip-dot"></span> 100% Autonomous Reasoning</div>
+            <div class="item-chip"><span class="chip-dot"></span> Zero Context Loss</div>
+            <div class="item-chip"><span class="chip-dot"></span> Self-Healing Tool Calls</div>
+            <div class="item-chip"><span class="chip-dot"></span> Sub-Second Execution</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FOOTER -->
+      <div class="footer-bar">
+        <div class="footer-left" id="footerLeft">
+          SWIPE FOR NEXT STEP ➔
+        </div>
+        <div class="footer-right" id="footerRight">
+          FOLLOW @ai.agent_jayant 🔖
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function setSlide(data) {
+      const canvas = document.getElementById("slideCanvas");
+      if (data.imagePath) {
+        canvas.style.backgroundImage = `url('${data.imagePath.replace(/\\/g, "/")}')`;
+      }
+      if (data.categoryTag) {
+        document.getElementById("categoryTag").innerText = data.categoryTag;
+      }
+      if (data.slideNum) {
+        document.getElementById("slideNum").innerText = data.slideNum;
+      }
+      if (data.hookPill) {
+        document.getElementById("hookPill").innerText = data.hookPill;
+      }
+      if (data.title && data.titleGreen) {
+        document.getElementById("slideTitle").innerHTML = `${data.title} <span class="accent">${data.titleGreen}</span>`;
+      } else if (data.title) {
+        document.getElementById("slideTitle").innerText = data.title;
+      }
+      if (data.subtitle) {
+        document.getElementById("slideSubtitle").innerText = data.subtitle;
+      }
+      if (data.tacticalHeading) {
+        document.getElementById("tacticalHeading").innerText = data.tacticalHeading;
+      }
+      if (data.tacticalItems && Array.isArray(data.tacticalItems) && data.tacticalItems.length > 0) {
+        const container = document.getElementById("tacticalItems");
+        container.innerHTML = data.tacticalItems.map(item => `
+          <div class="item-chip"><span class="chip-dot"></span> ${item}</div>
+        `).join("");
+        document.getElementById("tacticalBox").style.display = "flex";
+      } else {
+        document.getElementById("tacticalBox").style.display = "none";
+      }
+      if (data.footerLeft) {
+        document.getElementById("footerLeft").innerText = data.footerLeft;
+      }
+      if (data.footerRight) {
+        document.getElementById("footerRight").innerText = data.footerRight;
+      }
+    }
+  </script>
+</body>
+</html>

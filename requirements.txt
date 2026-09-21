@@ -2,3 +2,5 @@ google-genai
 requests
 Pillow
 youtube-transcript-api
+playwright
+python-dotenv
