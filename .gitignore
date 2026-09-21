@@ -1,0 +1,6 @@
+.env
+telegram_outputs/
+seen_topics.json
+*.wav
+__pycache__/
+*.pyc
