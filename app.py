@@ -36,19 +36,24 @@ if os.path.exists(".env"):
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 AUTHORIZED_CHAT_ID = int(os.getenv("AUTHORIZED_CHAT_ID", "7007116692"))
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+
+# ─── MULTI-KEY POOLS (TWO KEYS FOR EACH PLATFORM) ───
+GEMINI_KEYS = [k for k in [os.getenv("GEMINI_API_KEY", ""), os.getenv("GEMINI_API_KEY_2", "")] if k]
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-AGNES_API_KEY = os.getenv("AGNES_API_KEY", "")
-HF_TOKEN = os.getenv("HF_TOKEN", "")
-CF_TOKEN = os.getenv("CF_TOKEN", "")
-CF_ACCOUNT = os.getenv("CF_ACCOUNT", "")
+AGNES_KEYS = [k for k in [os.getenv("AGNES_API_KEY", ""), os.getenv("AGNES_API_KEY_2", "")] if k]
+HF_TOKENS = [k for k in [os.getenv("HF_TOKEN", ""), os.getenv("HF_TOKEN_2", "")] if k]
+OPENROUTER_KEYS = [k for k in [os.getenv("OPENROUTER_API_KEY", ""), os.getenv("OPENROUTER_API_KEY_2", "")] if k]
+
+CF_CREDS = []
+if os.getenv("CF_ACCOUNT") and os.getenv("CF_TOKEN"):
+    CF_CREDS.append((os.getenv("CF_ACCOUNT"), os.getenv("CF_TOKEN")))
+if os.getenv("CF_ACCOUNT_2") and os.getenv("CF_TOKEN_2"):
+    CF_CREDS.append((os.getenv("CF_ACCOUNT_2"), os.getenv("CF_TOKEN_2")))
 
 TG_API_BASE = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
 OUTPUT_DIR = "telegram_outputs"
 SEEN_FILE = "seen_topics.json"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
-
-g_client = genai.Client(api_key=GEMINI_API_KEY)
 
 # ─── MEMORY & DEDUPLICATION ───
 if os.path.exists(SEEN_FILE):
@@ -119,24 +124,28 @@ def capture_url_screenshot(target_url):
 
 
 def generate_flux_image(prompt):
-    """Generate high-res visual proof card via Hugging Face FLUX.1-schnell."""
-    try:
-        api_url = "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell"
-        headers = {"Authorization": f"Bearer {HF_TOKEN}"}
-        res = requests.post(api_url, headers=headers, json={"inputs": prompt}, timeout=25)
-        if res.status_code == 200:
-            return res.content
-    except Exception as e:
-        print(f"HF FLUX error: {e}")
+    """Generate high-res visual proof card via Hugging Face FLUX.1-schnell (dual key rotation) with Cloudflare SDXL fallback."""
+    # 1. Try Hugging Face FLUX across both tokens
+    for token in HF_TOKENS:
+        try:
+            api_url = "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell"
+            headers = {"Authorization": f"Bearer {token}"}
+            res = requests.post(api_url, headers=headers, json={"inputs": prompt}, timeout=25)
+            if res.status_code == 200 and res.content:
+                return res.content
+        except Exception as e:
+            print(f"HF FLUX error with token: {e}")
 
-    # Fallback to Cloudflare SDXL Lightning
-    try:
-        cf_url = f"https://api.cloudflare.com/client/v4/accounts/{CF_ACCOUNT}/ai/run/@cf/bytedance/stable-diffusion-xl-lightning"
-        r = requests.post(cf_url, headers={"Authorization": f"Bearer {CF_TOKEN}"}, json={"prompt": prompt}, timeout=20)
-        if r.status_code == 200:
-            return r.content
-    except Exception as e:
-        print(f"CF Fallback error: {e}")
+    # 2. Fallback to Cloudflare SDXL Lightning across both accounts
+    for account, token in CF_CREDS:
+        try:
+            cf_url = f"https://api.cloudflare.com/client/v4/accounts/{account}/ai/run/@cf/bytedance/stable-diffusion-xl-lightning"
+            r = requests.post(cf_url, headers={"Authorization": f"Bearer {token}"}, json={"prompt": prompt}, timeout=20)
+            if r.status_code == 200 and r.content:
+                return r.content
+        except Exception as e:
+            print(f"CF Fallback error with account {account}: {e}")
+
     return None
 
 
@@ -198,39 +207,71 @@ Slide 6: CTA (Save post & DM for free AI audit: +91 78800 56262)
 [PROMPT_OF_THE_DAY]
 (A ready-to-copy prompt template for this tool to share in the Jayant's AI Lab WhatsApp community.)
 """
-    # 1. Generate text using Groq 120B (fallback to Agnes 2.5 Flash / Gemini)
+    # 1. Generate text using multi-platform fallback with dual-key rotation
     raw_text = None
-    try:
-        g_res = requests.post(
-            "https://api.groq.com/openai/v1/chat/completions",
-            headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"},
-            json={"model": "openai/gpt-oss-120b", "messages": [{"role": "user", "content": prompt}], "temperature": 0.4},
-            timeout=20
-        )
-        if g_res.status_code == 200:
-            raw_text = g_res.json()["choices"][0]["message"]["content"]
-    except Exception as e:
-        print(f"Groq generation fallback: {e}")
 
-    if not raw_text:
+    # Priority 1: Groq 120B
+    if GROQ_API_KEY:
         try:
-            a_res = requests.post(
-                "https://apihub.agnes-ai.com/v1/chat/completions",
-                headers={"Authorization": f"Bearer {AGNES_API_KEY}", "Content-Type": "application/json"},
-                json={"model": "agnes-2.5-flash", "messages": [{"role": "user", "content": prompt}], "temperature": 0.4},
+            g_res = requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"},
+                json={"model": "openai/gpt-oss-120b", "messages": [{"role": "user", "content": prompt}], "temperature": 0.4},
                 timeout=20
             )
-            if a_res.status_code == 200:
-                raw_text = a_res.json()["choices"][0]["message"]["content"]
-        except Exception:
-            pass
+            if g_res.status_code == 200:
+                raw_text = g_res.json()["choices"][0]["message"]["content"]
+        except Exception as e:
+            print(f"Groq generation fallback: {e}")
 
+    # Priority 2: Agnes 2.5 Flash across both Agnes keys
     if not raw_text:
-        gem_res = g_client.models.generate_content(model="gemini-3.8-flash", contents=prompt)
-        raw_text = gem_res.text
+        for a_key in AGNES_KEYS:
+            try:
+                a_res = requests.post(
+                    "https://apihub.agnes-ai.com/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {a_key}", "Content-Type": "application/json"},
+                    json={"model": "agnes-2.5-flash", "messages": [{"role": "user", "content": prompt}], "temperature": 0.4},
+                    timeout=20
+                )
+                if a_res.status_code == 200:
+                    raw_text = a_res.json()["choices"][0]["message"]["content"]
+                    break
+            except Exception:
+                pass
+
+    # Priority 3: OpenRouter across both OpenRouter keys
+    if not raw_text:
+        for or_key in OPENROUTER_KEYS:
+            try:
+                or_res = requests.post(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {or_key}", "Content-Type": "application/json"},
+                    json={"model": "meta-llama/llama-3.3-70b-instruct:free", "messages": [{"role": "user", "content": prompt}]},
+                    timeout=20
+                )
+                if or_res.status_code == 200:
+                    raw_text = or_res.json()["choices"][0]["message"]["content"]
+                    break
+            except Exception:
+                pass
+
+    # Priority 4: Gemini 3.8 Flash across both Gemini keys
+    if not raw_text:
+        for g_key in GEMINI_KEYS:
+            try:
+                g_client_text = genai.Client(api_key=g_key)
+                gem_res = g_client_text.models.generate_content(model="gemini-3.8-flash", contents=prompt)
+                if gem_res.text:
+                    raw_text = gem_res.text
+                    break
+            except Exception:
+                pass
 
     # Parse sections safely
     def extract_tag(tag, text):
+        if not text:
+            return ""
         if f"[{tag}]" in text:
             part = text.split(f"[{tag}]")[1]
             for next_tag in ["HOOK", "ZORO_BODY", "B_ROLL_LIST", "CTA", "TWEET", "LINKEDIN", "CAROUSEL", "PROMPT_OF_THE_DAY"]:
@@ -252,7 +293,7 @@ Slide 6: CTA (Save post & DM for free AI audit: +91 78800 56262)
     if len(tweet) > 260:
         tweet = tweet[:257] + "..."
 
-    # 2. Synthesize ZORO voice track via Gemini 3.1 Flash TTS
+    # 2. Synthesize ZORO voice track via Gemini 3.1 Flash TTS (dual key rotation)
     director_prompt = f"""## "ZORO — Jayant's AI Employee" — Daily AI Briefing
 ## THE SCENE: Modern AI Lab, South Delhi
 ZORO is dynamic, smiling, and speaking with crisp news-anchor clarity and infectious energy.
@@ -263,21 +304,31 @@ Accent: Educated Indian English.
 #### TRANSCRIPT
 {body}
 """
-    interaction = g_client.interactions.create(
-        model="gemini-3.1-flash-tts-preview",
-        input=director_prompt,
-        response_format={"type": "audio"},
-        generation_config={"speech_config": [{"voice": "Rasalgethi"}]}
-    )
-    audio_data = base64.b64decode(interaction.output_audio.data)
+    audio_data = None
+    for g_key in GEMINI_KEYS:
+        try:
+            g_client_tts = genai.Client(api_key=g_key)
+            interaction = g_client_tts.interactions.create(
+                model="gemini-3.1-flash-tts-preview",
+                input=director_prompt,
+                response_format={"type": "audio"},
+                generation_config={"speech_config": [{"voice": "Rasalgethi"}]}
+            )
+            audio_data = base64.b64decode(interaction.output_audio.data)
+            if audio_data:
+                break
+        except Exception as e:
+            print(f"TTS error with key: {e}")
+
     timestamp = int(time.time())
     audio_path = os.path.join(OUTPUT_DIR, f"zoro_{timestamp}.wav")
 
-    with wave.open(audio_path, "wb") as wf:
-        wf.setnchannels(1)
-        wf.setsampwidth(2)
-        wf.setframerate(24000)
-        wf.writeframes(audio_data)
+    if audio_data:
+        with wave.open(audio_path, "wb") as wf:
+            wf.setnchannels(1)
+            wf.setsampwidth(2)
+            wf.setframerate(24000)
+            wf.writeframes(audio_data)
 
     return {
         "hook": hook,
