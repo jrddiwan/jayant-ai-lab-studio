@@ -298,8 +298,9 @@ Slide 6: CTA (Save post & DM for free AI audit: +91 78800 56262)
 ## THE SCENE: Modern AI Lab, South Delhi
 ZORO is dynamic, smiling, and speaking with crisp news-anchor clarity and infectious energy.
 ### DIRECTOR'S NOTES
+Speaker: Confident, energetic young male tech consultant / AI employee.
 Style: Conversational, vocal smile, fast-paced short-form video cadence, clear Indian English accent (South Delhi).
-Pace: Brisk, punchy, energetic.
+Pace: Brisk, punchy, energetic male delivery.
 Accent: Educated Indian English.
 #### TRANSCRIPT
 {body}
@@ -312,7 +313,7 @@ Accent: Educated Indian English.
                 model="gemini-3.1-flash-tts-preview",
                 input=director_prompt,
                 response_format={"type": "audio"},
-                generation_config={"speech_config": [{"voice": "Rasalgethi"}]}
+                generation_config={"speech_config": [{"voice": "Puck"}]}
             )
             audio_data = base64.b64decode(interaction.output_audio.data)
             if audio_data:
@@ -397,7 +398,7 @@ def check_youtube_uploads():
                             f"🎧 *ZORO's audio is attached below!*"
                         )
                         send_tg_message(AUTHORIZED_CHAT_ID, video_msg)
-                        send_tg_audio(AUTHORIZED_CHAT_ID, pkg['audio_path'], caption="🎙️ ZORO Voice (Rasalgethi • South Delhi)")
+                        send_tg_audio(AUTHORIZED_CHAT_ID, pkg['audio_path'], caption="🎙️ ZORO Audio (Puck • Energetic Male Voice)")
 
                         # 2. Deliver Social Distribution Pack
                         social_msg = (
@@ -476,7 +477,7 @@ def telegram_listener():
                         f"🎧 *ZORO's audio track is attached below!*"
                     )
                     send_tg_message(chat_id, video_msg)
-                    send_tg_audio(chat_id, pkg['audio_path'], caption="🎙️ ZORO Audio (Rasalgethi • South Delhi)")
+                    send_tg_audio(chat_id, pkg['audio_path'], caption="🎙️ ZORO Audio (Puck • Energetic Male Voice)")
 
                     # 2. Deliver Social Distribution Pack
                     social_msg = (
