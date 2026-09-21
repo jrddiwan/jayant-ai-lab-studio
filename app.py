@@ -149,44 +149,58 @@ def send_tg_album(chat_id, image_paths, caption=""):
 def render_instagram_carousel(topic_title, carousel_text):
     """
     Renders 6 ultra-clean, dark mode Instagram carousel slides (1080x1350 vertical aspect ratio).
+    Uses Roboto-Bold & Roboto-Regular for agency-grade typography.
     Delivered directly as an album to Telegram.
     """
+    font_bold_path = "fonts/Roboto-Bold.ttf"
+    font_reg_path = "fonts/Roboto-Regular.ttf"
+
+    try:
+        f_badge = ImageFont.truetype(font_bold_path, 28)
+        f_brand = ImageFont.truetype(font_bold_path, 30)
+        f_title = ImageFont.truetype(font_bold_path, 54)
+        f_body = ImageFont.truetype(font_reg_path, 34)
+        f_footer = ImageFont.truetype(font_bold_path, 26)
+    except Exception:
+        f_badge = f_brand = f_title = f_body = f_footer = ImageFont.load_default()
+
     slides_data = [
-        ("THE BIG SHIFT", f"{topic_title}\n\nStop doing this the old way.", "Swipe >>"),
-        ("THE PROBLEM", "99% of creators & businesses are wasting hours every day.", "Why it matters >>"),
-        ("HOW IT WORKS", "No tech jargon. Plain English breakdown so simple a 12-year-old gets it.", "The secret triad >>"),
-        ("THE SIGNATURE TRIAD", "INPUT: Your raw data / idea\nPROMPT: Architecture framework\nOUTPUT: Production-ready result", "Practical ROI >>"),
-        ("BUSINESS IMPACT", "What used to take 3 days and an agency now takes 30 seconds.", "Final step >>"),
-        ("TAKE ACTION", "DM 'AUDIT' or WhatsApp +91 78800 56262\nfor a free 15-minute AI implementation roadmap.", "Jayant's AI Lab HQ")
+        ("THE BIG SHIFT", f"{topic_title[:80]}\n\nStop doing this the old way. A new AI model just flipped the industry.", "Swipe >>"),
+        ("THE PROBLEM", "99% of creators & business owners are wasting 4+ hours every day on repetitive manual work.\n\nHere is how to automate it in seconds.", "Why it matters >>"),
+        ("HOW IT WORKS", "No tech jargon. Plain English breakdown so simple a 12-year-old gets it.\n\nIt replaces 3 separate complex tools into 1 unified pipeline.", "The secret triad >>"),
+        ("THE SIGNATURE TRIAD", "INPUT: Your raw data or simple prompt\nPROMPT: Jayant's System Architecture\nOUTPUT: Production-ready client deliverable", "Practical ROI >>"),
+        ("BUSINESS IMPACT", "What used to take 3 days and an expensive agency now takes 30 seconds inside your business.", "Final step >>"),
+        ("TAKE ACTION", "Save this post for later.\n\nWhatsApp +91 78800 56262 or DM 'AUDIT' for a free 15-minute AI implementation roadmap.", "Jayant's AI Lab HQ")
     ]
 
     timestamp = int(time.time())
     generated_paths = []
 
     for idx, (headline, body, footer_hint) in enumerate(slides_data, 1):
-        img = Image.new("RGB", (1080, 1350), color="#0b0f19")
+        img = Image.new("RGB", (1080, 1350), color="#080c14")
         draw = ImageDraw.Draw(img)
 
-        # Outer border
-        draw.rectangle([(50, 50), (1030, 1300)], outline="#1e293b", width=3)
+        # Outer rounded frame
+        draw.rounded_rectangle([(40, 40), (1040, 1310)], radius=24, outline="#1e293b", width=3)
 
-        # Top Badge Pill
-        draw.rectangle([(80, 80), (450, 140)], fill="#1e293b")
-        draw.text((100, 95), f"JAYANT'S AI LAB  |  {idx}/6", fill="#38bdf8")
+        # Top Pill Badge
+        draw.rounded_rectangle([(80, 80), (460, 150)], radius=35, fill="#0f2338", outline="#0284c7", width=2)
+        draw.text((110, 98), f"AI STRATEGY  |  {idx}/6", font=f_badge, fill="#38bdf8")
 
-        # Slide Headline
-        draw.text((80, 220), headline, fill="#ffffff")
+        # Brand Title
+        draw.text((640, 100), "JAYANT'S AI LAB", font=f_brand, fill="#64748b")
 
-        # Slide Body (Wrapped line representation)
-        y_pos = 380
-        for line in body.split("\n"):
-            draw.text((80, y_pos), line, fill="#94a3b8")
-            y_pos += 60
+        # Headline
+        draw.text((80, 240), headline, font=f_title, fill="#ffffff", spacing=14)
 
-        # Footer CTA
-        draw.line([(80, 1200), (1000, 1200)], fill="#1e293b", width=2)
-        draw.text((80, 1225), footer_hint, fill="#38bdf8")
-        draw.text((700, 1225), "@jrddiwan", fill="#64748b")
+        # Content Container Card
+        draw.rounded_rectangle([(80, 480), (1000, 1140)], radius=20, fill="#0d1526", outline="#1e293b", width=2)
+        draw.text((120, 530), body, font=f_body, fill="#cbd5e1", spacing=22)
+
+        # Footer
+        draw.line([(80, 1190), (1000, 1190)], fill="#1e293b", width=2)
+        draw.text((80, 1225), footer_hint, font=f_footer, fill="#38bdf8")
+        draw.text((700, 1225), "@jrddiwan", font=f_footer, fill="#64748b")
 
         slide_path = os.path.join(CAROUSEL_DIR, f"slide_{timestamp}_{idx}.png")
         img.save(slide_path)

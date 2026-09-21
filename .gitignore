@@ -1,6 +1,10 @@
 .env
 telegram_outputs/
+carousel_outputs/
+test_album/
 seen_topics.json
 *.wav
+*.png
 __pycache__/
 *.pyc
+!fonts/
