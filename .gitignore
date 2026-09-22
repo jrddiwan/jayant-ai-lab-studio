@@ -8,3 +8,5 @@ seen_topics.json
 __pycache__/
 *.pyc
 !fonts/
+test_*.py
+send_*.py
