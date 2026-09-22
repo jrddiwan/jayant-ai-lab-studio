@@ -60,11 +60,11 @@
 ---
 
 ### D. Zoro Voice Track & Audio Synthesis Specification
-* **Target Speaker**: Zoro (Jayant's AI employee)
-* **Primary TTS Engine**: Google Gemini 2.5 Flash TTS (`gemini-2.5-flash-preview-tts`), Voice: `"Puck"` (energetic, upbeat, confident tech founder cadence).
-* **Failover Engine**: Microsoft Edge-TTS (`en-IN-PrabhatNeural`, +5% speed rate, authentic South Delhi urban Indian male cadence).
-* **Audio Format**: 24,000 Hz, 16-bit Mono Linear PCM packaged as `.wav` or `.mp3`.
-* **Delivery**: Dispatched via Telegram `sendAudio` directly to Jayant's personal chat ID.
+* **Target Speaker**: Zoro (Jayant's AI employee at Jayant's AI Lab in South Delhi)
+* **Primary Flagship TTS Engine**: Microsoft Edge-TTS (`en-IN-PrabhatNeural`, +4% to +5% speed rate, authentic South Delhi urban Indian male tech founder cadence).
+* **Failover Engine**: Google Gemini 2.5 Flash TTS (`gemini-2.5-flash-preview-tts`), Voice: `"Puck"` with Indian cadence steering prompt.
+* **Audio Format**: 24,000 Hz, 16-bit Mono packaged as high-fidelity `.mp3` or `.wav`.
+* **Delivery**: Dispatched via Telegram `sendAudio` directly to Jayant's personal chat ID (`7007116692`).
 * **Browser/Web Client**: Interactive Puter.js (`puter.ai.txt2speech` with provider `gemini` and model `gemini-2.5-flash-preview-tts`) embedded in `dashboard.html` for zero-friction client-side playback.
 
 ---
