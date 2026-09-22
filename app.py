@@ -35,6 +35,7 @@ import io
 import time
 import json
 import wave
+import re
 
 if sys.stdout and hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -185,7 +186,10 @@ def send_tg_message(chat_id, text, bot_token=None):
     url = f"{_get_tg_base(bot_token)}/sendMessage"
     payload = {"chat_id": chat_id, "text": text, "parse_mode": "Markdown"}
     try:
-        requests.post(url, json=payload, timeout=15)
+        r = requests.post(url, json=payload, timeout=15)
+        if r.status_code != 200:
+            print(f"[TG sendMessage Markdown rejected ({r.status_code})]: {r.text[:80]}. Retrying plain text...")
+            requests.post(url, json={"chat_id": chat_id, "text": text}, timeout=15)
     except Exception as e:
         print(f"Error sending TG message: {e}")
 
@@ -194,11 +198,15 @@ def send_tg_photo(chat_id, photo_url_or_bytes, caption="", bot_token=None):
     url = f"{_get_tg_base(bot_token)}/sendPhoto"
     try:
         if isinstance(photo_url_or_bytes, str) and photo_url_or_bytes.startswith("http"):
-            requests.post(url, json={"chat_id": chat_id, "photo": photo_url_or_bytes, "caption": caption, "parse_mode": "Markdown"}, timeout=20)
+            r = requests.post(url, json={"chat_id": chat_id, "photo": photo_url_or_bytes, "caption": caption, "parse_mode": "Markdown"}, timeout=20)
+            if r.status_code != 200:
+                requests.post(url, json={"chat_id": chat_id, "photo": photo_url_or_bytes, "caption": caption}, timeout=20)
         else:
             files = {"photo": photo_url_or_bytes}
             data = {"chat_id": chat_id, "caption": caption, "parse_mode": "Markdown"}
-            requests.post(url, files=files, data=data, timeout=25)
+            r = requests.post(url, files=files, data=data, timeout=25)
+            if r.status_code != 200:
+                requests.post(url, files={"photo": photo_url_or_bytes}, data={"chat_id": chat_id, "caption": caption}, timeout=25)
     except Exception as e:
         print(f"Error sending TG photo: {e}")
 
@@ -215,7 +223,7 @@ def send_tg_audio(chat_id, audio_path, caption="", bot_token=None):
 
 
 def send_tg_album(chat_id, images, caption="", bot_token=None):
-    """Sends 6 carousel slides as an Instagram swipeable album (JPEG 92% compressed)."""
+    """Sends 7 carousel slides as an Instagram swipeable album (JPEG 92% compressed)."""
     url = f"{_get_tg_base(bot_token)}/sendMediaGroup"
     try:
         media = []
@@ -241,6 +249,24 @@ def send_tg_album(chat_id, images, caption="", bot_token=None):
         if files:
             data = {"chat_id": chat_id, "media": json.dumps(media)}
             res = requests.post(url, data=data, files=files, timeout=90)
+            if res.status_code != 200:
+                print(f"[TG sendMediaGroup failed ({res.status_code})]: {res.text[:80]}. Retrying without Markdown...")
+                if media and "parse_mode" in media[0]:
+                    del media[0]["parse_mode"]
+                files_retry = {}
+                for idx, img_ref in enumerate(images):
+                    attach_name = f"photo_{idx}"
+                    try:
+                        with Image.open(img_ref) as img:
+                            rgb_img = img.convert("RGB")
+                            buf = io.BytesIO()
+                            rgb_img.save(buf, format="JPEG", quality=92, optimize=True)
+                            img_bytes = buf.getvalue()
+                        files_retry[attach_name] = (f"slide_{idx+1}.jpg", img_bytes, "image/jpeg")
+                    except Exception:
+                        pass
+                if files_retry:
+                    res = requests.post(url, data={"chat_id": chat_id, "media": json.dumps(media)}, files=files_retry, timeout=90)
             return res.status_code == 200
     except Exception as e:
         print(f"Error sending TG album: {e}")
@@ -878,7 +904,8 @@ Slide 6: Dynamic CTA (Aligned with the selected CTA framework, saving post & fol
     clean_body = body.strip()
     for bracket in ["[cheerfully]", "[excitedly]", "[energetically]", "[confidently]", "[upbeat]"]:
         clean_body = clean_body.replace(bracket, "").strip()
-    tts_text = clean_body
+    # For TTS synthesis, keep to ~120-150 words (punchy 45-60s reel audio)
+    tts_text = clean_body[:800]
 
     director_input = f"""## "Jayant AI Lab Intelligence Brief"
 
@@ -891,20 +918,33 @@ Style:
 ### TRANSCRIPT
 {tts_text}
 """
+    from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
+
     audio_data = None
+    def _synthesize_voice(key, prompt_text):
+        g_client_tts = genai.Client(api_key=key)
+        interaction = g_client_tts.interactions.create(
+            model="gemini-3.1-flash-tts-preview",
+            input=prompt_text,
+            response_format={"type": "audio"},
+            generation_config={"speech_config": [{"voice": ZORO_VOICE}]}
+        )
+        return base64.b64decode(interaction.output_audio.data)
+
     for g_key in GEMINI_KEYS:
+        executor = ThreadPoolExecutor(max_workers=1)
         try:
-            g_client_tts = genai.Client(api_key=g_key)
-            interaction = g_client_tts.interactions.create(
-                model="gemini-3.1-flash-tts-preview",
-                input=director_input,
-                response_format={"type": "audio"},
-                generation_config={"speech_config": [{"voice": ZORO_VOICE}]}
-            )
-            audio_data = base64.b64decode(interaction.output_audio.data)
+            future = executor.submit(_synthesize_voice, g_key, director_input)
+            audio_data = future.result(timeout=20)
+            executor.shutdown(wait=False, cancel_futures=True)
             if audio_data:
                 break
+        except FutureTimeout:
+            executor.shutdown(wait=False, cancel_futures=True)
+            print("[TTS Warning]: Gemini Flash TTS took >20s, proceeding without audio to keep pipeline real-time.")
+            break
         except Exception as e:
+            executor.shutdown(wait=False, cancel_futures=True)
             print(f"TTS error: {e}")
 
     timestamp = int(time.time())
@@ -1207,42 +1247,57 @@ def deliver_production_package(title, details, source_url="", source_name=""):
     """Generates and delivers the complete multi-asset production package to Jayant's DM."""
     # Flagship: Warm Magazine Editorial (7 slides @theautomationguy.ai aesthetic with clear branding)
     chosen_style = "editorial"
-    pkg = generate_full_studio_package(title, details, source_url=source_url, carousel_style=chosen_style)
+    try:
+        pkg = generate_full_studio_package(title, details, source_url=source_url, carousel_style=chosen_style)
+    except Exception as e:
+        print(f"[Studio Dispatch Error] Failed generating package for '{title}': {e}")
+        return
 
     src_display = source_name or "AI Intelligence Radar"
     src_link = f"[{src_display}]({source_url})" if source_url else f"`{src_display}`"
 
     # 1. Video Production Package
-    video_msg = (
-        f"🎬 *NEW RADAR PRODUCTION PACK*\n"
-        f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"🌐 *SOURCE:* {src_link}\n"
-        f"📰 *HEADLINE:* {title}\n"
-        f"🎨 *CAROUSEL STYLE:* `{chosen_style.upper()}`\n\n"
-        f"🎯 *YOUR HOOK (Google Vids Avatar):*\n_{pkg['hook']}_\n\n"
-        f"🤖 *ZORO BODY SCRIPT (ELI12):*\n{pkg['body']}\n\n"
-        f"📢 *YOUR CTA (Google Vids Avatar):*\n_{pkg['cta']}_\n\n"
-        f"🎥 *AUTOMATED B-ROLL SCENE LIST & AI PROMPTS:*\n{pkg['b_roll']}\n\n"
-        f"🎧 *ZORO's audio track is attached below!*"
-    )
-    send_tg_message(TARGET_CHAT_ID, video_msg, bot_token=TELEGRAM_BOT_TOKEN_VIDEO)
-    if os.path.exists(pkg['audio_path']):
-        send_tg_audio(TARGET_CHAT_ID, pkg['audio_path'], caption=f"🎙️ ZORO Audio ({ZORO_VOICE} • South Delhi Cadence)", bot_token=TELEGRAM_BOT_TOKEN_VIDEO)
+    try:
+        video_msg = (
+            f"🎬 *NEW RADAR PRODUCTION PACK*\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🌐 *SOURCE:* {src_link}\n"
+            f"📰 *HEADLINE:* {title}\n"
+            f"🎨 *CAROUSEL STYLE:* `{chosen_style.upper()}`\n\n"
+            f"🎯 *YOUR HOOK (Google Vids Avatar):*\n_{pkg.get('hook', '')}_\n\n"
+            f"🤖 *ZORO BODY SCRIPT (ELI12):*\n{pkg.get('body', '')}\n\n"
+            f"📢 *YOUR CTA (Google Vids Avatar):*\n_{pkg.get('cta', '')}_\n\n"
+            f"🎥 *AUTOMATED B-ROLL SCENE LIST & AI PROMPTS:*\n{pkg.get('b_roll', '')}\n\n"
+            f"🎧 *ZORO's audio track is attached below!*"
+        )
+        send_tg_message(TARGET_CHAT_ID, video_msg, bot_token=TELEGRAM_BOT_TOKEN_VIDEO)
+        if pkg.get('audio_path') and os.path.exists(pkg['audio_path']):
+            send_tg_audio(TARGET_CHAT_ID, pkg['audio_path'], caption=f"🎙️ ZORO Audio ({ZORO_VOICE} • South Delhi Cadence)", bot_token=TELEGRAM_BOT_TOKEN_VIDEO)
+    except Exception as e:
+        print(f"[Video Bot Dispatch Error]: {e}")
 
     # 2. Instagram Carousel Album (Delivered via Carousel Studio Bot)
-    if pkg['carousel_images']:
-        send_tg_album(TARGET_CHAT_ID, pkg['carousel_images'], caption=f"📱 *Instagram Carousel ({chosen_style.upper()}): {title[:60]}*\n🌐 *Source:* {src_link}", bot_token=TELEGRAM_BOT_TOKEN_CAROUSEL)
+    try:
+        if pkg.get('carousel_images'):
+            send_tg_album(TARGET_CHAT_ID, pkg['carousel_images'], caption=f"📱 *Instagram Carousel ({chosen_style.upper()}): {title[:60]}*\n🌐 *Source:* {src_link}", bot_token=TELEGRAM_BOT_TOKEN_CAROUSEL)
+        else:
+            print("[Carousel Bot] No carousel images generated.")
+    except Exception as e:
+        print(f"[Carousel Bot Dispatch Error]: {e}")
 
     # 3. Omnichannel Social Pack (Delivered via Social & News Bot)
-    social_msg = (
-        f"📢 *OMNICHANNEL SOCIAL DISTRIBUTION PACK*\n"
-        f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"🌐 *ORIGINAL INTEL SOURCE:* {src_link}\n\n"
-        f"🐦 *STRICT <= 260 CHAR TWEET:*\n`{pkg['tweet']}`\n\n"
-        f"💡 *PROMPT OF THE DAY MAGNET (WhatsApp Community):*\n```\n{pkg['prompt_magnet']}\n```\n\n"
-        f"💼 *HIGH-INSIGHT LINKEDIN POST:*\n{pkg['linkedin']}"
-    )
-    send_tg_message(TARGET_CHAT_ID, social_msg, bot_token=TELEGRAM_BOT_TOKEN_SOCIAL)
+    try:
+        social_msg = (
+            f"📢 *OMNICHANNEL SOCIAL DISTRIBUTION PACK*\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🌐 *ORIGINAL INTEL SOURCE:* {src_link}\n\n"
+            f"🐦 *STRICT <= 260 CHAR TWEET:*\n`{pkg.get('tweet', '')}`\n\n"
+            f"💡 *PROMPT OF THE DAY MAGNET (WhatsApp Community):*\n```\n{pkg.get('prompt_magnet', '')}\n```\n\n"
+            f"💼 *HIGH-INSIGHT LINKEDIN POST:*\n{pkg.get('linkedin', '')}"
+        )
+        send_tg_message(TARGET_CHAT_ID, social_msg, bot_token=TELEGRAM_BOT_TOKEN_SOCIAL)
+    except Exception as e:
+        print(f"[Social Bot Dispatch Error]: {e}")
 
 
 LAST_DISPATCHED_TYPE = None
