@@ -762,44 +762,66 @@ def generate_full_studio_package(topic_title, topic_details, source_url="", caro
     selected_cta = random.choice(cta_frameworks)
 
     prompt = f"""You are the chief viral scriptwriter and content director for Jayant's AI Lab (@jayantsailab).
+Jayant is an independent AI engineer and agency founder in South Delhi, India. He builds real autonomous agent pipelines for clients.
+He speaks with sharp, energetic, high-conviction tech authority. He is NOT a PR spokesperson for OpenAI, Meta, or Google. He breaks down their releases with an operator's critical lens.
+
 Topic: {topic_title}
 Details: {topic_details}
 Selected Hook Framework: {selected_hook}
 Selected Storytelling Structure: {selected_story_structure}
 Selected Call To Action: {selected_cta}
 
-Write an authentic, highly engaging studio distribution package blending top creator styles (Alex Hormozi, Rowan Cheung, Dan Koe, Matt Wolfe, Justin Welsh) with Jayant's high-energy South Delhi tech authority.
-
-STRICT HUMANIZER & WRITING RULES (Zero AI Giveaways):
-1. ABSOLUTE BAN ON EM DASHES: NEVER use em dashes ('—' or '--'). Use standard commas, periods, or clean line breaks.
-2. ABSOLUTE BAN ON AI BUZZWORDS: NEVER use 'delve', 'testament', 'beacon', 'tapestry', 'landscape', 'revolutionize', 'game-changer', 'unlock', 'navigate', 'elevate', 'harness', 'moreover', 'furthermore', 'in today\\'s fast-paced world', 'buckle up', 'stop scrolling', 'without further ado'.
-3. NO RULE-OF-THREE CLICHES: Ban repetitive triads like 'fast, scalable, and robust' or three parallel consecutive sentences.
-4. HUMAN CADENCE & RHYTHM: Alternate sentence lengths naturally. A punchy 4-word sentence. Then a conversational explanation. Write like a human builder in public, not a corporate marketing bot.
-5. STORYTELLING ARC: Structure ZORO's script and the LinkedIn post using the selected Storytelling Structure ({selected_story_structure}). Show the struggle, the failed attempt, and the exact breakthrough.
-6. NATURAL ZORO OPENERS: Never say '[cheerfully] Hey everyone, ZORO here!'. Open like a confident engineer: 'ZORO on deck. Let\\'s skip the marketing fluff and look at the actual numbers.', 'ZORO here from Jayant\\'s Lab. Here is the operational breakdown.', 'Alright, let\\'s see what actually shipped.'
-7. DIVERSE & ORGANIC CTA: Strictly follow the selected Call To Action framework ({selected_cta}).
-8. STRICT PHONE NUMBER BAN: NEVER include any phone numbers (+91 78800 56262, 7880056262, or wa.me links are STRICTLY FORBIDDEN). Always direct to Link in Bio or DM.
-9. BRAND IDENTITY: Strictly 'Jayant\\'s AI Lab', handle '@jayantsailab', avatar badge 'JL'.
-
-Return EXACT tags:
+CRITICAL FORMATTING & SCRIPT SPECIFICATIONS:
 
 [HOOK]
-(5-8 seconds for Google Vids Avatar. Deliver a punchy, arresting opening using the selected hook framework: {selected_hook}. Seamlessly transition to the lab breakdown.)
+* STRICT LENGTH: Exactly 10 to 18 words total (3 to 5 seconds speaking time for Google Vids Avatar).
+* DO NOT summarize the headline. DO NOT repeat the whole title.
+* Deliver an immediate, contrarian pattern interrupt from Jayant's builder perspective.
+* Good Examples:
+  - "OpenAI just killed another $50M SaaS category, and most founders haven't noticed."
+  - "Stop paying $20/month for closed AI APIs. Open-source models just caught up."
+  - "The biggest model release of the week just dropped, and it runs completely offline."
 
 [ZORO_BODY]
-(35-45 seconds, ~100-120 words for ZORO, Jayant's AI employee. Follow the {selected_story_structure} arc: identify the friction, explain the tool with a dead-simple analogy, give 1 sharp quantifiable metric, and finish with a confident takeaway. No bracketed stage directions.)
+* STRICT LENGTH: Exactly 130 to 180 words (45 to 60 seconds of punchy, engaging audio).
+* NEVER write just 2 lines. This is ZORO's flagship breakdown script.
+* Persona: ZORO, Jayant's AI employee in South Delhi. Confident, sharp, zero marketing fluff.
+* Structure:
+  1. The Friction / Bottleneck: Why existing methods or manual workflows fail.
+  2. The Architecture & Metrics: What actually changed under the hood. Quote 2 specific technical metrics (e.g. latency, context window, token cost, VRAM footprint).
+  3. The Lab Teardown: How Jayant's AI Lab is deploying this in production agent pipelines.
+  4. The Engineering Rule: A sharp, memorable rule of thumb for builders.
+* Write a continuous conversational monologue. No brackets or stage directions.
 
 [B_ROLL_LIST]
-(3-4 specific visual B-roll cues with timestamps [00:08 - 00:18] and AI video generation prompts for Kling/Luma/Runway.)
+* 3 to 4 specific visual cues with timestamps [00:08 - 00:20] and AI video generation prompts for Kling/Luma/Runway.
 
 [CTA]
-(6-8 seconds for Google Vids Avatar using the selected Call To Action Framework: {selected_cta}.)
+* Exactly 1 punchy sentence for Google Vids Avatar (e.g., "Save this breakdown for your next build sprint and check the link in bio for our raw prompt stack.")
 
 [TWEET]
-(Strictly <= 260 characters total. Contrarian hook + 1 key metric + link in bio / bookmark. Zero em dashes. Zero phone numbers.)
+* STRICT LENGTH: Exactly 180 to 250 characters (MUST FIT in a 280-char tweet).
+* JAYANT'S VOICE: An independent engineer evaluating the tech. NEVER sound like official company PR ("Please welcome...", "We are thrilled to announce...").
+* Format: Bold contrarian observation + 1 technical metric + link in bio.
+* Good Example:
+  "Most teams will waste $10k testing this new model.
+  The smart move?
+  Use it for sub-agent routing at 180 tok/s.
+  Closed API moats are evaporating in real time.
+  Full breakdown in bio."
 
 [LINKEDIN]
-(Viral Hook Line -> The Friction & Problem -> Failed Alternative -> The Breakthrough 3-Step Architecture -> Quantifiable Proof & Math -> Actionable Takeaway -> Engaging closing question / Asset giveaway CTA. Humanized, zero buzzwords, zero em dashes.)
+* STRICT LENGTH: Complete 160 to 240 word high-insight founder breakdown. NEVER OUTPUT JUST A LINK.
+* Format with clean spacing and line breaks:
+  - Line 1: Bold contrarian hook line.
+  - The Friction: The real operational headache businesses face.
+  - The 3-Step Breakthrough Architecture:
+      1. Ingestion / Data layer
+      2. Model Orchestration
+      3. Deterministic Output
+  - The Cold Numbers: Latency, compute savings, or ROI percentage.
+  - The Founder Rule: How operators can deploy this today.
+  - Closing CTA: "Save this post and drop 'WORKFLOW' in the comments or check link in bio for the complete deployment blueprint."
 
 [CAROUSEL]
 Slide 1: High-Impact Curiosity / Contrarian Title Hook
@@ -811,9 +833,62 @@ Slide 6: Dynamic CTA (Aligned with the selected CTA framework, saving post & fol
 
 [PROMPT_OF_THE_DAY]
 (A ready-to-copy, production-grade prompt template or workflow snippet for this topic to share in the Jayant's AI Lab community.)
+
+STRICT WRITING RULES:
+1. ABSOLUTE BAN ON EM DASHES: NEVER use em dashes ('—' or '--'). Use standard commas, periods, or clean line breaks.
+2. ABSOLUTE BAN ON AI BUZZWORDS: NEVER use 'delve', 'testament', 'beacon', 'tapestry', 'landscape', 'revolutionize', 'game-changer', 'unlock', 'navigate', 'elevate', 'harness', 'moreover', 'furthermore', 'in today\\'s fast-paced world', 'buckle up', 'stop scrolling', 'without further ado'.
+3. NO PHONE NUMBERS: Strictly forbidden (+91 78800 56262, 7880056262, wa.me). Direct to Link in Bio or DM.
+4. BRAND IDENTITY: Strictly 'Jayant\\'s AI Lab', handle '@jayantsailab', avatar badge 'JL'.
 """
     raw_text = None
-    if GROQ_API_KEY:
+
+    # Tier 1: OpenRouter (DeepSeek V3 / deepseek-chat) - Elite technical breakdown
+    if OPENROUTER_KEYS:
+        for or_k in OPENROUTER_KEYS:
+            try:
+                or_res = requests.post(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {or_k}", "Content-Type": "application/json"},
+                    json={"model": "deepseek/deepseek-chat", "messages": [{"role": "user", "content": prompt}], "temperature": 0.6},
+                    timeout=30
+                )
+                if or_res.status_code == 200:
+                    raw_text = or_res.json()["choices"][0]["message"]["content"]
+                    print("[LLM Studio]: Generated via OpenRouter DeepSeek V3 successfully.")
+                    break
+                else:
+                    print(f"[LLM Studio]: OpenRouter returned {or_res.status_code}: {or_res.text[:100]}")
+            except Exception as e:
+                print(f"[LLM Studio]: OpenRouter error: {e}")
+
+    # Tier 2: Gemini 3.5 Flash Lite (High quota, lightning fast)
+    if not raw_text:
+        for g_key in GEMINI_KEYS:
+            try:
+                g_client = genai.Client(api_key=g_key)
+                gem_res = g_client.models.generate_content(model="gemini-3.5-flash-lite", contents=prompt)
+                if gem_res.text:
+                    raw_text = gem_res.text
+                    print("[LLM Studio]: Generated via Gemini 3.5 Flash Lite successfully.")
+                    break
+            except Exception as e:
+                print(f"[LLM Studio]: Gemini 3.5 Flash Lite error: {e}")
+
+    # Tier 3: Gemini 3.6 Flash
+    if not raw_text:
+        for g_key in GEMINI_KEYS:
+            try:
+                g_client = genai.Client(api_key=g_key)
+                gem_res = g_client.models.generate_content(model="gemini-3.6-flash", contents=prompt)
+                if gem_res.text:
+                    raw_text = gem_res.text
+                    print("[LLM Studio]: Generated via Gemini 3.6 Flash successfully.")
+                    break
+            except Exception as e:
+                print(f"[LLM Studio]: Gemini 3.6 Flash error: {e}")
+
+    # Tier 4: Groq
+    if not raw_text and GROQ_API_KEY:
         try:
             g_res = requests.post(
                 "https://api.groq.com/openai/v1/chat/completions",
@@ -823,39 +898,70 @@ Slide 6: Dynamic CTA (Aligned with the selected CTA framework, saving post & fol
             )
             if g_res.status_code == 200:
                 raw_text = g_res.json()["choices"][0]["message"]["content"]
-        except Exception:
-            pass
-
-    if not raw_text:
-        for g_key in GEMINI_KEYS:
-            try:
-                g_client = genai.Client(api_key=g_key)
-                gem_res = g_client.models.generate_content(model="gemini-3.6-flash", contents=prompt)
-                if gem_res.text:
-                    raw_text = gem_res.text
-                    break
-            except Exception:
-                pass
+                print("[LLM Studio]: Generated via Groq 120B successfully.")
+        except Exception as e:
+            print(f"[LLM Studio]: Groq error: {e}")
 
     def extract_tag(tag, text):
         if not text:
             return ""
-        if f"[{tag}]" in text:
-            part = text.split(f"[{tag}]")[1]
-            for next_tag in ["HOOK", "ZORO_BODY", "B_ROLL_LIST", "CTA", "TWEET", "LINKEDIN", "CAROUSEL", "PROMPT_OF_THE_DAY"]:
-                if f"[{next_tag}]" in part:
-                    part = part.split(f"[{next_tag}]")[0]
-            return part.strip()
-        return ""
+        pattern = rf'(?:\[|\*\*\[|\#\#\s*\[?){tag}(?:\]|\:\*\*|\]\*\*|\:|\]\:)'
+        m = re.search(pattern, text, flags=re.IGNORECASE)
+        if not m:
+            if f"[{tag}]" in text:
+                start = text.index(f"[{tag}]") + len(f"[{tag}]")
+            else:
+                return ""
+        else:
+            start = m.end()
 
-    hook = extract_tag("HOOK", raw_text) or f"Stop doing manual workflows. {topic_title} just changed the math on AI automation. Let's look under the hood with ZORO."
-    body = extract_tag("ZORO_BODY", raw_text) or f"ZORO here from Jayant's AI Lab. {topic_title} is live, and here is the exact benchmark you need to know."
+        rest = text[start:]
+        all_tags = ["HOOK", "ZORO_BODY", "B_ROLL_LIST", "CTA", "TWEET", "LINKEDIN", "CAROUSEL", "PROMPT_OF_THE_DAY"]
+        next_pos = len(rest)
+        for other in all_tags:
+            if other.lower() == tag.lower():
+                continue
+            m_other = re.search(rf'(?:\[|\*\*\[|\#\#\s*\[?){other}(?:\]|\:\*\*|\]\*\*|\:|\]\:)', rest, flags=re.IGNORECASE)
+            if m_other and m_other.start() < next_pos:
+                next_pos = m_other.start()
+
+        extracted = rest[:next_pos].strip()
+        return extracted.strip('*"` \t\r\n')
+
+    # Rich, high-conviction fallbacks in Jayant's builder style
+    clean_topic = topic_title.split(" - ")[0].split(". ")[0].strip()
+    fallback_hook = f"The biggest AI breakthrough of the week just dropped, and it changes how we build."
+    fallback_body = (
+        f"ZORO on deck from Jayant's AI Lab. Let's look at {clean_topic}. "
+        f"Traditional setups are hitting hard compute bottlenecks, but this new release changes the math. "
+        f"In our initial benchmarks, inference latency dropped significantly while token throughput scaled up. "
+        f"At Jayant's Lab, we are already plugging this into our client agent architectures to eliminate manual API friction. "
+        f"The rule of thumb is simple: stop paying for closed, slow wrappers when high-speed architecture is ready right now."
+    )
+    fallback_tweet = (
+        f"Most teams will waste weeks testing {clean_topic[:60]}.\n"
+        f"The smart move? Deploy it for sub-agent routing at scale.\n"
+        f"Full architecture breakdown in bio."
+    )
+    fallback_linkedin = (
+        f"The bottleneck in autonomous AI workflows isn't capability. It's latency and cost.\n\n"
+        f"{clean_topic} just shifted the operational landscape.\n\n"
+        f"Here is how we are evaluating this in Jayant's AI Lab:\n"
+        f"1. Ingestion: Clean data preprocessing before routing to the model.\n"
+        f"2. Execution: Leveraging high token velocity to cut sub-agent wait times.\n"
+        f"3. Verification: Deterministic linting to ensure zero hallucinations.\n\n"
+        f"The result? Faster execution with a fraction of traditional cloud compute bills.\n\n"
+        f"Save this post for your next architecture sprint, and check the link in bio for the complete workflow stack."
+    )
+
+    hook = extract_tag("HOOK", raw_text) or fallback_hook
+    body = extract_tag("ZORO_BODY", raw_text) or fallback_body
     b_roll = extract_tag("B_ROLL_LIST", raw_text) or "• [00:08 - 00:20] Screen capture of tool UI\n• [00:20 - 00:35] Side-by-side speed test"
-    cta = extract_tag("CTA", raw_text) or "Save this breakdown for your next build sprint, and follow @jayantsailab for battle-tested AI blueprints. See you in the lab."
-    tweet = extract_tag("TWEET", raw_text) or f"AI update: {topic_title}. Follow @jayantsailab for production workflows."
-    linkedin = extract_tag("LINKEDIN", raw_text) or topic_details
+    cta = extract_tag("CTA", raw_text) or "Save this breakdown for your next build sprint, and follow @jayantsailab for battle-tested AI blueprints."
+    tweet = extract_tag("TWEET", raw_text) or fallback_tweet
+    linkedin = extract_tag("LINKEDIN", raw_text) or fallback_linkedin
     carousel = extract_tag("CAROUSEL", raw_text) or "Slide 1: Breaking AI Update\nSlide 2: Check it out!"
-    prompt_magnet = extract_tag("PROMPT_OF_THE_DAY", raw_text) or "Test this tool today."
+    prompt_magnet = extract_tag("PROMPT_OF_THE_DAY", raw_text) or "Test this tool today in your workflow."
 
     # ─── HUMANIZER POST-PROCESSOR (ENFORCE ZERO AI GIVEAWAYS) ───
     def humanize_text(t):
@@ -1030,23 +1136,35 @@ def fetch_reddit():
 
 
 def fetch_huggingface():
-    """Monitors Hugging Face API for major model releases."""
+    """Monitors Hugging Face API for major model releases from top AI labs."""
     items = []
     try:
-        url = "https://huggingface.co/api/models?sort=createdAt&direction=-1&limit=25"
+        url = "https://huggingface.co/api/models?sort=createdAt&direction=-1&limit=30"
         r = requests.get(url, headers=COMMON_HEADERS, timeout=8)
         if r.status_code == 200:
+            verified_orgs = [
+                "qwen/", "deepseek-ai/", "meta-llama/", "mistralai/", "google/",
+                "black-forest-labs/", "microsoft/", "anthropic/", "databricks/",
+                "allenai/", "alibaba-nlp/", "tiiuae/", "stabilityai/", "openai/", "cohere/"
+            ]
             for m in r.json():
                 mid = m.get("id", "")
-                if any(org in mid.lower() for org in ["qwen", "deepseek", "meta", "mistral", "google", "flash", "vision", "omni", "reason", "black-forest"]):
+                mid_lower = mid.lower()
+                likes = m.get("likes", 0)
+                downloads = m.get("downloads", 0)
+                is_verified = any(mid_lower.startswith(org) for org in verified_orgs)
+                # Ignore random user experimental fine-tunes with zero traction
+                if is_verified or likes >= 12 or downloads >= 50:
+                    pipeline = m.get("pipeline_tag", "")
+                    clean_pipeline = f" ({pipeline.replace('-', ' ').title()})" if pipeline else ""
                     items.append({
                         "source": "Hugging Face Hub",
-                        "title": f"New Model Drop: {mid}",
+                        "title": f"{mid}{clean_pipeline} Released",
                         "url": f"https://huggingface.co/{mid}",
                         "type": "huggingface"
                     })
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Hugging Face fetch error: {e}")
     return items
 
 
