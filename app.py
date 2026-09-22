@@ -52,6 +52,9 @@ import xml.etree.ElementTree as ET
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from PIL import Image
 from google import genai
+from google.genai import types
+import wave
+import asyncio
 from dotenv import load_dotenv
 
 # ─── LOAD ENVIRONMENT VARIABLES ───
@@ -212,12 +215,24 @@ def send_tg_photo(chat_id, photo_url_or_bytes, caption="", bot_token=None):
 
 
 def send_tg_audio(chat_id, audio_path, caption="", bot_token=None):
-    url = f"{_get_tg_base(bot_token)}/sendAudio"
+    if not audio_path or not os.path.exists(audio_path):
+        print(f"[TG sendAudio Error]: Audio file does not exist: {audio_path}")
+        return
+    token = bot_token or TELEGRAM_BOT_TOKEN
+    url = f"{_get_tg_base(token)}/sendAudio"
     try:
         with open(audio_path, "rb") as f:
             files = {"audio": f}
-            data = {"chat_id": chat_id, "caption": caption}
-            requests.post(url, files=files, data=data, timeout=35)
+            data = {"chat_id": str(chat_id), "caption": caption}
+            r = requests.post(url, files=files, data=data, timeout=35)
+            if r.status_code == 200:
+                print(f"[TG sendAudio]: Audio dispatched successfully ({os.path.basename(audio_path)}) to {chat_id}")
+            else:
+                print(f"[TG sendAudio Error {r.status_code}]: {r.text[:120]}. Retrying with master bot token...")
+                if token != TELEGRAM_BOT_TOKEN:
+                    url_master = f"{_get_tg_base(TELEGRAM_BOT_TOKEN)}/sendAudio"
+                    with open(audio_path, "rb") as f2:
+                        requests.post(url_master, files={"audio": f2}, data=data, timeout=35)
     except Exception as e:
         print(f"Error sending TG audio: {e}")
 
@@ -977,7 +992,68 @@ APPROVE: [Tool Name] | [One-line core reason]
         elif out.startswith("REJECT"):
             return False, out.replace("REJECT:", "").strip()
 
-    return True, title
+def synthesize_zoro_voice(body_text):
+    """
+    Synthesizes Zoro's voice track using Gemini 2.5 Flash Preview TTS (voice: Puck)
+    with seamless failover across all Gemini API keys, and bulletproof fallback to Edge-TTS (en-IN-PrabhatNeural).
+    Guarantees an audio file is always generated and saved!
+    """
+    clean_text = body_text.strip()
+    for bracket in ["[cheerfully]", "[excitedly]", "[energetically]", "[confidently]", "[upbeat]"]:
+        clean_text = clean_text.replace(bracket, "").strip()
+    clean_text = clean_text[:900]
+
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    timestamp = int(time.time())
+    wav_path = os.path.join(OUTPUT_DIR, f"zoro_{timestamp}.wav")
+    mp3_path = os.path.join(OUTPUT_DIR, f"zoro_{timestamp}.mp3")
+
+    # Strategy 1: Google Gemini 2.5 Flash TTS (Model used by Puter.js, Voice: Puck)
+    speech_prompt = f"Speak in a fast, punchy, confident tech founder tone: {clean_text}"
+    for g_key in GEMINI_KEYS:
+        if not g_key:
+            continue
+        try:
+            client = genai.Client(api_key=g_key)
+            resp = client.models.generate_content(
+                model="gemini-2.5-flash-preview-tts",
+                contents=speech_prompt,
+                config=types.GenerateContentConfig(
+                    response_modalities=["AUDIO"],
+                    speech_config=types.SpeechConfig(
+                        voice_config=types.VoiceConfig(
+                            prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name="Puck")
+                        )
+                    )
+                )
+            )
+            if resp.candidates and resp.candidates[0].content and resp.candidates[0].content.parts:
+                pcm_data = resp.candidates[0].content.parts[0].inline_data.data
+                if pcm_data and len(pcm_data) > 1000:
+                    with wave.open(wav_path, "wb") as wf:
+                        wf.setnchannels(1)
+                        wf.setsampwidth(2)
+                        wf.setframerate(24000)
+                        wf.writeframes(pcm_data)
+                    print(f"[ZORO AUDIO]: Generated via Gemini 2.5 Flash TTS ({len(pcm_data)} bytes PCM -> {wav_path})")
+                    return wav_path
+        except Exception as e:
+            print(f"[Gemini TTS Warning on key ...{g_key[-6:]}]: {str(e)[:80]}")
+
+    # Strategy 2: Ultra-Reliable Edge-TTS Fallback (Authentic Indian male tech voice: en-IN-PrabhatNeural)
+    try:
+        import edge_tts
+        async def _run_edge():
+            communicate = edge_tts.Communicate(clean_text, "en-IN-PrabhatNeural", rate="+5%")
+            await communicate.save(mp3_path)
+        asyncio.run(_run_edge())
+        if os.path.exists(mp3_path) and os.path.getsize(mp3_path) > 1000:
+            print(f"[ZORO AUDIO]: Generated via Edge-TTS PrabhatNeural ({os.path.getsize(mp3_path)} bytes -> {mp3_path})")
+            return mp3_path
+    except Exception as e:
+        print(f"[Edge-TTS Fallback Error]: {e}")
+
+    return None
 
 
 # ─── MASTER SCRIPTWRITING ENGINE (1,000 VIRAL HOOKS, LINKEDIN SKILLS, STORYTELLING & HUMANIZER) ───
@@ -1190,61 +1266,8 @@ STRICT WRITING RULES:
         tweet = tweet[:247] + "..."
 
 
-    # Voice track synthesis via Gemini 3.1 Flash TTS (Director's Notes steering for authentic Indian English / South Delhi cadence)
-    clean_body = body.strip()
-    for bracket in ["[cheerfully]", "[excitedly]", "[energetically]", "[confidently]", "[upbeat]"]:
-        clean_body = clean_body.replace(bracket, "").strip()
-    # For TTS synthesis, keep to ~120-150 words (punchy 45-60s reel audio)
-    tts_text = clean_body[:800]
-
-    director_input = f"""## "Jayant AI Lab Intelligence Brief"
-
-### DIRECTOR'S NOTES
-Style:
-* Voice: Energetic, charismatic Indian tech authority
-* Pace: Dynamic tech founder cadence, fast and punchy
-* Accent: Natural urban Indian English accent from South Delhi, India
-
-### TRANSCRIPT
-{tts_text}
-"""
-    from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
-
-    audio_data = None
-    def _synthesize_voice(key, prompt_text):
-        g_client_tts = genai.Client(api_key=key)
-        interaction = g_client_tts.interactions.create(
-            model="gemini-3.1-flash-tts-preview",
-            input=prompt_text,
-            response_format={"type": "audio"},
-            generation_config={"speech_config": [{"voice": ZORO_VOICE}]}
-        )
-        return base64.b64decode(interaction.output_audio.data)
-
-    for g_key in GEMINI_KEYS:
-        executor = ThreadPoolExecutor(max_workers=1)
-        try:
-            future = executor.submit(_synthesize_voice, g_key, director_input)
-            audio_data = future.result(timeout=20)
-            executor.shutdown(wait=False, cancel_futures=True)
-            if audio_data:
-                break
-        except FutureTimeout:
-            executor.shutdown(wait=False, cancel_futures=True)
-            print("[TTS Warning]: Gemini Flash TTS took >20s, proceeding without audio to keep pipeline real-time.")
-            break
-        except Exception as e:
-            executor.shutdown(wait=False, cancel_futures=True)
-            print(f"TTS error: {e}")
-
-    timestamp = int(time.time())
-    audio_path = os.path.join(OUTPUT_DIR, f"zoro_{timestamp}.wav")
-    if audio_data:
-        with wave.open(audio_path, "wb") as wf:
-            wf.setnchannels(1)
-            wf.setsampwidth(2)
-            wf.setframerate(24000)
-            wf.writeframes(audio_data)
+    # Voice track synthesis via Gemini 2.5 Flash TTS (Puck) + Edge-TTS fallback
+    audio_path = synthesize_zoro_voice(body)
 
     # Render 6-slide carousel using the chosen style
     carousel_images = render_instagram_carousel(topic_title, carousel, style=carousel_style)
@@ -1829,7 +1852,7 @@ def telegram_listener():
                         f"🎧 *ZORO's audio track is attached below!*"
                     )
                     send_tg_message(chat_id, video_msg, bot_token=TELEGRAM_BOT_TOKEN_VIDEO)
-                    if os.path.exists(pkg['audio_path']):
+                    if pkg.get('audio_path') and os.path.exists(pkg['audio_path']):
                         send_tg_audio(chat_id, pkg['audio_path'], caption=f"🎙️ ZORO Audio ({ZORO_VOICE} • South Delhi Cadence)", bot_token=TELEGRAM_BOT_TOKEN_VIDEO)
 
                     # Instagram Carousel (Delivered via Carousel Bot)

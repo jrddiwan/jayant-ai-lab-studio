@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+  <script src="https://js.puter.com/v2/"></script>
   <style>
     :root {
       --bg: #07090E;
@@ -261,6 +262,22 @@
       </div>
     </div>
 
+    <!-- ZORO AUDIO STUDIO (PUTER.JS & GEMINI TTS) -->
+    <div class="card" style="border: 1px solid rgba(0, 240, 255, 0.2); background: linear-gradient(180deg, rgba(0, 240, 255, 0.03) 0%, rgba(13, 17, 26, 1) 100%);">
+      <div class="card-header" style="color: var(--cyan);">
+        <span>🎙️ Zoro Voice Studio (Puter.js & Gemini 2.5 Flash TTS)</span>
+        <span class="badge-online">ENGINE: GEMINI 2.5 TTS (PUCK)</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <p style="font-size: 13px; color: var(--muted);">Test Zoro's real-time voice synthesis using Puter.js and Google Gemini 2.5 Flash TTS right in your browser:</p>
+        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+          <input id="ttsInput" type="text" value="I am Zoro, Jayant's AI employee at the Lab. Voice track generation is active." style="flex: 1; min-width: 280px; background: rgba(255,255,255,0.05); border: 1px solid var(--card-border); padding: 12px 16px; border-radius: 10px; color: var(--text); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; outline: none;">
+          <button onclick="playPuterTTS()" id="playBtn" class="action-btn" style="padding: 12px 24px; cursor: pointer; background: linear-gradient(135deg, var(--green), var(--cyan)); color: #000; font-weight: 800; border: none; border-radius: 10px;">▶️ Play Zoro Voice</button>
+        </div>
+        <div id="ttsStatus" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--cyan);">Ready to speak.</div>
+      </div>
+    </div>
+
     <!-- LIVE INGESTION FEED -->
     <div class="card">
       <div class="card-header">
@@ -344,6 +361,40 @@
         document.getElementById('lastUpdated').innerText = `Updated at ${new Date().toLocaleTimeString()}`;
       } catch (err) {
         console.error("Dashboard update error:", err);
+      }
+    }
+
+    async function playPuterTTS() {
+      const btn = document.getElementById('playBtn');
+      const statusEl = document.getElementById('ttsStatus');
+      const text = document.getElementById('ttsInput').value;
+      if (!text.trim()) return;
+      btn.innerText = '⏳ Synthesizing...';
+      btn.disabled = true;
+      statusEl.innerText = 'Contacting Gemini 2.5 Flash TTS via Puter.js...';
+      try {
+        const audio = await puter.ai.txt2speech(text, {
+          provider: "gemini",
+          model: "gemini-2.5-flash-preview-tts",
+          voice: "Puck",
+          instructions: "Speak in a friendly, upbeat, confident tech founder tone."
+        });
+        btn.innerText = '🔊 Playing Audio...';
+        statusEl.innerText = 'Audio synthesized! Playing live via browser audio...';
+        await audio.play();
+        audio.onended = () => {
+          btn.innerText = '▶️ Play Zoro Voice';
+          btn.disabled = false;
+          statusEl.innerText = 'Playback complete. Ready to speak.';
+        };
+      } catch(err) {
+        console.error("Puter TTS Error:", err);
+        btn.innerText = '⚠️ Synthesis Error';
+        statusEl.innerText = 'Error: ' + (err.message || 'Failed to synthesize.');
+        setTimeout(() => {
+          btn.innerText = '▶️ Play Zoro Voice';
+          btn.disabled = false;
+        }, 3000);
       }
     }
 
