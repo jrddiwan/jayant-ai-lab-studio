@@ -994,9 +994,9 @@ APPROVE: [Tool Name] | [One-line core reason]
 
 def synthesize_zoro_voice(body_text):
     """
-    Synthesizes Zoro's voice track using Gemini 2.5 Flash Preview TTS (voice: Puck)
-    with seamless failover across all Gemini API keys, and bulletproof fallback to Edge-TTS (en-IN-PrabhatNeural).
-    Guarantees an audio file is always generated and saved!
+    Synthesizes Zoro's voice track strictly using Gemini Flash TTS with the official
+    voice requested by Jayant: ZORO_VOICE (Rasalgethi) and South Delhi cadence.
+    Cycles across all Gemini API keys for maximum reliability.
     """
     clean_text = body_text.strip()
     for bracket in ["[cheerfully]", "[excitedly]", "[energetically]", "[confidently]", "[upbeat]"]:
@@ -1006,23 +1006,10 @@ def synthesize_zoro_voice(body_text):
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     timestamp = int(time.time())
     wav_path = os.path.join(OUTPUT_DIR, f"zoro_{timestamp}.wav")
-    mp3_path = os.path.join(OUTPUT_DIR, f"zoro_{timestamp}.mp3")
 
-    # Strategy 1: Flagship Authentic Indian Tech Founder Voice (en-IN-PrabhatNeural • South Delhi Cadence)
-    try:
-        import edge_tts
-        async def _run_edge():
-            communicate = edge_tts.Communicate(clean_text, "en-IN-PrabhatNeural", rate="+5%")
-            await communicate.save(mp3_path)
-        asyncio.run(_run_edge())
-        if os.path.exists(mp3_path) and os.path.getsize(mp3_path) > 1000:
-            print(f"[ZORO AUDIO]: Generated via Edge-TTS PrabhatNeural ({os.path.getsize(mp3_path)} bytes -> {mp3_path})")
-            return mp3_path
-    except Exception as e:
-        print(f"[Edge-TTS Indian Voice Warning]: {e}")
+    voice_to_use = ZORO_VOICE or "Rasalgethi"
+    speech_prompt = f"Speak in a natural, charismatic Indian English tech founder tone from South Delhi: {clean_text}"
 
-    # Strategy 2: High-Speed Gemini 2.5 Flash TTS Fallback (Puck)
-    speech_prompt = f"Speak in a natural, charismatic Indian English tech founder tone: {clean_text}"
     for g_key in GEMINI_KEYS:
         if not g_key:
             continue
@@ -1035,7 +1022,7 @@ def synthesize_zoro_voice(body_text):
                     response_modalities=["AUDIO"],
                     speech_config=types.SpeechConfig(
                         voice_config=types.VoiceConfig(
-                            prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name="Puck")
+                            prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=voice_to_use)
                         )
                     )
                 )
@@ -1048,7 +1035,7 @@ def synthesize_zoro_voice(body_text):
                         wf.setsampwidth(2)
                         wf.setframerate(24000)
                         wf.writeframes(pcm_data)
-                    print(f"[ZORO AUDIO]: Generated via Gemini 2.5 Flash TTS fallback ({len(pcm_data)} bytes PCM -> {wav_path})")
+                    print(f"[ZORO AUDIO]: Generated via Gemini TTS ({voice_to_use}) -> {wav_path}")
                     return wav_path
         except Exception as e:
             print(f"[Gemini TTS Warning on key ...{g_key[-6:]}]: {str(e)[:80]}")
