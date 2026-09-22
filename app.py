@@ -1898,6 +1898,9 @@ class HealthHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(b"Jayant AI Lab Master Studio & Radar running 24/7!")
 
+    def do_POST(self):
+        self.do_GET()
+
 
 def main():
     print("=" * 60)
