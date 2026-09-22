@@ -49,11 +49,23 @@
 
 ---
 
+---
+
 ### C. The Avatar Call to Action (CTA)
 * **Target Speaker**: Jayant (Founder Avatar)
 * **Length**: Exactly 1 punchy sentence.
 * **Rule**: Offer our lab's production prompt stack or workflow architecture. Direct exclusively to Link in Bio or DM (strictly 0 phone numbers).
   - *Example*: `"Save this teardown for your next build sprint, and tap the link in bio for our raw deployment stack."`
+
+---
+
+### D. Zoro Voice Track & Audio Synthesis Specification
+* **Target Speaker**: Zoro (Jayant's AI employee)
+* **Primary TTS Engine**: Google Gemini 2.5 Flash TTS (`gemini-2.5-flash-preview-tts`), Voice: `"Puck"` (energetic, upbeat, confident tech founder cadence).
+* **Failover Engine**: Microsoft Edge-TTS (`en-IN-PrabhatNeural`, +5% speed rate, authentic South Delhi urban Indian male cadence).
+* **Audio Format**: 24,000 Hz, 16-bit Mono Linear PCM packaged as `.wav` or `.mp3`.
+* **Delivery**: Dispatched via Telegram `sendAudio` directly to Jayant's personal chat ID.
+* **Browser/Web Client**: Interactive Puter.js (`puter.ai.txt2speech` with provider `gemini` and model `gemini-2.5-flash-preview-tts`) embedded in `dashboard.html` for zero-friction client-side playback.
 
 ---
 
