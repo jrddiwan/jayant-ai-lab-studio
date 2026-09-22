@@ -881,7 +881,7 @@
             <span class="badge-pill-orange">${data.subtitleHighlight || 'FREE.'}</span>
           </div>
           <div class="hero-showcase">
-            <div class="hero-terminal">
+            <div class="hero-terminal" style="flex: initial; padding: 24px 28px; margin-bottom: 16px;">
               <div class="terminal-header">
                 <div class="terminal-dots">
                   <div class="tdot tdot-red"></div>
@@ -890,18 +890,34 @@
                 </div>
                 <div class="terminal-title">${data.terminalTitle || 'ARCHITECTURE // AUTONOMOUS AGENT ORG'}</div>
               </div>
-              <div style="font-size: 19px; margin-bottom: 14px; color: #FACC15;">$ git clone ${data.repoUrl || 'https://github.com/jayantsailab/agents'}</div>
-              <div style="color: #94A3B8; font-size: 16px; margin-bottom: 20px;">// Initializing multi-agent orchestrator...</div>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; font-size: 16px; font-weight: 600;">
+              <div style="font-size: 19px; margin-bottom: 12px; color: #FACC15;">$ git clone ${data.repoUrl || 'https://github.com/sergebulaev/linkedin-skills'}</div>
+              <div style="color: #94A3B8; font-size: 15px; margin-bottom: 16px;">// Initializing multi-agent orchestrator...</div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 16px; font-weight: 600;">
                 ${(data.terminalItems || [
-                  '✔ C-Suite Strategy Agent (Online)',
-                  '✔ Full-Stack Code Auditor (Active)',
-                  '✔ Autonomous Growth Engine (Synced)',
-                  '✔ Zero-Trust Security Gate (Verified)'
+                  '✔ Post Writer Agent (Active)',
+                  '✔ Comment Drafter (Synced)',
+                  '✔ Post Audit & Humanizer (Ready)',
+                  '✔ Founder Mode Engine (Online)'
                 ]).map(item => `<div style="color: #E2E8F0;">${item}</div>`).join('')}
               </div>
             </div>
-            <div class="bottom-telemetry-bar" style="margin-top: 14px;">
+
+            <!-- Hero Agent Preview Card with Voxel Chief Wizard -->
+            <div style="background: #FFFFFF; border: 1.5px solid var(--card-border); border-radius: 20px; padding: 18px 24px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 14px rgba(0,0,0,0.02); margin-bottom: 14px;">
+              <div style="display: flex; align-items: center; gap: 18px;">
+                <img src="${CHARS.org_chief}" style="width: 110px; height: 85px; object-fit: cover; border-radius: 12px; border: 1.5px solid var(--card-border); background: #F4EFE6;" alt="Chief Agent">
+                <div>
+                  <div style="font-size: 13px; font-weight: 800; font-family: 'JetBrains Mono'; color: var(--orange);">👑 CHIEF CLAUDE CODE ORCHESTRATOR</div>
+                  <div style="font-size: 22px; font-weight: 900; color: #111111; margin: 3px 0;">11 Autonomous Skills Active</div>
+                  <div style="font-size: 14px; font-weight: 600; color: var(--text-muted);">Runs locally • $0 marginal SaaS fees • Deterministic humanizer</div>
+                </div>
+              </div>
+              <div style="background: #18191C; color: #27C93F; font-family: 'JetBrains Mono'; font-size: 13px; font-weight: 800; padding: 10px 16px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); white-space: nowrap;">
+                ● 100% ONLINE
+              </div>
+            </div>
+
+            <div class="bottom-telemetry-bar">
               <div class="telemetry-left">⚡ FULL AUTONOMOUS STACK</div>
               <div class="telemetry-right">
                 <span>✔ TESTED IN LAB</span>

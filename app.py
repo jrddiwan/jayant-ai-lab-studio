@@ -560,17 +560,21 @@ Return JSON:
 
     if not carousel_json:
         for g_key in GEMINI_KEYS:
-            try:
-                c = genai.Client(api_key=g_key)
-                r = c.models.generate_content(
-                    model="gemini-3.8-flash",
-                    contents=f"{system_prompt}\n\n{user_prompt}",
-                    config={"response_mime_type": "application/json"}
-                )
-                carousel_json = json.loads(r.text)
+            for gm in ["gemini-3.6-flash", "gemini-3.5-flash-lite"]:
+                try:
+                    c = genai.Client(api_key=g_key)
+                    r = c.models.generate_content(
+                        model=gm,
+                        contents=f"{system_prompt}\n\n{user_prompt}",
+                        config={"response_mime_type": "application/json"}
+                    )
+                    if r.text:
+                        carousel_json = json.loads(r.text)
+                        break
+                except Exception:
+                    pass
+            if carousel_json:
                 break
-            except Exception:
-                pass
 
     if not carousel_json or "slides" not in carousel_json or not carousel_json["slides"]:
         return []
@@ -673,7 +677,7 @@ APPROVE: [Tool Name] | [One-line core reason]
     for g_key in GEMINI_KEYS:
         try:
             c = genai.Client(api_key=g_key)
-            r = c.models.generate_content(model="gemini-3.8-flash", contents=eval_prompt)
+            r = c.models.generate_content(model="gemini-3.6-flash", contents=eval_prompt)
             out = r.text.strip()
             if out.startswith("APPROVE"):
                 return True, out.replace("APPROVE:", "").strip()
@@ -800,7 +804,7 @@ Slide 6: Dynamic CTA (Aligned with the selected CTA framework, saving post & fol
         for g_key in GEMINI_KEYS:
             try:
                 g_client = genai.Client(api_key=g_key)
-                gem_res = g_client.models.generate_content(model="gemini-3.8-flash", contents=prompt)
+                gem_res = g_client.models.generate_content(model="gemini-3.6-flash", contents=prompt)
                 if gem_res.text:
                     raw_text = gem_res.text
                     break
