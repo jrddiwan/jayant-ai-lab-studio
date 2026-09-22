@@ -301,8 +301,9 @@ def generate_flux_image(prompt):
     return None
 
 
-# ─── 4-STYLE INSTAGRAM CAROUSEL RENDERER ───
+# ─── 5-STYLE INSTAGRAM CAROUSEL RENDERER (FLAGSHIP EDITORIAL 7-SLIDE ENGINE) ───
 CAROUSEL_STYLES = {
+    "editorial": "carousel_style_editorial_pro.html",
     "cyber": "carousel_style_1_cyber.html",
     "minimal": "carousel_style_2_minimal.html",
     "matrix": "carousel_style_3_matrix.html",
@@ -310,32 +311,204 @@ CAROUSEL_STYLES = {
 }
 
 
-def render_instagram_carousel(topic_title, topic_details, style="auto"):
+def render_instagram_carousel(topic_title, topic_details, style="editorial"):
     """
-    Renders 6 ultra-crisp 1080x1350 portrait carousel slides in one of 4 proven Instagram styles:
-    1. 'cyber': Futuristic Cyberpunk Glassmorphism (Anton + frosted glass + neon green glow)
-    2. 'minimal': Minimalist Bold Editorial (Syne + electric yellow accent + giant numbered cards)
-    3. 'matrix': Framework & Comparison Matrix (Split Old vs New table + step progress rail)
-    4. 'tweet': Tweet-to-Carousel Hero (Authentic dark-mode X post card mockup + teardown)
+    Renders ultra-crisp 1080x1350 portrait carousel slides.
+    Flagship: 'editorial' produces 7 warm, magazine-grade slides modeled after @theautomationguy.ai
+    with high-contrast branding for Jayant's AI Lab (@jayantsailab).
+    Alternative styles: 'cyber', 'minimal', 'matrix', 'tweet'.
     """
     if style == "auto" or style not in CAROUSEL_STYLES:
-        title_lower = topic_title.lower()
-        if "vs" in title_lower or "better" in title_lower or "replace" in title_lower or "compare" in title_lower:
-            chosen_style = "matrix"
-        elif "tweet" in title_lower or "x.com" in title_lower or "announced" in title_lower or "breaks" in title_lower:
-            chosen_style = "tweet"
-        elif "agent" in title_lower or "model" in title_lower or "autonomous" in title_lower or "ai" in title_lower:
-            chosen_style = random.choice(["cyber", "minimal"])
-        else:
-            chosen_style = random.choice(["cyber", "minimal", "matrix", "tweet"])
+        chosen_style = "editorial"
     else:
         chosen_style = style
 
-    template_file = CAROUSEL_STYLES.get(chosen_style, "carousel_style_1_cyber.html")
-    print(f"[CAROUSEL]: Rendering 6 slides with Style [{chosen_style}] -> {template_file}")
+    template_file = CAROUSEL_STYLES.get(chosen_style, "carousel_style_editorial_pro.html")
+    print(f"[CAROUSEL]: Rendering with Style [{chosen_style}] -> {template_file}")
 
-    system_prompt = f"You are the elite Instagram creative director for Jayant's AI Lab (@jayantsailab). Generate 6 slides for an educational carousel in style '{chosen_style}'. Return ONLY valid JSON."
-    user_prompt = f"""TOPIC: {topic_title}
+    carousel_json = None
+
+    if chosen_style == "editorial":
+        system_prompt = (
+            "You are the chief design and content director for Jayant's AI Lab (@jayantsailab). "
+            "Generate a structured 7-slide viral Instagram carousel modeled after top tech creators (@theautomationguy.ai, Rowan Cheung, Ruben Hassid). "
+            "Every slide must have high information density, crisp typography, and actionable value. Return ONLY valid JSON."
+        )
+        user_prompt = f"""TOPIC: {topic_title}
+DETAILS: {topic_details}
+
+Generate all 7 slides in this exact narrative sequence:
+- Slide 1 (slideType: 'hero'): Arresting hook headline split into titlePrefix, titleOrange (accent phrase), titleSuffix. Subtitle pill. Terminal box with 4 verified active items. Kraft sticky note with handwriting tone.
+- Slide 2 (slideType: 'org_chart'): System Architecture & Orchestration. Leader orchestrator card + 4 department/fleet cards (01 to 04 with titles & descriptions). Sticky note.
+- Slide 3 (slideType: 'grid_cards'): 6 Specialist Fleet items (01 to 06) with catchy uppercase tag, title, and 1-sentence actionable description. Sticky note.
+- Slide 4 (slideType: 'workflows'): 4 Practical Execution Prompts (e.g., '01. Launch feature sprint', '02. Code audit') with 3-4 bullet tasks each. Sticky note.
+- Slide 5 (slideType: 'benchmark'): The Cold Numbers. Side-by-side comparison: Old Manual Way (e.g. 4 Days, high retainers) vs Jayant's AI Lab Way (e.g. 35 Sec, $0 marginal cost). Bottom telemetry ROI highlight. Sticky note.
+- Slide 6 (slideType: 'workflows'): 4 Production Business Use Cases (real day-to-day enterprise/builder deployments). Sticky note.
+- Slide 7 (slideType: 'cta_final'): The Transformation. Bold headline ('Same Team. A More Capable You.'), clear value proposition, large button text ('Save This Carousel & Follow @jayantsailab'), 3 pills, and quote sign-off. Sticky note.
+
+Return JSON strictly matching this schema:
+{{
+  "categoryTag": "SHORT CATEGORY (e.g. ● OPEN SOURCE • GITHUB, ● AUTONOMOUS WORKFLOW, ● LLM BENCHMARK)",
+  "slides": [
+    {{
+      "slideType": "hero",
+      "tagline": "NEW AI BREAKTHROUGH",
+      "titlePrefix": "Someone",
+      "titleOrange": "Open-Sourced",
+      "titleSuffix": "an Entire AI Agency.",
+      "subtitlePrefix": "250+ Specialized Agents. One System.",
+      "subtitleHighlight": "FREE.",
+      "terminalTitle": "ARCHITECTURE // AUTONOMOUS AGENT ORG",
+      "repoUrl": "https://github.com/jayantsailab/agents",
+      "terminalItems": [
+        "✔ C-Suite Strategy Agent (Online)",
+        "✔ Full-Stack Code Auditor (Active)",
+        "✔ Autonomous Growth Engine (Synced)",
+        "✔ Zero-Trust Security Gate (Verified)"
+      ],
+      "stickyNote": "Not just a chatbot.<br>A full team.",
+      "stickyRotate": "2deg",
+      "footerRight": "I'LL SHOW YOU WHAT THEY BUILT ➔"
+    }},
+    {{
+      "slideType": "org_chart",
+      "tagline": "THE ORG CHART",
+      "titlePrefix": "Not Just Chatbots.",
+      "titleOrange": "A Full Org Chart",
+      "titleSuffix": "Of AI Workers.",
+      "leaderTitle": "Chief AI Orchestrator (ZORO)",
+      "leaderSub": "Receives one high-level prompt → coordinates the entire department fleet",
+      "orgCards": [
+        {{"num": "01", "title": "Engineering Fleet", "desc": "Code generation, CI/CD linting, automated PR reviews & refactoring"}},
+        {{"num": "02", "title": "Marketing Engine", "desc": "Copywriting, programmatic SEO, carousel scripts & audience research"}},
+        {{"num": "03", "title": "Ops & Finance", "desc": "Budget tracking, pipeline auditing, API rate-limit monitoring"}},
+        {{"num": "04", "title": "Research & QA", "desc": "Paper verification, benchmark stress-tests, hallucination checks"}}
+      ],
+      "badgeBarLeft": "250+ AGENTS AND COUNTING...",
+      "stickyNote": "Like a company.<br>But AI & open source.",
+      "stickyRotate": "-2deg",
+      "footerRight": "NEXT: MEET THE SPECIALISTS ➔"
+    }},
+    {{
+      "slideType": "grid_cards",
+      "tagline": "THE FIRST SIX HIRES",
+      "titlePrefix": "You Don't Hire 250 People.",
+      "titleOrange": "You Assemble",
+      "titleSuffix": "Them.",
+      "specialists": [
+        {{"num": "01", "tag": "BUILD SHIP REPEAT", "title": "Frontend Engineer", "desc": "Generates UI components, layout systems, and responsive screens in seconds."}},
+        {{"num": "02", "tag": "SYSTEM SCALES", "title": "Backend Architect", "desc": "Creates secure APIs, schema migrations, and high-throughput pipelines."}},
+        {{"num": "03", "tag": "SECURITY FIRST", "title": "Code Auditor", "desc": "Catches exposed keys, SQL vulnerabilities, and logic flaws before merge."}},
+        {{"num": "04", "tag": "REAL BENCHMARK", "title": "Reality Checker", "desc": "Stress tests outputs, verifies facts, and halts hallucinated claims."}},
+        {{"num": "05", "tag": "GROWTH ENGINE", "title": "Content Strategist", "desc": "Transforms raw code updates into viral visual carousels and threads."}},
+        {{"num": "06", "tag": "RETENTION MAGNET", "title": "Community Lead", "desc": "Engages questions, routes support requests, and builds user loyalty."}}
+      ],
+      "stickyNote": "Different skills.<br>Same goal.<br>Real work.",
+      "stickyRotate": "3deg",
+      "footerRight": "NEXT: REAL WORKFLOWS ➔"
+    }},
+    {{
+      "slideType": "workflows",
+      "tagline": "EXECUTION IN ACTION",
+      "titlePrefix": "Imagine Giving Your Lab",
+      "titleOrange": "One Single",
+      "titleSuffix": "Instruction.",
+      "workflows": [
+        {{
+          "prompt": "01. Launch a new feature sprint.",
+          "tasks": ["Research user requests", "Write PRD & architecture", "Generate UI code", "Run test suite & deploy"]
+        }},
+        {{
+          "prompt": "02. Audit entire codebase security.",
+          "tasks": ["Scan for hardcoded keys", "Check API permission scopes", "Verify auth tokens", "Output patched branch"]
+        }},
+        {{
+          "prompt": "03. Produce 30 days of tech content.",
+          "tasks": ["Scrape trending AI papers", "Write viral creator hooks", "Render 7-slide decks", "Format X threads & posts"]
+        }},
+        {{
+          "prompt": "04. Benchmark local LLM latency.",
+          "tasks": ["Deploy quantized weights", "Run inference batch tests", "Compare RAM vs GPU", "Generate cost ledger"]
+        }}
+      ],
+      "stickyNote": "You set the goal.<br>They handle the rest.",
+      "stickyRotate": "-1deg",
+      "footerRight": "NEXT: THE RAW NUMBERS ➔"
+    }},
+    {{
+      "slideType": "benchmark",
+      "tagline": "THE COLD NUMBERS",
+      "titlePrefix": "Manual Chaos vs",
+      "titleOrange": "Autonomous",
+      "titleSuffix": "Execution.",
+      "oldStat": "4 Days",
+      "oldSub": "Per audit or feature deployment",
+      "oldItems": [
+        "• $3,500/mo contractor retainer",
+        "• Context lost across meetings",
+        "• Prone to human oversight",
+        "• Bottlenecked by business hours"
+      ],
+      "newStat": "35 Sec",
+      "newSub": "Autonomous local agent pipeline",
+      "newItems": [
+        "• $0 marginal inference cost",
+        "• 24/7 continuous autonomous execution",
+        "• Deterministic verification & tests",
+        "• Scales to 100+ tasks in parallel"
+      ],
+      "roiHighlight": "99.4% TIME SAVED",
+      "stickyNote": "Numbers don't lie.",
+      "stickyRotate": "2deg",
+      "footerRight": "NEXT: HOW TO DEPLOY ➔"
+    }},
+    {{
+      "slideType": "workflows",
+      "tagline": "DAY-TO-DAY INTEGRATION",
+      "titlePrefix": "Where To Plug",
+      "titleOrange": "This Pipeline",
+      "titleSuffix": "In Your Business.",
+      "workflows": [
+        {{
+          "prompt": "01. Client Onboarding Sprint",
+          "tasks": ["Parse intake form & contract", "Generate workspace & DB tables", "Send customized welcome kit", "Notify account lead"]
+        }},
+        {{
+          "prompt": "02. Daily Intelligence Radar",
+          "tasks": ["Monitor 50+ AI sources", "Filter non-actionable fluff", "Synthesize executive briefing", "Publish cross-platform"]
+        }},
+        {{
+          "prompt": "03. Codebase Refactoring",
+          "tasks": ["Identify technical debt", "Generate type-safe patches", "Run local regression tests", "Create clean pull request"]
+        }},
+        {{
+          "prompt": "04. Customer Support Triage",
+          "tasks": ["Classify ticket urgency", "Draft solution from docs", "Execute DB health check", "Escalate blockers in seconds"]
+        }}
+      ],
+      "stickyNote": "Automate. Learn.<br>Build. Scale.",
+      "stickyRotate": "-2deg",
+      "footerRight": "NEXT: TAKE ACTION ➔"
+    }},
+    {{
+      "slideType": "cta_final",
+      "tagline": "THE TRANSFORMATION",
+      "titlePrefix": "Same Team.",
+      "titleOrange": "A More Capable",
+      "titleSuffix": "You.",
+      "ctaMain": "The autonomous AI workforce is officially here.",
+      "ctaSub": "Stop setting payroll on fire doing repetitive manual workflows. Start deploying battle-tested open-source agents today.",
+      "buttonText": "Save This Carousel & Follow @jayantsailab",
+      "stickyNote": "Same curiosity.<br>Bigger leverage.",
+      "stickyRotate": "1deg",
+      "footerRight": "FOLLOW @JAYANTSAILAB 🔖"
+    }}
+  ]
+}}
+"""
+    else:
+        system_prompt = f"You are the elite Instagram creative director for Jayant's AI Lab (@jayantsailab). Generate 6 slides for an educational carousel in style '{chosen_style}'. Return ONLY valid JSON."
+        user_prompt = f"""TOPIC: {topic_title}
 DETAILS: {topic_details}
 STYLE: {chosen_style}
 
@@ -367,7 +540,7 @@ Return JSON:
   ]
 }}
 """
-    carousel_json = None
+
     if GROQ_API_KEY:
         try:
             res = requests.post(
@@ -399,7 +572,7 @@ Return JSON:
             except Exception:
                 pass
 
-    if not carousel_json or "slides" not in carousel_json:
+    if not carousel_json or "slides" not in carousel_json or not carousel_json["slides"]:
         return []
 
     slides = carousel_json["slides"]
@@ -412,7 +585,7 @@ Return JSON:
         bg1 = os.path.abspath(os.path.join(CAROUSEL_DIR, f"bg_hero_{ts}.png"))
         bg2 = os.path.abspath(os.path.join(CAROUSEL_DIR, f"bg_arch_{ts}.png"))
         p1 = slides[0].get("imagePrompt", f"Dark cyber AI core for {topic_title[:50]}")
-        p2 = slides[2].get("imagePrompt", f"Dark holographic AI command center for {topic_title[:50]}")
+        p2 = slides[min(2, len(slides)-1)].get("imagePrompt", f"Dark holographic AI command center for {topic_title[:50]}")
         generate_agnes_image(p1, bg1)
         generate_agnes_image(p2, bg2)
 
@@ -428,21 +601,29 @@ Return JSON:
 
             for i, s in enumerate(slides):
                 idx = i + 1
-                bg_to_use = (bg1 if idx <= 3 else bg2) if chosen_style == "cyber" else ""
-                payload = {
-                    "imagePath": bg_to_use.replace("\\", "/") if bg_to_use else "",
-                    "categoryTag": category,
-                    "slideNum": s.get("slideNum", f"0{idx} / 0{len(slides)}"),
-                    "hookPill": s.get("hookPill", "⚡ AI BREAKTHROUGH"),
-                    "title": s.get("title", ""),
-                    "titleGreen": s.get("titleGreen", ""),
-                    "subtitle": s.get("subtitle", ""),
-                    "tacticalHeading": s.get("tacticalHeading", "CORE SPECIFICATIONS"),
-                    "tacticalItems": s.get("tacticalItems", []),
-                    "footerLeft": s.get("footerLeft", "SWIPE FOR NEXT ➔"),
-                    "footerRight": s.get("footerRight", "FOLLOW @jayantsailab 🔖")
-                }
-                page.evaluate("(data) => setSlide(data)", payload)
+                if chosen_style == "editorial":
+                    s["currentSlide"] = idx
+                    s["totalSlides"] = len(slides)
+                    if "categoryTag" not in s or not s["categoryTag"]:
+                        s["categoryTag"] = category
+                    page.evaluate("(data) => setSlide(data)", s)
+                else:
+                    bg_to_use = (bg1 if idx <= 3 else bg2) if chosen_style == "cyber" else ""
+                    payload = {
+                        "imagePath": bg_to_use.replace("\\", "/") if bg_to_use else "",
+                        "categoryTag": category,
+                        "slideNum": s.get("slideNum", f"0{idx} / 0{len(slides)}"),
+                        "hookPill": s.get("hookPill", "⚡ AI BREAKTHROUGH"),
+                        "title": s.get("title", ""),
+                        "titleGreen": s.get("titleGreen", ""),
+                        "subtitle": s.get("subtitle", ""),
+                        "tacticalHeading": s.get("tacticalHeading", "CORE SPECIFICATIONS"),
+                        "tacticalItems": s.get("tacticalItems", []),
+                        "footerLeft": s.get("footerLeft", "SWIPE FOR NEXT ➔"),
+                        "footerRight": s.get("footerRight", "FOLLOW @jayantsailab 🔖")
+                    }
+                    page.evaluate("(data) => setSlide(data)", payload)
+
                 page.wait_for_timeout(350)
                 out_file = os.path.abspath(os.path.join(CAROUSEL_DIR, f"slide_{ts}_{idx}.png"))
                 page.screenshot(path=out_file)
@@ -924,8 +1105,8 @@ def check_youtube_uploads():
 # ─── MASTER RADAR AGGREGATOR & DISPATCHER ───
 def deliver_production_package(title, details, source_url="", source_name=""):
     """Generates and delivers the complete multi-asset production package to Jayant's DM."""
-    # Rotate carousel styles across deliverables
-    chosen_style = random.choice(["cyber", "minimal", "matrix", "tweet"])
+    # Flagship: Warm Magazine Editorial (7 slides @theautomationguy.ai aesthetic with clear branding)
+    chosen_style = "editorial"
     pkg = generate_full_studio_package(title, details, source_url=source_url, carousel_style=chosen_style)
 
     src_display = source_name or "AI Intelligence Radar"
@@ -1037,20 +1218,20 @@ def telegram_listener():
                         send_tg_message(chat_id, "👋 Hello Jayant! Master Studio Engine is active 24/7. Send any AI link, topic, or command anytime!")
                         continue
 
-                    # Allow on-demand style command: e.g., "/style minimal <Topic>"
-                    style = "auto"
-                    for s_key in ["cyber", "minimal", "matrix", "tweet"]:
+                    # Allow on-demand style command: e.g., "/editorial <Topic>" or "/cyber <Topic>"
+                    style = "editorial"
+                    for s_key in ["editorial", "cyber", "minimal", "matrix", "tweet"]:
                         if text.lower().startswith(f"/{s_key} "):
                             style = s_key
                             text = text[len(s_key)+2:].strip()
                             break
 
                     print(f"[MANUAL REQUEST]: {text} (Style: {style})")
-                    send_tg_message(chat_id, f"⚡ *Got it! Generating complete Studio Distribution Package & {style.upper()} Carousel... (Takes ~30s)*")
+                    send_tg_message(chat_id, f"⚡ *Got it! Generating complete Studio Distribution Package & {style.upper()} Carousel... (Takes ~30s)*", bot_token=TELEGRAM_BOT_TOKEN_VIDEO)
 
                     pkg = generate_full_studio_package(text, text, source_url="", carousel_style=style)
 
-                    # Video Pack
+                    # Video Pack (Delivered via Video Bot)
                     video_msg = (
                         f"🎬 *VIDEO PRODUCTION PACKAGE READY!*\n"
                         f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
@@ -1061,15 +1242,15 @@ def telegram_listener():
                         f"🎥 *AUTOMATED B-ROLL SCENE LIST & AI PROMPTS:*\n{pkg['b_roll']}\n\n"
                         f"🎧 *ZORO's audio track is attached below!*"
                     )
-                    send_tg_message(chat_id, video_msg)
+                    send_tg_message(chat_id, video_msg, bot_token=TELEGRAM_BOT_TOKEN_VIDEO)
                     if os.path.exists(pkg['audio_path']):
-                        send_tg_audio(chat_id, pkg['audio_path'], caption=f"🎙️ ZORO Audio ({ZORO_VOICE} • South Delhi Cadence)")
+                        send_tg_audio(chat_id, pkg['audio_path'], caption=f"🎙️ ZORO Audio ({ZORO_VOICE} • South Delhi Cadence)", bot_token=TELEGRAM_BOT_TOKEN_VIDEO)
 
-                    # Instagram Carousel
+                    # Instagram Carousel (Delivered via Carousel Bot)
                     if pkg['carousel_images']:
-                        send_tg_album(chat_id, pkg['carousel_images'], caption=f"📱 *Instagram Carousel Deliverable ({style.upper()}): {text[:60]}*")
+                        send_tg_album(chat_id, pkg['carousel_images'], caption=f"📱 *Instagram Carousel Deliverable ({style.upper()}): {text[:60]}*", bot_token=TELEGRAM_BOT_TOKEN_CAROUSEL)
 
-                    # Social Pack
+                    # Social Pack (Delivered via Social Bot)
                     social_msg = (
                         f"📢 *OMNICHANNEL SOCIAL DISTRIBUTION PACK*\n"
                         f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
@@ -1077,12 +1258,12 @@ def telegram_listener():
                         f"💡 *PROMPT OF THE DAY MAGNET (WhatsApp Community):*\n```\n{pkg['prompt_magnet']}\n```\n\n"
                         f"💼 *HIGH-INSIGHT LINKEDIN POST:*\n{pkg['linkedin']}"
                     )
-                    send_tg_message(chat_id, social_msg)
+                    send_tg_message(chat_id, social_msg, bot_token=TELEGRAM_BOT_TOKEN_SOCIAL)
 
                     # Hugging Face FLUX.1 visual proof card
                     img_bytes = generate_flux_image(f"Futuristic tech proof card for {text[:60]}, dark mode cyber aesthetic, 8k")
                     if img_bytes:
-                        send_tg_photo(chat_id, img_bytes, caption="🖼️ Hugging Face FLUX.1 Visual Proof Card")
+                        send_tg_photo(chat_id, img_bytes, caption="🖼️ Hugging Face FLUX.1 Visual Proof Card", bot_token=TELEGRAM_BOT_TOKEN_SOCIAL)
 
         except Exception as e:
             print(f"Error in TG listener: {e}")

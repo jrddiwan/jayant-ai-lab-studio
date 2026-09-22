@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Jayant's AI Lab — Editorial Pro Carousel (1080x1350)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Inter+Tight:wght@700;800;900&family=JetBrains+Mono:wght@600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #F7F5F0;
+      --card-bg: #FFFFFF;
+      --card-border: #E8E4DC;
+      --text-main: #111111;
+      --text-muted: #66635B;
+      --orange: #E04F16;
+      --orange-light: #FFF0EB;
+      --sticky-bg: #F3E8CE;
+      --sticky-tape: rgba(255, 255, 255, 0.75);
+      --dark-bar: #161618;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 1080px;
+      height: 1350px;
+      overflow: hidden;
+      background: var(--bg);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: var(--text-main);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 60px 70px 50px 70px;
+      background-image: 
+        radial-gradient(circle at 10% 10%, rgba(224, 79, 22, 0.03) 0%, transparent 40%),
+        radial-gradient(circle at 90% 90%, rgba(17, 17, 17, 0.02) 0%, transparent 50%),
+        radial-gradient(rgba(0,0,0,0.015) 1px, transparent 0);
+      background-size: 100% 100%, 100% 100%, 28px 28px;
+    }
+
+    /* ─── HEADER ─── */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      width: 100%;
+      height: 80px;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .brand-avatar {
+      width: 52px;
+      height: 52px;
+      background: var(--dark-bar);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #FFFFFF;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 900;
+      font-size: 22px;
+      border: 2px solid #FFFFFF;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    .brand-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .brand-name {
+      font-weight: 900;
+      font-size: 20px;
+      letter-spacing: -0.5px;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .brand-handle {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--orange);
+      letter-spacing: -0.2px;
+    }
+
+    .header-center-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1.5px solid rgba(17, 17, 17, 0.25);
+      background: rgba(255, 255, 255, 0.7);
+      padding: 8px 20px;
+      border-radius: 999px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: var(--text-main);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .slide-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1.5px solid var(--text-main);
+      border-radius: 999px;
+      padding: 6px 18px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text-main);
+      background: #FFFFFF;
+    }
+
+    .vertical-stack {
+      display: flex;
+      flex-direction: column;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 1.2px;
+      color: var(--text-muted);
+      line-height: 1.25;
+      text-transform: uppercase;
+      text-align: right;
+    }
+
+    /* ─── STICKY NOTE (KRAFT PAPER WITH MASKING TAPE) ─── */
+    .sticky-note {
+      position: absolute;
+      background: var(--sticky-bg);
+      padding: 18px 24px;
+      box-shadow: 2px 8px 20px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0,0,0,0.04);
+      border-radius: 4px;
+      font-family: 'Caveat', cursive;
+      font-size: 26px;
+      font-weight: 700;
+      line-height: 1.15;
+      color: #382D1E;
+      z-index: 20;
+    }
+
+    .sticky-tape {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60px;
+      height: 22px;
+      background: var(--sticky-tape);
+      opacity: 0.85;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border-radius: 2px;
+    }
+
+    /* ─── MAIN CONTENT CONTAINER ─── */
+    .content-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      margin-top: 20px;
+      position: relative;
+    }
+
+    /* ─── HEADINGS ─── */
+    .tagline-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .tagline-label::before {
+      content: "";
+      width: 18px;
+      height: 2.5px;
+      background: var(--orange);
+    }
+
+    .hero-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 58px;
+      font-weight: 900;
+      line-height: 1.05;
+      letter-spacing: -2px;
+      color: var(--text-main);
+      margin-bottom: 16px;
+      max-width: 680px;
+    }
+
+    .hero-title .highlight-orange {
+      color: var(--orange);
+      position: relative;
+      display: inline-block;
+    }
+
+    .hero-subtitle {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: -0.5px;
+      line-height: 1.35;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      max-width: 680px;
+    }
+
+    .badge-pill-orange {
+      background: var(--orange);
+      color: #FFFFFF;
+      padding: 4px 14px;
+      border-radius: 6px;
+      font-weight: 900;
+      font-size: 20px;
+      letter-spacing: 0.5px;
+      display: inline-block;
+    }
+
+    /* ─── SLIDE TYPE 1: HERO DISPLAY (CENTER VISUAL CARD) ─── */
+    .hero-showcase {
+      flex: 1;
+      background: #FFFFFF;
+      border: 2px solid var(--card-border);
+      border-radius: 24px;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.04);
+      overflow: hidden;
+    }
+
+    .hero-terminal {
+      background: var(--dark-bar);
+      border-radius: 18px;
+      padding: 24px;
+      color: #FFFFFF;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 15px;
+      line-height: 1.6;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+    }
+
+    .terminal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding-bottom: 14px;
+      margin-bottom: 18px;
+    }
+
+    .terminal-dots { display: flex; gap: 8px; }
+    .tdot { width: 10px; height: 10px; border-radius: 50%; }
+    .tdot-red { background: #FF5F56; }
+    .tdot-yellow { background: #FFBD2E; }
+    .tdot-green { background: #27C93F; }
+
+    .terminal-title {
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    /* ─── SLIDE TYPE 2: ORG CHART / ARCHITECTURE ─── */
+    .org-chart-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-top: 10px;
+    }
+
+    .org-lead-card {
+      background: #FFFFFF;
+      border: 2px solid var(--orange);
+      border-radius: 18px;
+      padding: 20px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 8px 24px rgba(224, 79, 22, 0.08);
+    }
+
+    .org-lead-title { font-size: 22px; font-weight: 900; letter-spacing: -0.5px; }
+    .org-lead-sub { font-size: 14px; color: var(--text-muted); font-weight: 600; margin-top: 3px; }
+
+    .org-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .org-card {
+      background: #FFFFFF;
+      border: 1.5px solid var(--card-border);
+      border-radius: 16px;
+      padding: 20px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.03);
+    }
+
+    .org-card-num {
+      font-size: 32px;
+      font-weight: 900;
+      color: var(--orange);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      line-height: 1;
+    }
+
+    .org-card-name { font-size: 18px; font-weight: 900; letter-spacing: -0.3px; }
+    .org-card-desc { font-size: 13px; color: var(--text-muted); font-weight: 600; line-height: 1.35; }
+
+    /* ─── SLIDE TYPE 3: 6-CARD SPECIALIST GRID ─── */
+    .six-card-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: repeat(3, 1fr);
+      gap: 16px;
+      flex: 1;
+      margin-top: 8px;
+    }
+
+    .specialist-card {
+      background: #FFFFFF;
+      border: 1.5px solid var(--card-border);
+      border-radius: 16px;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+    }
+
+    .spec-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .spec-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--text-main);
+      background: var(--bg);
+      border: 1px solid var(--card-border);
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+
+    .spec-tag {
+      font-family: 'Caveat', cursive;
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--orange);
+    }
+
+    .spec-title {
+      font-size: 19px;
+      font-weight: 900;
+      letter-spacing: -0.4px;
+      margin-bottom: 4px;
+    }
+
+    .spec-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 600;
+      line-height: 1.35;
+    }
+
+    /* ─── SLIDE TYPE 4: WORKFLOW EXECUTION ─── */
+    .workflow-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      flex: 1;
+      margin-top: 10px;
+    }
+
+    .workflow-item {
+      background: #FFFFFF;
+      border: 1.5px solid var(--card-border);
+      border-radius: 16px;
+      padding: 18px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+    }
+
+    .workflow-input-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg);
+      border: 1.5px solid rgba(17, 17, 17, 0.15);
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-weight: 800;
+      font-size: 15px;
+    }
+
+    .workflow-btn {
+      background: var(--dark-bar);
+      color: #FFFFFF;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .workflow-tasks {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .task-check {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .check-icon {
+      color: #27C93F;
+      font-weight: 900;
+    }
+
+    /* ─── SLIDE TYPE 5: ROI BENCHMARK ─── */
+    .benchmark-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      flex: 1;
+      margin-top: 12px;
+    }
+
+    .vs-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .vs-card-old {
+      background: #FFFFFF;
+      border: 2px solid #E5E7EB;
+      border-radius: 20px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .vs-card-new {
+      background: #FFFFFF;
+      border: 2.5px solid var(--orange);
+      border-radius: 20px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 12px 30px rgba(224, 79, 22, 0.08);
+      position: relative;
+    }
+
+    .vs-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .vs-stat {
+      font-size: 42px;
+      font-weight: 900;
+      letter-spacing: -1.5px;
+      line-height: 1;
+    }
+
+    /* ─── SLIDE TYPE 7: FINAL CTA ─── */
+    .final-cta-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      background: #FFFFFF;
+      border: 2px solid var(--card-border);
+      border-radius: 24px;
+      padding: 40px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.04);
+      position: relative;
+      margin-top: 10px;
+    }
+
+    .cta-big-btn {
+      background: var(--dark-bar);
+      color: #FFFFFF;
+      border-radius: 16px;
+      padding: 20px 48px;
+      font-size: 24px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      gap: 16px;
+      margin: 24px 0;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.18);
+    }
+
+    .cta-pills {
+      display: flex;
+      gap: 16px;
+      margin-top: 10px;
+    }
+
+    .cta-pill {
+      background: var(--bg);
+      border: 1.5px solid var(--card-border);
+      border-radius: 12px;
+      padding: 12px 24px;
+      font-weight: 800;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* ─── BOTTOM DARK TELEMETRY BAR ─── */
+    .bottom-telemetry-bar {
+      background: var(--dark-bar);
+      color: #FFFFFF;
+      border-radius: 16px;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    }
+
+    .telemetry-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-weight: 900;
+      font-size: 15px;
+      letter-spacing: 0.5px;
+    }
+
+    .telemetry-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    /* ─── FOOTER ─── */
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      height: 60px;
+      border-top: 1.5px solid rgba(17, 17, 17, 0.1);
+      padding-top: 18px;
+    }
+
+    .footer-left {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .footer-handle {
+      font-weight: 900;
+      font-size: 16px;
+      color: var(--text-main);
+      letter-spacing: -0.2px;
+    }
+
+    .footer-sub {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+    }
+
+    .footer-center {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .dots-rail {
+      display: flex;
+      gap: 6px;
+    }
+
+    .rail-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: rgba(17, 17, 17, 0.2);
+    }
+
+    .rail-dot.active {
+      background: var(--text-main);
+      width: 22px;
+      border-radius: 999px;
+    }
+
+    .swipe-pill {
+      background: var(--orange);
+      color: #FFFFFF;
+      padding: 8px 20px;
+      border-radius: 999px;
+      font-weight: 900;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(224, 79, 22, 0.25);
+    }
+
+    .footer-right {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- STICKY NOTE (DYNAMICALLY POSITIONED) -->
+  <div class="sticky-note" id="stickyNote" style="top: 130px; right: 80px; transform: rotate(2deg);">
+    <div class="sticky-tape"></div>
+    <span id="stickyText">Real workflows.<br>Real leverage.</span>
+  </div>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="brand-group">
+      <div class="brand-avatar">JL</div>
+      <div class="brand-meta">
+        <div class="brand-name">Jayant's AI Lab</div>
+        <div class="brand-handle">@jayantsailab</div>
+      </div>
+    </div>
+
+    <div class="header-center-pill">
+      <span style="color: var(--orange);">●</span>
+      <span id="centerTag">AI BREAKTHROUGH</span>
+    </div>
+
+    <div class="header-right">
+      <div class="slide-badge" id="slideBadge">1/7</div>
+      <div class="vertical-stack">
+        <span>DISCOVER</span>
+        <span>TEST</span>
+        <span>AUTOMATE</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- DYNAMIC CONTENT AREA -->
+  <div class="content-area" id="contentArea">
+    <!-- Populated dynamically by setSlide() -->
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-left">
+      <div class="footer-handle">@jayantsailab</div>
+      <div class="footer-sub">JAYANT'S AI LAB • AUTONOMOUS STUDIO</div>
+    </div>
+
+    <div class="footer-center">
+      <div class="dots-rail" id="dotsRail">
+        <div class="rail-dot active"></div>
+        <div class="rail-dot"></div>
+        <div class="rail-dot"></div>
+        <div class="rail-dot"></div>
+        <div class="rail-dot"></div>
+        <div class="rail-dot"></div>
+        <div class="rail-dot"></div>
+      </div>
+      <div class="swipe-pill" id="swipePill">SWIPE ➔</div>
+    </div>
+
+    <div class="footer-right" id="footerRight">
+      I'LL SHOW YOU WHAT THEY BUILT
+    </div>
+  </div>
+
+  <script>
+    function setSlide(data) {
+      // 1. Header & Meta
+      document.getElementById('centerTag').innerText = data.categoryTag || 'AI BREAKTHROUGH';
+      const cur = data.currentSlide || 1;
+      const total = data.totalSlides || 7;
+      document.getElementById('slideBadge').innerText = `${cur}/${total}`;
+      
+      // Update rail dots
+      const dots = document.getElementById('dotsRail').children;
+      for (let i = 0; i < dots.length; i++) {
+        dots[i].className = (i + 1 === cur) ? 'rail-dot active' : 'rail-dot';
+      }
+
+      // Update sticky note
+      const sticky = document.getElementById('stickyNote');
+      if (data.stickyNote) {
+        sticky.style.display = 'block';
+        document.getElementById('stickyText').innerHTML = data.stickyNote;
+        if (data.stickyTop) sticky.style.top = data.stickyTop;
+        if (data.stickyRight) sticky.style.right = data.stickyRight;
+        if (data.stickyRotate) sticky.style.transform = `rotate(${data.stickyRotate})`;
+      } else {
+        sticky.style.display = 'none';
+      }
+
+      // Update footer
+      document.getElementById('footerRight').innerText = data.footerRight || 'SWIPE FOR NEXT ➔';
+      if (cur === total) {
+        document.getElementById('swipePill').innerText = 'FOLLOW 🔖';
+        document.getElementById('swipePill').style.background = 'var(--text-main)';
+      } else {
+        document.getElementById('swipePill').innerText = 'SWIPE ➔';
+        document.getElementById('swipePill').style.background = 'var(--orange)';
+      }
+
+      // 2. Render Body by Slide Type
+      const container = document.getElementById('contentArea');
+      const st = data.slideType || 'hero';
+
+      if (st === 'hero') {
+        container.innerHTML = `
+          <div class="tagline-label">${data.tagline || 'NEW OPEN SOURCE RELEASE'}</div>
+          <div class="hero-title">${data.titlePrefix || 'Someone'} <span class="highlight-orange">${data.titleOrange || 'Open-Sourced'}</span> ${data.titleSuffix || 'an Entire AI Agency.'}</div>
+          <div class="hero-subtitle">
+            <span>${data.subtitlePrefix || '250+ Specialized Agents. One System.'}</span>
+            <span class="badge-pill-orange">${data.subtitleHighlight || 'FREE.'}</span>
+          </div>
+          <div class="hero-showcase">
+            <div class="hero-terminal">
+              <div class="terminal-header">
+                <div class="terminal-dots">
+                  <div class="tdot tdot-red"></div>
+                  <div class="tdot tdot-yellow"></div>
+                  <div class="tdot tdot-green"></div>
+                </div>
+                <div class="terminal-title">${data.terminalTitle || 'ARCHITECTURE // AUTONOMOUS AGENT ORG'}</div>
+              </div>
+              <div style="font-size: 17px; margin-bottom: 12px; color: #FACC15;">$ git clone ${data.repoUrl || 'https://github.com/jayantsailab/agents'}</div>
+              <div style="color: #94A3B8; font-size: 15px; margin-bottom: 16px;">// Initializing multi-agent orchestrator...</div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px;">
+                ${(data.terminalItems || [
+                  '✔ C-Suite Strategy Agent (Online)',
+                  '✔ Full-Stack Code Auditor (Active)',
+                  '✔ Autonomous Growth Engine (Synced)',
+                  '✔ Zero-Trust Security Gate (Verified)'
+                ]).map(item => `<div style="color: #E2E8F0;">${item}</div>`).join('')}
+              </div>
+            </div>
+            <div class="bottom-telemetry-bar" style="margin-top: 14px;">
+              <div class="telemetry-left">⚡ FULL AUTONOMOUS STACK</div>
+              <div class="telemetry-right">
+                <span>✔ TESTED IN LAB</span>
+                <span>✔ PRODUCTION READY</span>
+              </div>
+            </div>
+          </div>
+        `;
+      } 
+      else if (st === 'org_chart') {
+        container.innerHTML = `
+          <div class="tagline-label">${data.tagline || 'THE ORG CHART'}</div>
+          <div class="hero-title">${data.titlePrefix || 'Not Just Chatbots.'} <span class="highlight-orange">${data.titleOrange || 'A Full Team'}</span> ${data.titleSuffix || 'Of AI Workers.'}</div>
+          <div class="org-chart-container">
+            <div class="org-lead-card">
+              <div>
+                <div class="org-lead-title">👑 ${data.leaderTitle || 'Chief AI Orchestrator'}</div>
+                <div class="org-lead-sub">${data.leaderSub || 'Receives one high-level prompt → coordinates the entire department fleet'}</div>
+              </div>
+              <div class="badge-pill-orange">CORE HUB</div>
+            </div>
+            <div class="org-grid">
+              ${(data.orgCards || [
+                { num: '01', title: 'Engineering Fleet', desc: 'Code generation, CI/CD linting, automated PR reviews & refactoring' },
+                { num: '02', title: 'Marketing Engine', desc: 'Copywriting, programmatic SEO, carousel scripts & audience research' },
+                { num: '03', title: 'Ops & Finance', desc: 'Budget tracking, pipeline auditing, API rate-limit monitoring' },
+                { num: '04', title: 'Research & QA', desc: 'Paper verification, benchmark stress-tests, hallucination checks' }
+              ]).map(c => `
+                <div class="org-card">
+                  <div class="org-card-num">${c.num}</div>
+                  <div class="org-card-name">${c.title}</div>
+                  <div class="org-card-desc">${c.desc}</div>
+                </div>
+              `).join('')}
+            </div>
+            <div class="bottom-telemetry-bar">
+              <div class="telemetry-left">🤖 ${data.badgeBarLeft || 'AUTONOMOUS FLEET'}</div>
+              <div class="telemetry-right">
+                <span>✔ REAL WORKFLOWS</span>
+                <span>✔ 100% OPEN SOURCE</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+      else if (st === 'grid_cards') {
+        container.innerHTML = `
+          <div class="tagline-label">${data.tagline || 'THE SPECIALIST FLEET'}</div>
+          <div class="hero-title">${data.titlePrefix || "You Don't Hire 250 People."} <span class="highlight-orange">${data.titleOrange || 'You Assemble'}</span> ${data.titleSuffix || 'Them.'}</div>
+          <div class="six-card-grid">
+            ${(data.specialists || [
+              { num: '01', tag: 'BUILD SHIP REPEAT', title: 'Frontend Engineer', desc: 'Generates UI components, layout systems, and responsive screens in seconds.' },
+              { num: '02', tag: 'SYSTEM SCALES', title: 'Backend Architect', desc: 'Creates secure APIs, schema migrations, and high-throughput pipelines.' },
+              { num: '03', tag: 'SECURITY FIRST', title: 'Code Auditor', desc: 'Catches exposed keys, SQL vulnerabilities, and logic flaws before merge.' },
+              { num: '04', tag: 'REAL BENCHMARK', title: 'Reality Checker', desc: 'Stress tests outputs, verifies facts, and halts hallucinated claims.' },
+              { num: '05', tag: 'GROWTH ENGINE', title: 'Content Strategist', desc: 'Transforms raw code updates into viral visual carousels and threads.' },
+              { num: '06', tag: 'RETENTION MAGNET', title: 'Community Lead', desc: 'Engages questions, routes support requests, and builds user loyalty.' }
+            ]).map(s => `
+              <div class="specialist-card">
+                <div class="spec-header">
+                  <div class="spec-num">${s.num}</div>
+                  <div class="spec-tag">${s.tag}</div>
+                </div>
+                <div class="spec-title">${s.title}</div>
+                <div class="spec-desc">${s.desc}</div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+      else if (st === 'workflows') {
+        container.innerHTML = `
+          <div class="tagline-label">${data.tagline || 'PRACTICAL EXECUTION'}</div>
+          <div class="hero-title">${data.titlePrefix || 'Imagine Giving Your Lab'} <span class="highlight-orange">${data.titleOrange || 'One Single'}</span> ${data.titleSuffix || 'Instruction.'}</div>
+          <div class="workflow-list">
+            ${(data.workflows || [
+              {
+                prompt: '01. Launch a new feature sprint.',
+                tasks: ['Research user requests', 'Write PRD & architecture', 'Generate UI code', 'Run test suite & deploy']
+              },
+              {
+                prompt: '02. Audit entire codebase security.',
+                tasks: ['Scan for hardcoded keys', 'Check API permission scopes', 'Verify auth tokens', 'Output patched branch']
+              },
+              {
+                prompt: '03. Produce 30 days of tech content.',
+                tasks: ['Scrape trending AI papers', 'Write viral creator hooks', 'Render 7-slide decks', 'Format X threads & posts']
+              },
+              {
+                prompt: '04. Benchmark local LLM latency.',
+                tasks: ['Deploy quantized weights', 'Run inference batch tests', 'Compare RAM vs GPU', 'Generate cost ledger']
+              }
+            ]).map(w => `
+              <div class="workflow-item">
+                <div class="workflow-input-bar">
+                  <span>${w.prompt}</span>
+                  <div class="workflow-btn">➔</div>
+                </div>
+                <div class="workflow-tasks">
+                  ${w.tasks.map(t => `<div class="task-check"><span class="check-icon">✔</span> ${t}</div>`).join('')}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+      else if (st === 'benchmark') {
+        container.innerHTML = `
+          <div class="tagline-label">${data.tagline || 'THE COLD NUMBERS'}</div>
+          <div class="hero-title">${data.titlePrefix || 'Manual Chaos vs'} <span class="highlight-orange">${data.titleOrange || 'Autonomous'}</span> ${data.titleSuffix || 'Execution.'}</div>
+          <div class="benchmark-container">
+            <div class="vs-grid">
+              <div class="vs-card-old">
+                <div class="vs-tag" style="color: #991B1B;">✖ THE OLD MANUAL WAY</div>
+                <div class="vs-stat" style="color: #111111;">${data.oldStat || '4 Days'}</div>
+                <div style="font-weight: 700; color: var(--text-muted);">${data.oldSub || 'Per audit or feature deployment'}</div>
+                <div style="display: flex; flex-direction: column; gap: 8px; font-size: 14px; font-weight: 600; color: #666;">
+                  ${(data.oldItems || [
+                    '• \$3,500/mo contractor retainer',
+                    '• Context lost across meetings',
+                    '• Prone to human oversight',
+                    '• Bottlenecked by business hours'
+                  ]).map(it => `<div>${it}</div>`).join('')}
+                </div>
+              </div>
+
+              <div class="vs-card-new">
+                <div class="vs-tag" style="color: var(--orange);">✔ JAYANT\'S AI LAB WAY</div>
+                <div class="vs-stat" style="color: var(--orange);">${data.newStat || '35 Sec'}</div>
+                <div style="font-weight: 800; color: var(--text-main);">${data.newSub || 'Autonomous local agent pipeline'}</div>
+                <div style="display: flex; flex-direction: column; gap: 8px; font-size: 14px; font-weight: 700; color: var(--text-main);">
+                  ${(data.newItems || [
+                    '• \$0 marginal inference cost',
+                    '• 24/7 continuous autonomous execution',
+                    '• Deterministic verification & tests',
+                    '• Scales to 100+ tasks in parallel'
+                  ]).map(it => `<div>${it}</div>`).join('')}
+                </div>
+              </div>
+            </div>
+
+            <div class="bottom-telemetry-bar" style="margin-top: 10px;">
+              <div class="telemetry-left">🚀 ${data.roiHighlight || '99.4% TIME SAVED'}</div>
+              <div class="telemetry-right">
+                <span>ESTIMATED \$4,200/MO RETAINED</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+      else if (st === 'cta_final') {
+        container.innerHTML = `
+          <div class="tagline-label">${data.tagline || 'YOUR NEXT MOVE'}</div>
+          <div class="hero-title">${data.titlePrefix || 'Same Team.'} <span class="highlight-orange">${data.titleOrange || 'A More Capable'}</span> ${data.titleSuffix || 'You.'}</div>
+          <div class="final-cta-container">
+            <div style="display: flex; gap: 12px; margin-bottom: 24px;">
+              <div style="background: var(--bg); border: 1.5px solid var(--card-border); border-radius: 10px; padding: 10px 18px; font-size: 13px; font-weight: 800; font-family: 'JetBrains Mono';">⚡ 24/7 AUTONOMOUS FLEET</div>
+              <div style="background: var(--bg); border: 1.5px solid var(--card-border); border-radius: 10px; padding: 10px 18px; font-size: 13px; font-weight: 800; font-family: 'JetBrains Mono';">🚀 100% REPRODUCIBLE</div>
+              <div style="background: var(--bg); border: 1.5px solid var(--card-border); border-radius: 10px; padding: 10px 18px; font-size: 13px; font-weight: 800; font-family: 'JetBrains Mono';">🛡️ ZERO LEAKS</div>
+            </div>
+            <div style="font-size: 28px; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 12px;">
+              ${data.ctaMain || 'The autonomous workforce is officially here.'}
+            </div>
+            <div style="font-size: 18px; color: var(--text-muted); font-weight: 600; max-width: 700px; line-height: 1.4;">
+              ${data.ctaSub || 'Stop setting payroll on fire doing repetitive manual workflows. Start deploying battle-tested open-source agents today.'}
+            </div>
+
+            <div class="cta-big-btn">
+              <span>${data.buttonText || "Save This Carousel & Follow @jayantsailab"}</span>
+              <span style="color: var(--orange);">🔖</span>
+            </div>
+
+            <div class="cta-pills">
+              <div class="cta-pill">📖 100% FREE</div>
+              <div class="cta-pill">⚡ BATTLE-TESTED</div>
+              <div class="cta-pill">🤖 OPEN SOURCE</div>
+            </div>
+
+            <div style="margin-top: 24px; font-family: 'Caveat', cursive; font-size: 28px; color: var(--text-muted); font-weight: 700;">
+              "Build. Automate. Scale. Together." — Jayant
+            </div>
+          </div>
+        `;
+      }
+    }
+  </script>
+</body>
+</html>

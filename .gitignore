@@ -11,3 +11,4 @@ __pycache__/
 !fonts/
 test_*.py
 send_*.py
+scratch/
