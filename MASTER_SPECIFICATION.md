@@ -62,10 +62,11 @@
 ### D. Zoro Voice Track & Audio Synthesis Specification
 * **Target Speaker**: Zoro (Jayant's AI employee at Jayant's AI Lab in South Delhi)
 * **Official Engine**: Google Gemini Flash TTS (`gemini-2.5-flash-preview-tts` / `gemini-3.1-flash-tts-preview`)
-* **Voice**: Strictly `ZORO_VOICE="Rasalgethi"` (Charismatic Indian English tech authority, South Delhi cadence)
+* **Voice Configuration Parameter**: `voice_name="Rasalgethi"` (MANDATORY: Always pass `prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name="Rasalgethi")`).
+* **Steering Prompt Framework**: Uses the structured `Audio Profile:` + `Transcript:` block targeting authentic urban Indian English accent, intonation, and South Delhi tech founder cadence.
 * **Audio Format**: 24,000 Hz, 16-bit Mono Linear PCM packaged as `.wav`
 * **Delivery**: Dispatched via Telegram `sendAudio` directly to Jayant's personal chat ID (`7007116692`).
-* **Browser/Web Client**: Interactive Puter.js (`puter.ai.txt2speech` with provider `gemini`, model `gemini-2.5-flash-preview-tts`, and voice `"Rasalgethi"`) embedded in `dashboard.html`.
+* **Browser/Web Client**: Interactive Puter.js (`puter.ai.txt2speech` with provider `gemini`, model `gemini-2.5-flash-preview-tts`, and `voice: "Rasalgethi"`) embedded in `dashboard.html`.
 
 ---
 

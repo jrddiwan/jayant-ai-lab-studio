@@ -1008,7 +1008,15 @@ def synthesize_zoro_voice(body_text):
     wav_path = os.path.join(OUTPUT_DIR, f"zoro_{timestamp}.wav")
 
     voice_to_use = ZORO_VOICE or "Rasalgethi"
-    speech_prompt = f"Speak in a natural, charismatic Indian English tech founder tone from South Delhi: {clean_text}"
+    speech_prompt = f"""Audio Profile:
+* Speaker: Zoro, senior AI engineer and tech founder at Jayant's AI Lab in South Delhi, India.
+* Accent: Authentic Indian English accent with distinct South Delhi urban Indian intonation, natural Indian phonetic pronunciation, and energetic cadence.
+* Tone: Confident, fast-paced, authoritative builder tone.
+* Pace: Dynamic tech founder pace.
+
+Transcript:
+{clean_text}
+"""
 
     for g_key in GEMINI_KEYS:
         if not g_key:
