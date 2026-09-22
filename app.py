@@ -685,23 +685,47 @@ APPROVE: [Tool Name] | [One-line core reason]
     return True, title
 
 
-# ─── MASTER SCRIPTWRITING ENGINE (DYNAMIC TOP-CREATOR HOOKS & CTAs) ───
+# ─── MASTER SCRIPTWRITING ENGINE (1,000 VIRAL HOOKS, LINKEDIN SKILLS, STORYTELLING & HUMANIZER) ───
 def generate_full_studio_package(topic_title, topic_details, source_url="", carousel_style="auto"):
-    # Dynamically select creator hook and CTA frameworks to guarantee viral variety across every piece of content
+    # Dynamically select creator hook and CTA frameworks from the 1,000 Viral Hook vault & LinkedIn Skills
     hook_frameworks = [
-        "CONTRARIAN_DISRUPTION (Alex Hormozi / Vaibhav Sisinty): Hard pattern interrupt exposing an expensive, outdated manual habit ('Stop paying $3,000/mo for manual X', '90% of developers are doing Y wrong'). Emphasize quantifiable speed/cost leverage.",
-        "SILENT_DROP_INSIDER (Rowan Cheung / Matt Wolfe): Insider discovery tone. An unhyped repository or framework update that quietly out-benchmarks massive models. High curiosity and technical elegance.",
-        "RADICAL_LEVERAGE_SPEED (Dan Koe / Justin Welsh): High-contrast transformation. What used to take an agency 4 days now completes locally in 35 seconds. Focus on sovereign output and human leverage.",
-        "EXPENSIVE_MISTAKE_ALERT (Enterprise / Growth): Warn businesses that continuing manual workflows in this area is burning payroll, then introduce the automated replacement.",
-        "REALITY_CHECK_BENCHMARK (Technical Teardown): Skip the marketing press releases. Raw, unfiltered stress test results on real-world production data.",
-        "DIRECT_WORKFLOW_CHALLENGE (Actionable Sprint): A 45-second implementation sprint proving how fast this tool can be integrated into existing daily operations."
+        # Category A: 1,000 Viral Hooks (Educational & Breakdown)
+        "EDUCATIONAL_60S (1,000 Hooks): 'Can you tell us how to {result} in 60 seconds? Here is exactly how much {action} you need.' High clarity, fast pace.",
+        "EDUCATIONAL_DECADE (1,000 Hooks): 'It took me 10 years to learn this, but I will teach it to you in less than 60 seconds.' Condense massive complexity into pure signal.",
+        "STEP_BY_STEP_TUTORIAL (1,000 Hooks): 'Everyone tells you to {action}, but nobody actually tells you how to do it. Here is the step-by-step tutorial you can save.'",
+        "WAKE_UP_PAIN (1,000 Hooks): 'If I woke up with {pain_point} tomorrow and wanted {dream_result} by next week, here is exactly what I would do.'",
+        
+        # Category B: 1,000 Viral Hooks (Comparison & Contrarian)
+        "SIDE_BY_SIDE_COMPARISON (1,000 Hooks): 'This is an old manual agency setup, and this is an autonomous agent lab. For this cost, you could have all of this.'",
+        "GROUP_CONTRAST (1,000 Hooks): 'This team didn't automate this workflow, and this team did. Look at what happened to their payroll.'",
+        "PSYCHO_EFFICIENCY (1,000 Hooks): 'Why do manual {action} like a normal agency when you can deploy local autonomous agents instead?'",
+        
+        # Category C: 1,000 Viral Hooks (Myth Busting & Warning)
+        "MYTH_BUSTER (1,000 Hooks): 'They said \"{famous_quote_or_cliche}\". That is a lie. Here is what actually happens in production.'",
+        "STOP_DOING_THIS (1,000 Hooks): 'Stop {action} if you actually want {dream_result}. You are burning hours without even realizing it.'",
+        "DE_INFLUENCE (1,000 Hooks): 'Let me de-influence you from paying $3,000/mo retainers for manual AI tasks. Here is the local open-source setup.'",
+        
+        # Category D: LinkedIn Skills & Founder Mode (Serge Bulaev)
+        "FOUNDER_REPRICE_CATEGORY (LinkedIn Founder Mode): 'Traditional agencies charge $4,000/month for this. Here is how we engineered it locally with $0 marginal cost.'",
+        "FOUNDER_UNGLAMOROUS_BET (LinkedIn Founder Mode): 'While everyone is hyping general chatbots, we built 6 boring specialized agents that do real work.'",
+        "FOUNDER_LIMIT_OF_DELEGATION (LinkedIn Founder Mode): 'You cannot delegate strategic judgment to an AI. But you can delegate the entire execution pipeline.'",
+        "FOUNDER_SCARCE_SHOTS (LinkedIn Founder Mode): 'When you run a lean lab, you do not have 10 engineers. You have 10 autonomous loops running while you sleep.'",
+        "FOUNDER_CONTENT_TO_PIPELINE (LinkedIn Founder Mode): 'How one open-source repo turned raw GitHub commits into qualified inbound clients without cold outreach.'"
     ]
     selected_hook = random.choice(hook_frameworks)
+
+    # Narrative Storytelling Structure (from Storytelling Structures: Hero's Journey, Man in a Hole, About Me)
+    storytelling_structures = [
+        "HERO_JOURNEY: 1. Intro & Hero -> 2. Inflection Point (burning pain/symptoms) -> 3. Failed Attempts (what didn't work) -> 4. The Breakthrough (the one tool/workflow that worked) -> 5. Proof (quantifiable metrics) -> 6. Resolution / Next Step.",
+        "MAN_IN_A_HOLE: 1. Comfort Zone (everything seemed fine) -> 2. The Trigger (a costly disruption or bottleneck hit) -> 3. The Crisis (realizing traditional methods failed) -> 4. The Recovery (deploying autonomous AI) -> 5. The Better Place (sovereign speed & zero overhead).",
+        "ORIGIN_EPIPHANY: 1. The Starting Line -> 2. The Conflict (wasting payroll on manual tasks) -> 3. The Epiphany (agents > chatbots) -> 4. The Change (building deterministic pipelines) -> 5. The Mission (helping builders scale)."
+    ]
+    selected_story_structure = random.choice(storytelling_structures)
 
     cta_frameworks = [
         "BLUEPRINT_GIVEAWAY: Offer our lab's production prompt stack + agent workflow architecture. (Save post 🔖 and comment 'BLUEPRINT' or check link in bio).",
         "TACTICAL_CHALLENGE: Challenge founders and builders to plug this pipeline into one bottleneck today and share their benchmark in the comments.",
-        "CONTRARIAN_DEBATE: Ask a high-signal polarizing question ('Is this true operational disruption or overhyped PR? Drop your take below — Jayant is replying').",
+        "CONTRARIAN_DEBATE: Ask a high-signal polarizing question ('Is this true operational disruption or overhyped PR? Drop your take below, Jayant is replying').",
         "LAB_COMMUNITY_RETENTION: Save this teardown for your next build sprint 🔖 and follow @jayantsailab for unfiltered, production-tested AI deployments.",
         "PRIVATE_LAB_IMPLEMENTATION: If scaling a business and wanting Jayant's team to engineer this autonomous pipeline custom for your operations, tap link in bio to apply."
     ]
@@ -710,38 +734,42 @@ def generate_full_studio_package(topic_title, topic_details, source_url="", caro
     prompt = f"""You are the chief viral scriptwriter and content director for Jayant's AI Lab (@jayantsailab).
 Topic: {topic_title}
 Details: {topic_details}
-Selected Viral Hook Framework: {selected_hook}
-Selected Call To Action Framework: {selected_cta}
+Selected Hook Framework: {selected_hook}
+Selected Storytelling Structure: {selected_story_structure}
+Selected Call To Action: {selected_cta}
 
-Write an authentic, highly engaging studio distribution package blending the styles of top creators (Alex Hormozi, Rowan Cheung/The Rundown, Ruben Hassid, Dan Koe, Matt Wolfe, Justin Welsh) with Jayant's high-energy South Delhi tech authority.
+Write an authentic, highly engaging studio distribution package blending top creator styles (Alex Hormozi, Rowan Cheung, Dan Koe, Matt Wolfe, Justin Welsh) with Jayant's high-energy South Delhi tech authority.
 
-STRICT CONSTRAINTS & STYLE RULES:
-1. ZERO ROBOTIC CLICHES: NEVER use 'game-changer', 'delve into', 'tapestry', 'in today's fast-paced world', 'buckle up', 'revolutionize', or 'Stop scrolling!'.
-2. ZERO REPETITIVE CANNED LINES: Do NOT end the hook with the same canned line. Vary the handoff naturally (e.g. "Let's look under the hood with ZORO", "Watch what happens when you run this in production", "Here's the technical breakdown from our lab").
-3. NATURAL ZORO SCRIPT: Do NOT use '[cheerfully] Hey everyone, ZORO here — Jayant's AI employee!'. Instead, use sharp, varied conversational openers (e.g. "ZORO here from Jayant's Lab — let's skip the marketing fluff and look at the real benchmarks", "ZORO on deck. If you build AI workflows, this update solves the biggest bottleneck in production", "Alright, let's break down what just shipped").
-4. DIVERSE & CONTEXTUAL CTA: Follow the selected Call To Action framework organically. Do NOT spam 'DM AUDIT' on every single line or slide.
-5. STRICT PHONE NUMBER BAN: NEVER include any phone numbers (+91 78800 56262, 7880056262, or wa.me links are STRICTLY FORBIDDEN). Always direct to Link in Bio or DM.
-6. BRAND IDENTITY: Strictly 'Jayant's AI Lab', handle '@jayantsailab', avatar badge 'JL'.
+STRICT HUMANIZER & WRITING RULES (Zero AI Giveaways):
+1. ABSOLUTE BAN ON EM DASHES: NEVER use em dashes ('—' or '--'). Use standard commas, periods, or clean line breaks.
+2. ABSOLUTE BAN ON AI BUZZWORDS: NEVER use 'delve', 'testament', 'beacon', 'tapestry', 'landscape', 'revolutionize', 'game-changer', 'unlock', 'navigate', 'elevate', 'harness', 'moreover', 'furthermore', 'in today\\'s fast-paced world', 'buckle up', 'stop scrolling', 'without further ado'.
+3. NO RULE-OF-THREE CLICHES: Ban repetitive triads like 'fast, scalable, and robust' or three parallel consecutive sentences.
+4. HUMAN CADENCE & RHYTHM: Alternate sentence lengths naturally. A punchy 4-word sentence. Then a conversational explanation. Write like a human builder in public, not a corporate marketing bot.
+5. STORYTELLING ARC: Structure ZORO's script and the LinkedIn post using the selected Storytelling Structure ({selected_story_structure}). Show the struggle, the failed attempt, and the exact breakthrough.
+6. NATURAL ZORO OPENERS: Never say '[cheerfully] Hey everyone, ZORO here!'. Open like a confident engineer: 'ZORO on deck. Let\\'s skip the marketing fluff and look at the actual numbers.', 'ZORO here from Jayant\\'s Lab. Here is the operational breakdown.', 'Alright, let\\'s see what actually shipped.'
+7. DIVERSE & ORGANIC CTA: Strictly follow the selected Call To Action framework ({selected_cta}).
+8. STRICT PHONE NUMBER BAN: NEVER include any phone numbers (+91 78800 56262, 7880056262, or wa.me links are STRICTLY FORBIDDEN). Always direct to Link in Bio or DM.
+9. BRAND IDENTITY: Strictly 'Jayant\\'s AI Lab', handle '@jayantsailab', avatar badge 'JL'.
 
 Return EXACT tags:
 
 [HOOK]
-(5-8 seconds for Google Vids Avatar. Deliver a punchy, arresting opening using the selected hook framework. Seamlessly transition to the lab breakdown.)
+(5-8 seconds for Google Vids Avatar. Deliver a punchy, arresting opening using the selected hook framework: {selected_hook}. Seamlessly transition to the lab breakdown.)
 
 [ZORO_BODY]
-(35-45 seconds, ~100-120 words for ZORO, Jayant's AI employee. Start with a natural, punchy greeting. Explain how this tool or model works with an everyday analogy. Provide 1 sharp quantifiable metric or time comparison. Deliver pure tactical value with a confident punchline. No bracketed stage directions like [cheerfully].)
+(35-45 seconds, ~100-120 words for ZORO, Jayant's AI employee. Follow the {selected_story_structure} arc: identify the friction, explain the tool with a dead-simple analogy, give 1 sharp quantifiable metric, and finish with a confident takeaway. No bracketed stage directions.)
 
 [B_ROLL_LIST]
 (3-4 specific visual B-roll cues with timestamps [00:08 - 00:18] and AI video generation prompts for Kling/Luma/Runway.)
 
 [CTA]
-(6-8 seconds for Google Vids Avatar using the selected Call To Action Framework. High-value and organic.)
+(6-8 seconds for Google Vids Avatar using the selected Call To Action Framework: {selected_cta}.)
 
 [TWEET]
-(Strictly <= 260 characters total. Contrarian hook + 1 key metric + link in bio / bookmark. Zero phone numbers.)
+(Strictly <= 260 characters total. Contrarian hook + 1 key metric + link in bio / bookmark. Zero em dashes. Zero phone numbers.)
 
 [LINKEDIN]
-(Hook line -> The Friction / Bottleneck -> The 3-step Architecture (Input -> Workflow -> Verified Output) -> Real-world business impact with numbers -> Actionable Takeaway -> Engaging closing question / Asset giveaway CTA.)
+(Viral Hook Line -> The Friction & Problem -> Failed Alternative -> The Breakthrough 3-Step Architecture -> Quantifiable Proof & Math -> Actionable Takeaway -> Engaging closing question / Asset giveaway CTA. Humanized, zero buzzwords, zero em dashes.)
 
 [CAROUSEL]
 Slide 1: High-Impact Curiosity / Contrarian Title Hook
@@ -798,6 +826,40 @@ Slide 6: Dynamic CTA (Aligned with the selected CTA framework, saving post & fol
     linkedin = extract_tag("LINKEDIN", raw_text) or topic_details
     carousel = extract_tag("CAROUSEL", raw_text) or "Slide 1: Breaking AI Update\nSlide 2: Check it out!"
     prompt_magnet = extract_tag("PROMPT_OF_THE_DAY", raw_text) or "Test this tool today."
+
+    # ─── HUMANIZER POST-PROCESSOR (ENFORCE ZERO AI GIVEAWAYS) ───
+    def humanize_text(t):
+        if not t:
+            return ""
+        # 1. Enforce strict ban on em dashes and double dashes
+        t = t.replace(" — ", ", ").replace("—", ", ").replace(" -- ", ", ").replace("--", ", ")
+        # 2. Scrub AI buzzwords if any slipped through
+        buzzwords = {
+            "a game-changer": "a major breakthrough",
+            "game-changer": "major shift",
+            "delve into": "look into",
+            "delve": "explore",
+            "testament to": "proof of",
+            "beacon of": "example of",
+            "tapestry": "system",
+            "landscape": "market",
+            "revolutionize": "upgrade",
+            "in today's fast-paced world": "today",
+            "buckle up": "here is what matters",
+            "stop scrolling": "look at this"
+        }
+        for bw, rep in buzzwords.items():
+            t = re.sub(re.escape(bw), rep, t, flags=re.IGNORECASE)
+        # 3. Clean up double spaces or awkward comma spacing
+        t = re.sub(r' ,', ',', t)
+        t = re.sub(r'\s+', ' ', t)
+        return t.strip()
+
+    hook = humanize_text(hook)
+    body = humanize_text(body)
+    cta = humanize_text(cta)
+    tweet = humanize_text(tweet)
+    linkedin = humanize_text(linkedin)
 
     # Strict scrub of any phone numbers
     for forbidden in ["+91 78800 56262", "+917880056262", "7880056262", "wa.me/917880056262", "wa.me/7880056262"]:
@@ -945,16 +1007,16 @@ def fetch_huggingface():
 
 
 def fetch_github():
-    """Monitors GitHub trending repositories under topic:llm and topic:artificial-intelligence."""
+    """Monitors GitHub trending repositories under topic:llm and python AI tools."""
     items = []
     try:
-        url = "https://api.github.com/search/repositories?q=topic:llm+OR+topic:artificial-intelligence&sort=updated&order=desc&per_page=8"
+        url = "https://api.github.com/search/repositories?q=topic:llm+language:python&sort=updated&order=desc&per_page=8"
         r = requests.get(url, headers={"User-Agent": "JayantAILab/1.0"}, timeout=8)
         if r.status_code == 200:
             for repo in r.json().get("items", []):
                 items.append({
                     "source": "GitHub Trending",
-                    "title": f"Repo: {repo.get('full_name')} — {repo.get('description', '')[:70]}",
+                    "title": f"Repo: {repo.get('full_name')} ({repo.get('description', '')[:70]})",
                     "url": repo.get("html_url"),
                     "type": "github"
                 })
@@ -988,9 +1050,60 @@ def fetch_x_twitter():
 
 
 def fetch_news_apis():
-    """Queries Newsdata.io and FreeNewsAPI.io strictly respecting daily quotas."""
+    """Queries Tavily, NewsAPI.org, SerpAPI, and Newsdata.io strictly respecting daily quotas."""
     items = []
-    # 1. Newsdata.io (budgeted cap: 150/day)
+
+    # 1. Tavily AI Search (budgeted cap: 25/day)
+    if TAVILY_API_KEY and QuotaManager.can_call("TAVILY"):
+        try:
+            QuotaManager.record_call("TAVILY")
+            r = requests.post(
+                "https://api.tavily.com/search",
+                json={"api_key": TAVILY_API_KEY, "query": "trending artificial intelligence breakthrough launch new model", "max_results": 3},
+                timeout=10
+            )
+            if r.status_code == 200:
+                for res in r.json().get("results", [])[:3]:
+                    title = res.get("title", "")
+                    link = res.get("url", "")
+                    if title:
+                        items.append({"source": "Tavily AI Search", "title": title, "url": link, "type": "api_news"})
+        except Exception as e:
+            print(f"Tavily fetch error: {e}")
+
+    # 2. NewsAPI.org (budgeted cap: 80/day)
+    if NEWSAPI_API_KEY and QuotaManager.can_call("NEWSAPI"):
+        try:
+            QuotaManager.record_call("NEWSAPI")
+            url = f"https://newsapi.org/v2/everything?q=artificial+intelligence&pageSize=3&sortBy=publishedAt&apiKey={NEWSAPI_API_KEY}"
+            r = requests.get(url, timeout=10)
+            if r.status_code == 200:
+                for art in r.json().get("articles", [])[:3]:
+                    title = art.get("title", "")
+                    link = art.get("url", "")
+                    src = art.get("source", {}).get("name", "NewsAPI")
+                    if title:
+                        items.append({"source": f"NewsAPI ({src})", "title": title, "url": link, "type": "api_news"})
+        except Exception as e:
+            print(f"NewsAPI fetch error: {e}")
+
+    # 3. SerpAPI Google News (budgeted cap: 6/day)
+    if SERPAPI_API_KEY and QuotaManager.can_call("SERPAPI"):
+        try:
+            QuotaManager.record_call("SERPAPI")
+            url = f"https://serpapi.com/search.json?q=AI+breakthrough+news&engine=google_news&api_key={SERPAPI_API_KEY}"
+            r = requests.get(url, timeout=10)
+            if r.status_code == 200:
+                for res in r.json().get("news_results", [])[:3]:
+                    title = res.get("title", "")
+                    link = res.get("link", "")
+                    src = res.get("source", {}).get("name", "Google News")
+                    if title:
+                        items.append({"source": f"SerpAPI ({src})", "title": title, "url": link, "type": "api_news"})
+        except Exception as e:
+            print(f"SerpAPI fetch error: {e}")
+
+    # 4. Newsdata.io (budgeted cap: 150/day)
     if NEWSDATA_API_KEY and QuotaManager.can_call("NEWSDATA"):
         try:
             QuotaManager.record_call("NEWSDATA")
@@ -1000,28 +1113,11 @@ def fetch_news_apis():
                 for res in r.json().get("results", [])[:3]:
                     title = res.get("title", "")
                     link = res.get("link", "")
+                    src = res.get("source_id", "Newsdata")
                     if title:
-                        items.append({"source": "Newsdata.io", "title": title, "url": link, "type": "api_news"})
+                        items.append({"source": f"Newsdata ({src})", "title": title, "url": link, "type": "api_news"})
         except Exception as e:
             print(f"Newsdata fetch error: {e}")
-
-    # 2. FreeNewsAPI.io (budgeted cap: 2,500/day, 2 req/sec throttle)
-    if FREENEWSAPI_API_KEY and QuotaManager.can_call("FREENEWSAPI"):
-        try:
-            time.sleep(0.6)  # Enforce 600ms sleep for 2 req/sec limit
-            QuotaManager.record_call("FREENEWSAPI")
-            url = f"https://freenewsapi.io/api/v1/news?token={FREENEWSAPI_API_KEY}"
-            r = requests.get(url, timeout=10)
-            if r.status_code == 200:
-                data = r.json()
-                articles = data.get("articles") or data.get("data") or []
-                for a in articles[:3]:
-                    title = a.get("title", "")
-                    link = a.get("url", "") or a.get("link", "")
-                    if title:
-                        items.append({"source": "FreeNewsAPI", "title": title, "url": link, "type": "api_news"})
-        except Exception as e:
-            print(f"FreeNewsAPI fetch error: {e}")
 
     return items
 
@@ -1145,15 +1241,36 @@ def deliver_production_package(title, details, source_url="", source_name=""):
     send_tg_message(TARGET_CHAT_ID, social_msg, bot_token=TELEGRAM_BOT_TOKEN_SOCIAL)
 
 
+LAST_DISPATCHED_TYPE = None
+
+
 def check_all_radar_sources():
-    """Scans all non-YouTube sources (Tech News, Reddit, HF, GitHub, X handles, News APIs)."""
+    """Scans all non-YouTube sources (Tech News, Reddit, HF, GitHub, X handles, News APIs) with fair multi-source interleaving."""
+    global LAST_DISPATCHED_TYPE
+
+    buckets = {
+        "reddit": fetch_reddit(),
+        "github": fetch_github(),
+        "huggingface": fetch_huggingface(),
+        "x_twitter": fetch_x_twitter(),
+        "api_news": fetch_news_apis(),
+        "tech_news": fetch_tech_news()
+    }
+
+    # Interleave items across sources so no single source (like The Verge / TechCrunch) starves the rest
+    keys = list(buckets.keys())
+    random.shuffle(keys)
+    # If the last dispatched item was from a specific category, deprioritize it to ensure variety
+    if LAST_DISPATCHED_TYPE in keys:
+        keys.remove(LAST_DISPATCHED_TYPE)
+        keys.append(LAST_DISPATCHED_TYPE)
+
     candidates = []
-    candidates.extend(fetch_tech_news())
-    candidates.extend(fetch_reddit())
-    candidates.extend(fetch_huggingface())
-    candidates.extend(fetch_github())
-    candidates.extend(fetch_x_twitter())
-    candidates.extend(fetch_news_apis())
+    max_len = max(len(b) for b in buckets.values()) if buckets else 0
+    for i in range(max_len):
+        for k in keys:
+            if i < len(buckets[k]):
+                candidates.append(buckets[k][i])
 
     for item in candidates:
         url = item.get("url") or item.get("title")
@@ -1162,7 +1279,8 @@ def check_all_radar_sources():
 
         title = item.get("title", "")
         source = item.get("source", "")
-        seen_topics[url] = {"title": title, "source": source, "date": datetime.now(timezone.utc).isoformat()}
+        item_type = item.get("type", "news")
+        seen_topics[url] = {"title": title, "source": source, "type": item_type, "date": datetime.now(timezone.utc).isoformat()}
         save_memory()
 
         is_worthy, reason = evaluate_news_worth(title)
@@ -1178,6 +1296,7 @@ def check_all_radar_sources():
             RECENT_FEED.pop()
 
         if is_worthy:
+            LAST_DISPATCHED_TYPE = item_type
             print(f"[RADAR HIT APPROVED]: [{source}] {title} ({reason})")
             deliver_production_package(title, f"Discovered on {source}: {url}", source_url=url, source_name=source)
             break  # Process 1 high-signal item per sweep to prevent spamming
