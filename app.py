@@ -107,6 +107,9 @@ if os.path.exists(SEEN_FILE):
 else:
     seen_topics = {}
 
+# Rolling real-time activity feed for live web dashboard
+RECENT_FEED = []
+
 
 def save_memory():
     try:
@@ -594,15 +597,28 @@ Slide 6: CTA (Save post & tap link in bio or DM 'AUDIT' for a free AI audit)
     if len(tweet) > 260:
         tweet = tweet[:257] + "..."
 
-    # Voice track synthesis via Gemini 3.1 Flash TTS (Rasalgethi South Delhi male cadence)
-    tts_text = f"Hey everyone, ZORO here — Jayant's AI employee! {body.replace('[cheerfully] ', '').replace('Hey everyone, ZORO here — Jayant\'s AI employee!', '').strip()}"
+    # Voice track synthesis via Gemini 3.1 Flash TTS (Director's Notes steering for authentic Indian English / South Delhi cadence)
+    clean_body = body.replace('[cheerfully] ', '').replace("Hey everyone, ZORO here — Jayant's AI employee!", "").strip()
+    tts_text = f"Hey everyone, ZORO here — Jayant's AI employee! {clean_body}"
+
+    director_input = f"""## "Jayant AI Lab Intelligence Brief"
+
+### DIRECTOR'S NOTES
+Style:
+* Voice: Energetic, charismatic Indian tech authority
+* Pace: Dynamic tech founder cadence, fast and punchy
+* Accent: Natural urban Indian English accent from South Delhi, India
+
+### TRANSCRIPT
+{tts_text}
+"""
     audio_data = None
     for g_key in GEMINI_KEYS:
         try:
             g_client_tts = genai.Client(api_key=g_key)
             interaction = g_client_tts.interactions.create(
                 model="gemini-3.1-flash-tts-preview",
-                input=tts_text,
+                input=director_input,
                 response_format={"type": "audio"},
                 generation_config={"speech_config": [{"voice": ZORO_VOICE}]}
             )
@@ -849,12 +865,23 @@ def check_youtube_uploads():
                         save_memory()
 
                         is_worthy, reason = evaluate_news_worth(title)
+                        RECENT_FEED.insert(0, {
+                            "time": datetime.now(timezone.utc).strftime("%H:%M:%S"),
+                            "source": f"YouTube ({channel_name})",
+                            "title": title,
+                            "url": video_url,
+                            "status": "APPROVED" if is_worthy else "FILTERED",
+                            "reason": reason
+                        })
+                        if len(RECENT_FEED) > 40:
+                            RECENT_FEED.pop()
+
                         if not is_worthy:
                             print(f"[RADAR SUPPRESSED]: {title} -> {reason}")
                             continue
 
                         print(f"[RADAR APPROVED]: {title} ({reason})")
-                        deliver_production_package(title, f"Covered by {channel_name} on YouTube: {video_url}", source_url=video_url)
+                        deliver_production_package(title, f"Covered by {channel_name} on YouTube: {video_url}", source_url=video_url, source_name=f"YouTube ({channel_name})")
 
         except Exception as e:
             print(f"Error checking YouTube channel {channel_name}: {e}")
@@ -863,18 +890,22 @@ def check_youtube_uploads():
 
 
 # ─── MASTER RADAR AGGREGATOR & DISPATCHER ───
-def deliver_production_package(title, details, source_url=""):
+def deliver_production_package(title, details, source_url="", source_name=""):
     """Generates and delivers the complete multi-asset production package to Jayant's DM."""
     # Rotate carousel styles across deliverables
     chosen_style = random.choice(["cyber", "minimal", "matrix", "tweet"])
     pkg = generate_full_studio_package(title, details, source_url=source_url, carousel_style=chosen_style)
 
+    src_display = source_name or "AI Intelligence Radar"
+    src_link = f"[{src_display}]({source_url})" if source_url else f"`{src_display}`"
+
     # 1. Video Production Package
     video_msg = (
         f"🎬 *NEW RADAR PRODUCTION PACK*\n"
         f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"🎯 *Source:* {title}\n"
-        f"🎨 *Carousel Style Used:* `{chosen_style.upper()}`\n\n"
+        f"🌐 *SOURCE:* {src_link}\n"
+        f"📰 *HEADLINE:* {title}\n"
+        f"🎨 *CAROUSEL STYLE:* `{chosen_style.upper()}`\n\n"
         f"🎯 *YOUR HOOK (Google Vids Avatar):*\n_{pkg['hook']}_\n\n"
         f"🤖 *ZORO BODY SCRIPT (ELI12):*\n{pkg['body']}\n\n"
         f"📢 *YOUR CTA (Google Vids Avatar):*\n_{pkg['cta']}_\n\n"
@@ -887,12 +918,13 @@ def deliver_production_package(title, details, source_url=""):
 
     # 2. Instagram Carousel Album
     if pkg['carousel_images']:
-        send_tg_album(TARGET_CHAT_ID, pkg['carousel_images'], caption=f"📱 *Instagram Carousel Deliverable ({chosen_style.upper()}): {title[:60]}*")
+        send_tg_album(TARGET_CHAT_ID, pkg['carousel_images'], caption=f"📱 *Instagram Carousel ({chosen_style.upper()}): {title[:60]}*\n🌐 *Source:* {src_link}")
 
     # 3. Omnichannel Social Pack
     social_msg = (
         f"📢 *OMNICHANNEL SOCIAL DISTRIBUTION PACK*\n"
-        f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"🌐 *ORIGINAL INTEL SOURCE:* {src_link}\n\n"
         f"🐦 *STRICT <= 260 CHAR TWEET:*\n`{pkg['tweet']}`\n\n"
         f"💡 *PROMPT OF THE DAY MAGNET (WhatsApp Community):*\n```\n{pkg['prompt_magnet']}\n```\n\n"
         f"💼 *HIGH-INSIGHT LINKEDIN POST:*\n{pkg['linkedin']}"
@@ -921,9 +953,20 @@ def check_all_radar_sources():
         save_memory()
 
         is_worthy, reason = evaluate_news_worth(title)
+        RECENT_FEED.insert(0, {
+            "time": datetime.now(timezone.utc).strftime("%H:%M:%S"),
+            "source": source,
+            "title": title,
+            "url": url,
+            "status": "APPROVED" if is_worthy else "FILTERED",
+            "reason": reason
+        })
+        if len(RECENT_FEED) > 40:
+            RECENT_FEED.pop()
+
         if is_worthy:
             print(f"[RADAR HIT APPROVED]: [{source}] {title} ({reason})")
-            deliver_production_package(title, f"Discovered on {source}: {url}", source_url=url)
+            deliver_production_package(title, f"Discovered on {source}: {url}", source_url=url, source_name=source)
             break  # Process 1 high-signal item per sweep to prevent spamming
         else:
             print(f"[RADAR HIT SUPPRESSED]: [{source}] {title} -> {reason}")
@@ -1014,13 +1057,41 @@ def telegram_listener():
             time.sleep(3)
 
 
-# ─── CLOUD HTTP HEALTH HANDLER (RENDER KEEP-ALIVE) ───
+# ─── CLOUD HTTP SERVER & MISSION CONTROL DASHBOARD ───
 class HealthHandler(BaseHTTPRequestHandler):
     def do_GET(self):
-        self.send_response(200)
-        self.send_header("Content-type", "text/plain")
-        self.end_headers()
-        self.wfile.write(b"Jayant AI Lab Master Studio & Multi-Source Radar running 24/7!")
+        parsed = urllib.parse.urlparse(self.path)
+        if parsed.path == "/api/status":
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            payload = {
+                "quotas": QuotaManager._load(),
+                "recent_feed": RECENT_FEED,
+                "sources_online": True
+            }
+            self.wfile.write(json.dumps(payload).encode("utf-8"))
+        elif parsed.path == "/api/trigger-radar":
+            threading.Thread(target=check_all_radar_sources, daemon=True).start()
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(b'{"status": "radar_sweep_triggered"}')
+        else:
+            dashboard_file = os.path.join(os.path.dirname(__file__), "dashboard.html")
+            if os.path.exists(dashboard_file):
+                self.send_response(200)
+                self.send_header("Content-type", "text/html; charset=utf-8")
+                self.end_headers()
+                with open(dashboard_file, "rb") as f:
+                    self.wfile.write(f.read())
+            else:
+                self.send_response(200)
+                self.send_header("Content-type", "text/plain")
+                self.end_headers()
+                self.wfile.write(b"Jayant AI Lab Master Studio & Radar running 24/7!")
 
 
 def main():

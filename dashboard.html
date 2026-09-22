@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jayant's AI Lab | Autonomous Studio & Radar Command Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #07090E;
+      --card-bg: #0D111A;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --green: #00D048;
+      --cyan: #00F0FF;
+      --yellow: #FACC15;
+      --red: #EF4444;
+      --text: #F1F5F9;
+      --muted: #94A3B8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      padding: 32px 24px;
+      line-height: 1.5;
+    }
+    .container { max-width: 1300px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+    
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .brand { display: flex; align-items: center; gap: 14px; }
+    .brand-logo {
+      width: 48px; height: 48px; border-radius: 14px;
+      background: linear-gradient(135deg, var(--green), var(--cyan));
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 20px; color: #000;
+      box-shadow: 0 0 20px rgba(0, 208, 72, 0.3);
+    }
+    .brand-title { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+    .brand-sub { font-size: 13px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+    
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(0, 208, 72, 0.12); border: 1px solid rgba(0, 208, 72, 0.3);
+      padding: 8px 18px; border-radius: 999px;
+      font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; color: var(--green);
+    }
+    .pulse-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: var(--green);
+      box-shadow: 0 0 10px var(--green);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.85); } }
+
+    /* Grid Layout */
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px;
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .card-header {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 14px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;
+      font-family: 'JetBrains Mono', monospace; color: var(--cyan);
+    }
+
+    /* Source Health Pills */
+    .source-list { display: flex; flex-direction: column; gap: 10px; }
+    .source-item {
+      display: flex; justify-content: space-between; align-items: center;
+      background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border);
+      padding: 12px 16px; border-radius: 10px; font-size: 14px;
+    }
+    .source-name { font-weight: 600; display: flex; align-items: center; gap: 10px; }
+    .badge-online {
+      font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700;
+      color: var(--green); background: rgba(0, 208, 72, 0.1); padding: 4px 10px; border-radius: 6px;
+    }
+
+    /* Quota Progress Bars */
+    .quota-item { display: flex; flex-direction: column; gap: 6px; }
+    .quota-labels { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; }
+    .quota-bar {
+      width: 100%; height: 8px; background: rgba(255, 255, 255, 0.06); border-radius: 999px; overflow: hidden;
+    }
+    .quota-fill {
+      height: 100%; background: linear-gradient(90deg, var(--green), var(--cyan));
+      border-radius: 999px; transition: width 0.3s;
+    }
+
+    /* Live Feed Table */
+    .feed-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .feed-table th {
+      text-align: left; padding: 10px 12px; color: var(--muted);
+      font-family: 'JetBrains Mono', monospace; font-size: 11px;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .feed-table td { padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.04); vertical-align: top; }
+    .feed-source { font-weight: 700; color: var(--cyan); white-space: nowrap; }
+    .feed-title a { color: #FFFFFF; text-decoration: none; font-weight: 600; }
+    .feed-title a:hover { color: var(--green); text-decoration: underline; }
+    .badge-approved {
+      background: rgba(0, 208, 72, 0.12); color: var(--green);
+      padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 11px; font-family: 'JetBrains Mono', monospace;
+    }
+    .badge-suppressed {
+      background: rgba(239, 68, 68, 0.12); color: var(--red);
+      padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 11px; font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Quick Manual Trigger Button */
+    .action-btn {
+      background: linear-gradient(135deg, var(--green), #00A83A);
+      color: #000; border: none; padding: 10px 20px; border-radius: 10px;
+      font-weight: 800; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+    }
+    .action-btn:hover { opacity: 0.9; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- HEADER -->
+    <div class="header">
+      <div class="brand">
+        <div class="brand-logo">JL</div>
+        <div>
+          <div class="brand-title">Jayant's AI Lab — Mission Control</div>
+          <div class="brand-sub">Autonomous Multi-Source Radar & Studio Engine 24/7</div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <div class="status-badge">
+          <span class="pulse-dot"></span>
+          24/7 RADAR ONLINE
+        </div>
+        <button class="action-btn" onclick="triggerSweep()">⚡ Scan Radar Now</button>
+      </div>
+    </div>
+
+    <!-- METRICS & STATUS GRID -->
+    <div class="grid-3">
+      <!-- COLUMN 1: RADAR SOURCES -->
+      <div class="card">
+        <div class="card-header">
+          <span>📡 Radar Intelligence Grid</span>
+          <span>7 ACTIVE</span>
+        </div>
+        <div class="source-list">
+          <div class="source-item">
+            <div class="source-name">📰 Tech News (7 Feeds)</div>
+            <div class="badge-online">ONLINE</div>
+          </div>
+          <div class="source-item">
+            <div class="source-name">🤖 Reddit AI (5 Subreddits)</div>
+            <div class="badge-online">ONLINE</div>
+          </div>
+          <div class="source-item">
+            <div class="source-name">🤗 Hugging Face Models</div>
+            <div class="badge-online">ONLINE</div>
+          </div>
+          <div class="source-item">
+            <div class="source-name">💻 GitHub Trending (LLM/AI)</div>
+            <div class="badge-online">ONLINE</div>
+          </div>
+          <div class="source-item">
+            <div class="source-name">🐦 X / Twitter Radar (15+ Handles)</div>
+            <div class="badge-online">ONLINE</div>
+          </div>
+          <div class="source-item">
+            <div class="source-name">📺 YouTube Channels (6 Verified)</div>
+            <div class="badge-online">ONLINE</div>
+          </div>
+          <div class="source-item">
+            <div class="source-name">🔑 News & Search APIs (5 Live)</div>
+            <div class="badge-online">ONLINE</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COLUMN 2: API QUOTA BUDGETS -->
+      <div class="card">
+        <div class="card-header">
+          <span>⚡ Live Daily API Quotas</span>
+          <span id="quotaDate">TODAY</span>
+        </div>
+        <div class="source-list" id="quotaContainer">
+          <div class="quota-item">
+            <div class="quota-labels"><span>Tavily Search (Cap: 25/day)</span><span id="q-tavily">0 / 25</span></div>
+            <div class="quota-bar"><div class="quota-fill" id="qb-tavily" style="width: 0%;"></div></div>
+          </div>
+          <div class="quota-item">
+            <div class="quota-labels"><span>Newsdata.io (Cap: 150/day)</span><span id="q-newsdata">0 / 150</span></div>
+            <div class="quota-bar"><div class="quota-fill" id="qb-newsdata" style="width: 0%;"></div></div>
+          </div>
+          <div class="quota-item">
+            <div class="quota-labels"><span>NewsAPI.org (Cap: 80/day)</span><span id="q-newsapi">0 / 80</span></div>
+            <div class="quota-bar"><div class="quota-fill" id="qb-newsapi" style="width: 0%;"></div></div>
+          </div>
+          <div class="quota-item">
+            <div class="quota-labels"><span>SerpAPI (Cap: 6/day)</span><span id="q-serpapi">0 / 6</span></div>
+            <div class="quota-bar"><div class="quota-fill" id="qb-serpapi" style="width: 0%;"></div></div>
+          </div>
+          <div class="quota-item">
+            <div class="quota-labels"><span>FreeNewsAPI (Cap: 2500/day)</span><span id="q-freenewsapi">0 / 2500</span></div>
+            <div class="quota-bar"><div class="quota-fill" id="qb-freenewsapi" style="width: 0%;"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COLUMN 3: STUDIO CONFIGURATION -->
+      <div class="card">
+        <div class="card-header">
+          <span>⚙️ Studio Engine Config</span>
+          <span>LIVE</span>
+        </div>
+        <div class="source-list">
+          <div class="source-item">
+            <div class="source-name">🎙️ ZORO Voice Cadence</div>
+            <div style="font-family: 'JetBrains Mono'; font-weight: 700; color: var(--yellow);">Rasalgethi (Delhi)</div>
+          </div>
+          <div class="source-item">
+            <div class="source-name">📱 Instagram Styles</div>
+            <div style="font-family: 'JetBrains Mono'; font-weight: 700; color: var(--cyan);">4 Styles Loaded</div>
+          </div>
+          <div class="source-item">
+            <div class="source-name">🔒 Phone Number Scrubbing</div>
+            <div class="badge-online">100% ENFORCED</div>
+          </div>
+          <div class="source-item">
+            <div class="source-name">✈️ Telegram Delivery</div>
+            <div style="font-family: 'JetBrains Mono'; font-weight: 700; color: var(--green);">Personal DM</div>
+          </div>
+          <div class="source-item">
+            <div class="source-name">🧠 Quality Gate Model</div>
+            <div style="font-family: 'JetBrains Mono'; font-weight: 700;">Groq 120B / Gemini</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LIVE INGESTION FEED -->
+    <div class="card">
+      <div class="card-header">
+        <span>⚡ Real-Time Radar Ingestion & Quality Gate Feed</span>
+        <span id="lastUpdated">Auto-updating every 15s</span>
+      </div>
+      <div style="overflow-x: auto;">
+        <table class="feed-table">
+          <thead>
+            <tr>
+              <th>TIME (UTC)</th>
+              <th>RADAR SOURCE</th>
+              <th>TOPIC / HEADLINE</th>
+              <th>EXECUTIVE QUALITY GATE</th>
+            </tr>
+          </thead>
+          <tbody id="feedTableBody">
+            <tr>
+              <td colspan="4" style="text-align: center; color: var(--muted); padding: 24px;">Loading live radar data...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function updateDashboard() {
+      try {
+        const res = await fetch('/api/status');
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // Update Quotas
+        if (data.quotas) {
+          document.getElementById('quotaDate').innerText = data.quotas.date || 'TODAY';
+          const usage = data.quotas.usage || {};
+          const limits = { TAVILY: 25, NEWSDATA: 150, NEWSAPI: 80, SERPAPI: 6, FREENEWSAPI: 2500 };
+
+          for (const [k, limit] of Object.entries(limits)) {
+            const used = usage[k] || 0;
+            const elTxt = document.getElementById(`q-${k.toLowerCase()}`);
+            const elBar = document.getElementById(`qb-${k.toLowerCase()}`);
+            if (elTxt) elTxt.innerText = `${used} / ${limit}`;
+            if (elBar) elBar.style.width = `${Math.min(100, Math.round((used / limit) * 100))}%`;
+          }
+        }
+
+        // Update Ingestion Feed
+        if (data.recent_feed && Array.isArray(data.recent_feed)) {
+          const tbody = document.getElementById('feedTableBody');
+          if (data.recent_feed.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--muted); padding: 20px;">No items scanned yet in this cycle.</td></tr>';
+          } else {
+            tbody.innerHTML = data.recent_feed.map(item => `
+              <tr>
+                <td style="font-family: 'JetBrains Mono'; color: var(--muted);">${item.time || 'Just now'}</td>
+                <td class="feed-source">${item.source || 'Radar'}</td>
+                <td class="feed-title"><a href="${item.url || '#'}" target="_blank">${item.title}</a></td>
+                <td>
+                  <span class="${item.status === 'APPROVED' ? 'badge-approved' : 'badge-suppressed'}">
+                    ${item.status === 'APPROVED' ? '✔ APPROVED' : '✖ FILTERED'}
+                  </span>
+                  <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">${item.reason || ''}</div>
+                </td>
+              </tr>
+            `).join('');
+          }
+        }
+
+        document.getElementById('lastUpdated').innerText = `Updated at ${new Date().toLocaleTimeString()}`;
+      } catch (err) {
+        console.error("Dashboard update error:", err);
+      }
+    }
+
+    async function triggerSweep() {
+      const btn = document.querySelector('.action-btn');
+      btn.innerText = '⏳ Scanning...';
+      try {
+        await fetch('/api/trigger-radar');
+        setTimeout(updateDashboard, 2000);
+      } catch(e) {}
+      setTimeout(() => { btn.innerText = '⚡ Scan Radar Now'; }, 3000);
+    }
+
+    updateDashboard();
+    setInterval(updateDashboard, 15000);
+  </script>
+</body>
+</html>
