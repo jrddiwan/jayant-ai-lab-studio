@@ -43,11 +43,11 @@ if os.path.exists(".env"):
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 AUTHORIZED_CHAT_ID = int(os.getenv("AUTHORIZED_CHAT_ID", "7007116692"))
-HQ_CHANNEL_ID = os.getenv("HQ_CHANNEL_ID", "-1004226935646")
-ZORO_VOICE = os.getenv("ZORO_VOICE", "Puck")
+ZORO_VOICE = os.getenv("ZORO_VOICE", "Rasalgethi")
+TARGET_CHAT_ID = AUTHORIZED_CHAT_ID  # Deliver strictly to Jayant's personal DM (no duplicates, no separate channel)
 
 # ─── MULTI-KEY POOLS (TWO KEYS FOR EACH PLATFORM) ───
-GEMINI_KEYS = [k for k in [os.getenv("GEMINI_API_KEY", ""), os.getenv("GEMINI_API_KEY_2", "")] if k]
+GEMINI_KEYS = [k for k in [os.getenv("GEMINI_API_KEY_2", ""), os.getenv("GEMINI_API_KEY", "")] if k]
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 AGNES_KEYS = [k for k in [os.getenv("AGNES_API_KEY", ""), os.getenv("AGNES_API_KEY_2", "")] if k]
 HF_TOKENS = [k for k in [os.getenv("HF_TOKEN", ""), os.getenv("HF_TOKEN_2", "")] if k]
@@ -212,7 +212,7 @@ Create a viral 6-slide educational Instagram carousel:
 - Slide 3: The Secret Architecture (how it actually works under the hood)
 - Slide 4: Real-World Business Compounding Leverage / Results
 - Slide 5: The Complete Blueprint Map / System checklist
-- Slide 6: Steal This Setup & Call to Action (WhatsApp audit CTA: +91 78800 56262)
+- Slide 6: Steal This Setup & Call to Action (CTA: Save this post & tap link in bio or DM 'AUDIT' for a free 15-min consultation)
 
 Return JSON:
 {{
@@ -288,7 +288,7 @@ Return JSON:
         template_path = os.path.abspath("carousel_template.html").replace("\\", "/")
 
         with sync_playwright() as p:
-            browser = p.chromium.launch()
+            browser = p.chromium.launch(args=["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"])
             page = browser.new_page(viewport={"width": 1080, "height": 1350}, device_scale_factor=2)
             page.goto(f"file:///{template_path}")
 
@@ -418,7 +418,7 @@ Details: {topic_details}
 Write a viral studio distribution package blending the styles of:
 1. VAIBHAV SISINTY: Hard contrarian pattern-interrupt hook ("Stop doing X manually", "99% of people are doing this wrong"), punchy cadence, quantifiable time/money saved.
 2. THE AI SEARCH: Extreme visual dissection, explain the mechanics so simply that a 12-year-old school kid gets it immediately, clear real-world analogies.
-3. JAYANT: High-energy, confident South Delhi tech consultant authority, signature transformation triad (Input -> Prompt -> Output), WhatsApp audit CTA (+91 78800 56262).
+3. JAYANT: High-energy, confident South Delhi tech consultant authority, signature transformation triad (Input -> Prompt -> Output), tap link in bio / DM for free audit CTA.
 
 STRICT BANNED ROBOTIC WORDS:
 Do NOT use: "game-changer", "in today's fast-paced world", "harnessing the power", "delve into", "revolutionize", "testament", "tapestry".
@@ -440,13 +440,13 @@ Explain how this tool works using a real-world everyday analogy. Give 1 shocking
 - AI Video/Image generation prompt to copy-paste into Hugging Face, Kling, or Luma)
 
 [CTA]
-(8 seconds for Jayant's Google Vids Avatar: "That was ZORO — my AI employee. Want one working for your business? Message me on WhatsApp or tap the link in bio for a free fifteen-minute AI audit. See you tomorrow.")
+(8 seconds for Jayant's Google Vids Avatar: "That was ZORO — my AI employee. Want one working for your business? Tap the link in bio or DM 'AUDIT' for a free fifteen-minute AI audit. See you tomorrow.")
 
 [TWEET]
-(Strictly <= 260 characters total. Contrarian hook + 1 key metric + link/CTA. High engagement.)
+(Strictly <= 260 characters total. Contrarian hook + 1 key metric + link/CTA. High engagement. Never include a phone number.)
 
 [LINKEDIN]
-(Hook line -> The 'Old Way vs New Way' -> 3 bullet points of real business impact -> ELI12 takeaway -> Call to action with WhatsApp link.)
+(Hook line -> The 'Old Way vs New Way' -> 3 bullet points of real business impact -> ELI12 takeaway -> Call to action: 'Drop a comment or DM AUDIT to see how agents automate your operations.')
 
 [CAROUSEL]
 Slide 1: Bold Title Hook
@@ -454,7 +454,7 @@ Slide 2: The Big Problem (Old Way vs New Way)
 Slide 3: What This AI Does (Kid-friendly analogy)
 Slide 4: The Secret Triad (Input -> Prompt -> Output)
 Slide 5: Practical Business Use Case
-Slide 6: CTA (Save post & WhatsApp for free AI audit: +91 78800 56262)
+Slide 6: CTA (Save post & tap link in bio or DM 'AUDIT' for a free AI audit)
 
 [PROMPT_OF_THE_DAY]
 (A ready-to-copy prompt template for this tool to share in the Jayant's AI Lab WhatsApp community.)
@@ -529,40 +529,38 @@ Slide 6: CTA (Save post & WhatsApp for free AI audit: +91 78800 56262)
     hook = extract_tag("HOOK", raw_text) or "Did you see what just dropped in AI? Here's my AI employee ZORO to break it down."
     body = extract_tag("ZORO_BODY", raw_text) or f"[cheerfully] Hey everyone, ZORO here — Jayant's AI employee!\n{topic_title} is here and it changes everything for your business."
     b_roll = extract_tag("B_ROLL_LIST", raw_text) or "• [00:08 - 00:20] Screen capture of tool UI\n• [00:20 - 00:35] Side-by-side speed test"
-    cta = extract_tag("CTA", raw_text) or "That was ZORO — my AI employee. Message me on WhatsApp or check link in bio!"
-    tweet = extract_tag("TWEET", raw_text) or f"AI update: {topic_title}. Details: wa.me/917880056262"
+    cta = extract_tag("CTA", raw_text) or "That was ZORO — my AI employee. Tap the link in bio or DM 'AUDIT' for a free fifteen-minute AI audit. See you tomorrow."
+    tweet = extract_tag("TWEET", raw_text) or f"AI update: {topic_title}. Tap link in bio to deploy."
     linkedin = extract_tag("LINKEDIN", raw_text) or topic_details
     carousel = extract_tag("CAROUSEL", raw_text) or "Slide 1: Breaking AI Update\nSlide 2: Check it out!"
     prompt_magnet = extract_tag("PROMPT_OF_THE_DAY", raw_text) or "Test this tool today."
 
+    # Remove any stray phone numbers
+    for forbidden in ["+91 78800 56262", "+917880056262", "7880056262", "wa.me/917880056262"]:
+        tweet = tweet.replace(forbidden, "link in bio")
+        linkedin = linkedin.replace(forbidden, "link in bio")
+        cta = cta.replace(forbidden, "link in bio")
+
     if len(tweet) > 260:
         tweet = tweet[:257] + "..."
 
-    # 2. Synthesize ZORO voice track via Gemini 3.1 Flash TTS
-    director_prompt = f"""## "ZORO — Jayant's AI Employee" — Daily AI Briefing
-## THE SCENE: Modern AI Lab, South Delhi
-ZORO is dynamic, smiling, and speaking with crisp news-anchor clarity and infectious energy.
-### DIRECTOR'S NOTES
-Speaker: Confident, energetic young Indian male AI employee (South Delhi tech consultant).
-Style: Conversational, vocal smile, fast-paced short-form video cadence, clear Indian English accent.
-Pace: Brisk, punchy, energetic male delivery.
-Accent: Educated Indian English.
-#### TRANSCRIPT
-{body}
-"""
+    # 2. Synthesize ZORO voice track via Gemini 3.1 Flash TTS (Rasalgethi Voice)
+    tts_text = f"Hey everyone, ZORO here — Jayant's AI employee! {body.replace('[cheerfully] ', '').replace('Hey everyone, ZORO here — Jayant\'s AI employee!', '').strip()}"
     audio_data = None
     for g_key in GEMINI_KEYS:
         try:
             g_client_tts = genai.Client(api_key=g_key)
             interaction = g_client_tts.interactions.create(
                 model="gemini-3.1-flash-tts-preview",
-                input=director_prompt,
+                input=tts_text,
                 response_format={"type": "audio"},
                 generation_config={"speech_config": [{"voice": ZORO_VOICE}]}
             )
             audio_data = base64.b64decode(interaction.output_audio.data)
             if audio_data:
                 break
+        except Exception as e:
+            print(f"TTS error with key: {e}")
         except Exception as e:
             print(f"TTS error with key: {e}")
 
@@ -668,11 +666,11 @@ def check_youtube_uploads():
                             f"🎥 *AUTOMATED B-ROLL SCENE LIST & AI PROMPTS:*\n{pkg['b_roll']}\n\n"
                             f"🎧 *ZORO's audio track is attached below!*"
                         )
-                        send_tg_message(HQ_CHANNEL_ID, video_msg)
-                        send_tg_audio(HQ_CHANNEL_ID, pkg['audio_path'], caption=f"🎙️ ZORO Audio ({ZORO_VOICE} • South Delhi)")
+                        send_tg_message(TARGET_CHAT_ID, video_msg)
+                        send_tg_audio(TARGET_CHAT_ID, pkg['audio_path'], caption=f"🎙️ ZORO Audio ({ZORO_VOICE} • South Delhi)")
 
                         # Pack 2: Visual Instagram Carousel (Photos Album)
-                        send_tg_album(HQ_CHANNEL_ID, pkg['carousel_images'], caption=f"📱 *Instagram Carousel Deliverable: {title}*")
+                        send_tg_album(TARGET_CHAT_ID, pkg['carousel_images'], caption=f"📱 *Instagram Carousel Deliverable: {title}*")
 
                         # Pack 3: Social Omnichannel Pack
                         social_msg = (
@@ -682,12 +680,12 @@ def check_youtube_uploads():
                             f"💡 *PROMPT OF THE DAY MAGNET (WhatsApp Community):*\n```\n{pkg['prompt_magnet']}\n```\n\n"
                             f"💼 *HIGH-INSIGHT LINKEDIN POST:*\n{pkg['linkedin']}"
                         )
-                        send_tg_message(HQ_CHANNEL_ID, social_msg)
+                        send_tg_message(TARGET_CHAT_ID, social_msg)
 
                         # Proof visual
                         screenshot_url = capture_url_screenshot(video_url)
                         if screenshot_url:
-                            send_tg_photo(HQ_CHANNEL_ID, screenshot_url, caption=f"📸 Proof: {title}")
+                            send_tg_photo(TARGET_CHAT_ID, screenshot_url, caption=f"📸 Proof: {title}")
 
         except Exception as e:
             print(f"Error checking YouTube channel {channel_name}: {e}")
@@ -792,15 +790,16 @@ def main():
     t_tg.start()
 
     send_tg_message(
-        HQ_CHANNEL_ID,
-        "🚀 *Jayant's AI Lab HQ — Master Studio Connected 24/7!*\n\n"
-        "✨ *Autonomous Upgrades Active:*\n"
+        TARGET_CHAT_ID,
+        "🚀 *Jayant's AI Lab Master Studio Connected 24/7!*\n\n"
+        "✨ *Direct Delivery Active (Your Private DM):*\n"
         "• 🛑 Zero Past Videos: Only new videos published from this moment forward are monitored.\n"
         "• 🧠 Executive Quality Gate: Groq 120B evaluates transcripts to suppress podcast/vlog fluff.\n"
         "• ✍️ Vaibhav + The AI Search + Jayant scriptwriting fusion.\n"
         "• 📱 Instagram Carousels rendered & delivered directly as high-res PNG slide albums.\n"
-        "• 🎙️ ZORO male voice track (.wav) + Automated B-Roll cues.\n"
-        "• 🐦 Strict <= 260-char Tweet & High-Insight LinkedIn post."
+        "• 🎙️ ZORO male voice track (.wav) with Rasalgethi South Delhi cadence.\n"
+        "• 🐦 Strict <= 260-char Tweet & High-Insight LinkedIn post (no phone numbers exposed).\n"
+        "• ⚡ Send any topic or YouTube link directly in this chat to generate instant packages!"
     )
 
     # HTTP server for keep-alive on port 7860
