@@ -57,6 +57,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_BOT_TOKEN_VIDEO = os.getenv("TELEGRAM_BOT_TOKEN_VIDEO", TELEGRAM_BOT_TOKEN)
+TELEGRAM_BOT_TOKEN_CAROUSEL = os.getenv("TELEGRAM_BOT_TOKEN_CAROUSEL", TELEGRAM_BOT_TOKEN)
+TELEGRAM_BOT_TOKEN_SOCIAL = os.getenv("TELEGRAM_BOT_TOKEN_SOCIAL", TELEGRAM_BOT_TOKEN)
 AUTHORIZED_CHAT_ID = int(os.getenv("AUTHORIZED_CHAT_ID", "7007116692"))
 ZORO_VOICE = os.getenv("ZORO_VOICE", "Rasalgethi")
 TARGET_CHAT_ID = AUTHORIZED_CHAT_ID  # Deliver strictly to Jayant's personal DM
@@ -173,8 +176,13 @@ class QuotaManager:
 
 
 # ─── TELEGRAM BROADCAST HELPERS ───
-def send_tg_message(chat_id, text):
-    url = f"{TG_API_BASE}/sendMessage"
+def _get_tg_base(bot_token=None):
+    token = bot_token or TELEGRAM_BOT_TOKEN
+    return f"https://api.telegram.org/bot{token}"
+
+
+def send_tg_message(chat_id, text, bot_token=None):
+    url = f"{_get_tg_base(bot_token)}/sendMessage"
     payload = {"chat_id": chat_id, "text": text, "parse_mode": "Markdown"}
     try:
         requests.post(url, json=payload, timeout=15)
@@ -182,8 +190,8 @@ def send_tg_message(chat_id, text):
         print(f"Error sending TG message: {e}")
 
 
-def send_tg_photo(chat_id, photo_url_or_bytes, caption=""):
-    url = f"{TG_API_BASE}/sendPhoto"
+def send_tg_photo(chat_id, photo_url_or_bytes, caption="", bot_token=None):
+    url = f"{_get_tg_base(bot_token)}/sendPhoto"
     try:
         if isinstance(photo_url_or_bytes, str) and photo_url_or_bytes.startswith("http"):
             requests.post(url, json={"chat_id": chat_id, "photo": photo_url_or_bytes, "caption": caption, "parse_mode": "Markdown"}, timeout=20)
@@ -195,8 +203,8 @@ def send_tg_photo(chat_id, photo_url_or_bytes, caption=""):
         print(f"Error sending TG photo: {e}")
 
 
-def send_tg_audio(chat_id, audio_path, caption=""):
-    url = f"{TG_API_BASE}/sendAudio"
+def send_tg_audio(chat_id, audio_path, caption="", bot_token=None):
+    url = f"{_get_tg_base(bot_token)}/sendAudio"
     try:
         with open(audio_path, "rb") as f:
             files = {"audio": f}
@@ -206,9 +214,9 @@ def send_tg_audio(chat_id, audio_path, caption=""):
         print(f"Error sending TG audio: {e}")
 
 
-def send_tg_album(chat_id, images, caption=""):
+def send_tg_album(chat_id, images, caption="", bot_token=None):
     """Sends 6 carousel slides as an Instagram swipeable album (JPEG 92% compressed)."""
-    url = f"{TG_API_BASE}/sendMediaGroup"
+    url = f"{_get_tg_base(bot_token)}/sendMediaGroup"
     try:
         media = []
         files = {}
@@ -496,52 +504,74 @@ APPROVE: [Tool Name] | [One-line core reason]
     return True, title
 
 
-# ─── MASTER SCRIPTWRITING ENGINE (VAIBHAV + AI SEARCH + JAYANT FUSION) ───
+# ─── MASTER SCRIPTWRITING ENGINE (DYNAMIC TOP-CREATOR HOOKS & CTAs) ───
 def generate_full_studio_package(topic_title, topic_details, source_url="", carousel_style="auto"):
-    prompt = f"""You are the chief scriptwriter for Jayant's AI Lab.
+    # Dynamically select creator hook and CTA frameworks to guarantee viral variety across every piece of content
+    hook_frameworks = [
+        "CONTRARIAN_DISRUPTION (Alex Hormozi / Vaibhav Sisinty): Hard pattern interrupt exposing an expensive, outdated manual habit ('Stop paying $3,000/mo for manual X', '90% of developers are doing Y wrong'). Emphasize quantifiable speed/cost leverage.",
+        "SILENT_DROP_INSIDER (Rowan Cheung / Matt Wolfe): Insider discovery tone. An unhyped repository or framework update that quietly out-benchmarks massive models. High curiosity and technical elegance.",
+        "RADICAL_LEVERAGE_SPEED (Dan Koe / Justin Welsh): High-contrast transformation. What used to take an agency 4 days now completes locally in 35 seconds. Focus on sovereign output and human leverage.",
+        "EXPENSIVE_MISTAKE_ALERT (Enterprise / Growth): Warn businesses that continuing manual workflows in this area is burning payroll, then introduce the automated replacement.",
+        "REALITY_CHECK_BENCHMARK (Technical Teardown): Skip the marketing press releases. Raw, unfiltered stress test results on real-world production data.",
+        "DIRECT_WORKFLOW_CHALLENGE (Actionable Sprint): A 45-second implementation sprint proving how fast this tool can be integrated into existing daily operations."
+    ]
+    selected_hook = random.choice(hook_frameworks)
+
+    cta_frameworks = [
+        "BLUEPRINT_GIVEAWAY: Offer our lab's production prompt stack + agent workflow architecture. (Save post 🔖 and comment 'BLUEPRINT' or check link in bio).",
+        "TACTICAL_CHALLENGE: Challenge founders and builders to plug this pipeline into one bottleneck today and share their benchmark in the comments.",
+        "CONTRARIAN_DEBATE: Ask a high-signal polarizing question ('Is this true operational disruption or overhyped PR? Drop your take below — Jayant is replying').",
+        "LAB_COMMUNITY_RETENTION: Save this teardown for your next build sprint 🔖 and follow @jayantsailab for unfiltered, production-tested AI deployments.",
+        "PRIVATE_LAB_IMPLEMENTATION: If scaling a business and wanting Jayant's team to engineer this autonomous pipeline custom for your operations, tap link in bio to apply."
+    ]
+    selected_cta = random.choice(cta_frameworks)
+
+    prompt = f"""You are the chief viral scriptwriter and content director for Jayant's AI Lab (@jayantsailab).
 Topic: {topic_title}
 Details: {topic_details}
+Selected Viral Hook Framework: {selected_hook}
+Selected Call To Action Framework: {selected_cta}
 
-Write a viral studio distribution package blending the styles of:
-1. VAIBHAV SISINTY: Hard contrarian pattern-interrupt hook ("Stop doing X manually", "99% of teams do this wrong"), quantifiable time/money saved.
-2. THE AI SEARCH: Visual breakdown, explain the mechanics so simply that a 12-year-old gets it immediately, clear real-world analogies.
-3. JAYANT: High-energy South Delhi tech consultant authority, signature triad (Input -> Prompt -> Output), DM 'AUDIT' / tap link in bio CTA.
+Write an authentic, highly engaging studio distribution package blending the styles of top creators (Alex Hormozi, Rowan Cheung/The Rundown, Ruben Hassid, Dan Koe, Matt Wolfe, Justin Welsh) with Jayant's high-energy South Delhi tech authority.
 
-CRITICAL CONSTRAINTS:
-- NEVER include any phone numbers (+91 78800 56262, 7880056262, or wa.me links are STRICTLY PROHIBITED).
-- No robotic cliches ("game-changer", "delve into", "tapestry", "in today's fast-paced world").
+STRICT CONSTRAINTS & STYLE RULES:
+1. ZERO ROBOTIC CLICHES: NEVER use 'game-changer', 'delve into', 'tapestry', 'in today's fast-paced world', 'buckle up', 'revolutionize', or 'Stop scrolling!'.
+2. ZERO REPETITIVE CANNED LINES: Do NOT end the hook with the same canned line. Vary the handoff naturally (e.g. "Let's look under the hood with ZORO", "Watch what happens when you run this in production", "Here's the technical breakdown from our lab").
+3. NATURAL ZORO SCRIPT: Do NOT use '[cheerfully] Hey everyone, ZORO here — Jayant's AI employee!'. Instead, use sharp, varied conversational openers (e.g. "ZORO here from Jayant's Lab — let's skip the marketing fluff and look at the real benchmarks", "ZORO on deck. If you build AI workflows, this update solves the biggest bottleneck in production", "Alright, let's break down what just shipped").
+4. DIVERSE & CONTEXTUAL CTA: Follow the selected Call To Action framework organically. Do NOT spam 'DM AUDIT' on every single line or slide.
+5. STRICT PHONE NUMBER BAN: NEVER include any phone numbers (+91 78800 56262, 7880056262, or wa.me links are STRICTLY FORBIDDEN). Always direct to Link in Bio or DM.
+6. BRAND IDENTITY: Strictly 'Jayant's AI Lab', handle '@jayantsailab', avatar badge 'JL'.
 
 Return EXACT tags:
 
 [HOOK]
-(6-8 seconds for Google Vids Avatar. Start with a contrarian shock, end strictly with: "Here's my AI employee ZORO to break it down.")
+(5-8 seconds for Google Vids Avatar. Deliver a punchy, arresting opening using the selected hook framework. Seamlessly transition to the lab breakdown.)
 
 [ZORO_BODY]
-(35-45 seconds, ~110 words for ZORO. Start strictly with: "[cheerfully] Hey everyone, ZORO here — Jayant's AI employee!"
-Explain how this tool works with an everyday analogy. Give 1 shocking time comparison. End with a sharp punchline.)
+(35-45 seconds, ~100-120 words for ZORO, Jayant's AI employee. Start with a natural, punchy greeting. Explain how this tool or model works with an everyday analogy. Provide 1 sharp quantifiable metric or time comparison. Deliver pure tactical value with a confident punchline. No bracketed stage directions like [cheerfully].)
 
 [B_ROLL_LIST]
-(3-4 specific visual B-roll cues with timestamps [00:08 - 00:15] and AI generation prompts for Kling/HuggingFace/Luma.)
+(3-4 specific visual B-roll cues with timestamps [00:08 - 00:18] and AI video generation prompts for Kling/Luma/Runway.)
 
 [CTA]
-(8 seconds for Google Vids Avatar: "That was ZORO — my AI employee. Want one working for your business? Tap the link in bio or DM 'AUDIT' for a free fifteen-minute AI audit. See you tomorrow.")
+(6-8 seconds for Google Vids Avatar using the selected Call To Action Framework. High-value and organic.)
 
 [TWEET]
-(Strictly <= 260 characters total. Contrarian hook + 1 key metric + link/CTA. Zero phone numbers.)
+(Strictly <= 260 characters total. Contrarian hook + 1 key metric + link in bio / bookmark. Zero phone numbers.)
 
 [LINKEDIN]
-(Hook line -> Old Way vs New Way -> 3 bullet points of business impact -> ELI12 takeaway -> CTA: 'Drop a comment or DM AUDIT to see how agents automate your operations.')
+(Hook line -> The Friction / Bottleneck -> The 3-step Architecture (Input -> Workflow -> Verified Output) -> Real-world business impact with numbers -> Actionable Takeaway -> Engaging closing question / Asset giveaway CTA.)
 
 [CAROUSEL]
-Slide 1: Bold Title Hook
-Slide 2: The Bottleneck (Old Way vs New Way)
-Slide 3: What This AI Does (Simple analogy)
-Slide 4: The Secret Triad (Input -> Prompt -> Output)
-Slide 5: Practical Business Use Case
-Slide 6: CTA (Save post & tap link in bio or DM 'AUDIT' for a free AI audit)
+Slide 1: High-Impact Curiosity / Contrarian Title Hook
+Slide 2: The Bottleneck (The Old Slow Way vs The Agent Way)
+Slide 3: The Architecture (How it works under the hood - simple analogy)
+Slide 4: Step-by-Step Blueprint (Input -> Prompt / Model -> Automated Output)
+Slide 5: Quantifiable ROI (Hours saved, cost reduction, or speedup)
+Slide 6: Dynamic CTA (Aligned with the selected CTA framework, saving post & following @jayantsailab)
 
 [PROMPT_OF_THE_DAY]
-(A ready-to-copy prompt template for this tool to share in the Jayant's AI Lab WhatsApp community.)
+(A ready-to-copy, production-grade prompt template or workflow snippet for this topic to share in the Jayant's AI Lab community.)
 """
     raw_text = None
     if GROQ_API_KEY:
@@ -549,7 +579,7 @@ Slide 6: CTA (Save post & tap link in bio or DM 'AUDIT' for a free AI audit)
             g_res = requests.post(
                 "https://api.groq.com/openai/v1/chat/completions",
                 headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"},
-                json={"model": "openai/gpt-oss-120b", "messages": [{"role": "user", "content": prompt}], "temperature": 0.4},
+                json={"model": "openai/gpt-oss-120b", "messages": [{"role": "user", "content": prompt}], "temperature": 0.5},
                 timeout=25
             )
             if g_res.status_code == 200:
@@ -579,11 +609,11 @@ Slide 6: CTA (Save post & tap link in bio or DM 'AUDIT' for a free AI audit)
             return part.strip()
         return ""
 
-    hook = extract_tag("HOOK", raw_text) or "Did you see what just dropped in AI? Here's my AI employee ZORO to break it down."
-    body = extract_tag("ZORO_BODY", raw_text) or f"[cheerfully] Hey everyone, ZORO here — Jayant's AI employee!\n{topic_title} is here and it changes everything for your business."
+    hook = extract_tag("HOOK", raw_text) or f"Stop doing manual workflows. {topic_title} just changed the math on AI automation. Let's look under the hood with ZORO."
+    body = extract_tag("ZORO_BODY", raw_text) or f"ZORO here from Jayant's AI Lab. {topic_title} is live, and here is the exact benchmark you need to know."
     b_roll = extract_tag("B_ROLL_LIST", raw_text) or "• [00:08 - 00:20] Screen capture of tool UI\n• [00:20 - 00:35] Side-by-side speed test"
-    cta = extract_tag("CTA", raw_text) or "That was ZORO — my AI employee. Tap the link in bio or DM 'AUDIT' for a free fifteen-minute AI audit. See you tomorrow."
-    tweet = extract_tag("TWEET", raw_text) or f"AI update: {topic_title}. Tap link in bio to deploy."
+    cta = extract_tag("CTA", raw_text) or "Save this breakdown for your next build sprint, and follow @jayantsailab for battle-tested AI blueprints. See you in the lab."
+    tweet = extract_tag("TWEET", raw_text) or f"AI update: {topic_title}. Follow @jayantsailab for production workflows."
     linkedin = extract_tag("LINKEDIN", raw_text) or topic_details
     carousel = extract_tag("CAROUSEL", raw_text) or "Slide 1: Breaking AI Update\nSlide 2: Check it out!"
     prompt_magnet = extract_tag("PROMPT_OF_THE_DAY", raw_text) or "Test this tool today."
@@ -598,8 +628,10 @@ Slide 6: CTA (Save post & tap link in bio or DM 'AUDIT' for a free AI audit)
         tweet = tweet[:257] + "..."
 
     # Voice track synthesis via Gemini 3.1 Flash TTS (Director's Notes steering for authentic Indian English / South Delhi cadence)
-    clean_body = body.replace('[cheerfully] ', '').replace("Hey everyone, ZORO here — Jayant's AI employee!", "").strip()
-    tts_text = f"Hey everyone, ZORO here — Jayant's AI employee! {clean_body}"
+    clean_body = body.strip()
+    for bracket in ["[cheerfully]", "[excitedly]", "[energetically]", "[confidently]", "[upbeat]"]:
+        clean_body = clean_body.replace(bracket, "").strip()
+    tts_text = clean_body
 
     director_input = f"""## "Jayant AI Lab Intelligence Brief"
 
@@ -912,15 +944,15 @@ def deliver_production_package(title, details, source_url="", source_name=""):
         f"🎥 *AUTOMATED B-ROLL SCENE LIST & AI PROMPTS:*\n{pkg['b_roll']}\n\n"
         f"🎧 *ZORO's audio track is attached below!*"
     )
-    send_tg_message(TARGET_CHAT_ID, video_msg)
+    send_tg_message(TARGET_CHAT_ID, video_msg, bot_token=TELEGRAM_BOT_TOKEN_VIDEO)
     if os.path.exists(pkg['audio_path']):
-        send_tg_audio(TARGET_CHAT_ID, pkg['audio_path'], caption=f"🎙️ ZORO Audio ({ZORO_VOICE} • South Delhi Cadence)")
+        send_tg_audio(TARGET_CHAT_ID, pkg['audio_path'], caption=f"🎙️ ZORO Audio ({ZORO_VOICE} • South Delhi Cadence)", bot_token=TELEGRAM_BOT_TOKEN_VIDEO)
 
-    # 2. Instagram Carousel Album
+    # 2. Instagram Carousel Album (Delivered via Carousel Studio Bot)
     if pkg['carousel_images']:
-        send_tg_album(TARGET_CHAT_ID, pkg['carousel_images'], caption=f"📱 *Instagram Carousel ({chosen_style.upper()}): {title[:60]}*\n🌐 *Source:* {src_link}")
+        send_tg_album(TARGET_CHAT_ID, pkg['carousel_images'], caption=f"📱 *Instagram Carousel ({chosen_style.upper()}): {title[:60]}*\n🌐 *Source:* {src_link}", bot_token=TELEGRAM_BOT_TOKEN_CAROUSEL)
 
-    # 3. Omnichannel Social Pack
+    # 3. Omnichannel Social Pack (Delivered via Social & News Bot)
     social_msg = (
         f"📢 *OMNICHANNEL SOCIAL DISTRIBUTION PACK*\n"
         f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
@@ -929,7 +961,7 @@ def deliver_production_package(title, details, source_url="", source_name=""):
         f"💡 *PROMPT OF THE DAY MAGNET (WhatsApp Community):*\n```\n{pkg['prompt_magnet']}\n```\n\n"
         f"💼 *HIGH-INSIGHT LINKEDIN POST:*\n{pkg['linkedin']}"
     )
-    send_tg_message(TARGET_CHAT_ID, social_msg)
+    send_tg_message(TARGET_CHAT_ID, social_msg, bot_token=TELEGRAM_BOT_TOKEN_SOCIAL)
 
 
 def check_all_radar_sources():
@@ -1069,7 +1101,12 @@ class HealthHandler(BaseHTTPRequestHandler):
             payload = {
                 "quotas": QuotaManager._load(),
                 "recent_feed": RECENT_FEED,
-                "sources_online": True
+                "sources_online": True,
+                "bot_routing": {
+                    "video_bot": "CUSTOM DEDICATED" if os.getenv("TELEGRAM_BOT_TOKEN_VIDEO") else "ROUTED VIA MASTER BOT",
+                    "carousel_bot": "CUSTOM DEDICATED" if os.getenv("TELEGRAM_BOT_TOKEN_CAROUSEL") else "ROUTED VIA MASTER BOT",
+                    "social_bot": "CUSTOM DEDICATED" if os.getenv("TELEGRAM_BOT_TOKEN_SOCIAL") else "ROUTED VIA MASTER BOT"
+                }
             }
             self.wfile.write(json.dumps(payload).encode("utf-8"))
         elif parsed.path == "/api/trigger-radar":
