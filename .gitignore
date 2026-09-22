@@ -3,6 +3,7 @@ telegram_outputs/
 carousel_outputs/
 test_album/
 seen_topics.json
+api_quota.json
 *.wav
 *.png
 __pycache__/
