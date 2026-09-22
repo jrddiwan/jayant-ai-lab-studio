@@ -395,7 +395,30 @@ def call_llm_with_failover(prompt, system_prompt="", json_mode=False, temperatur
         except Exception as e:
             print(f"[Cascade Error]: OpenRouter Key #{idx+1}: {e}")
 
-    # Tier 2: Gemini 3.5 Flash Lite (High quota, lightning fast)
+    # Tier 2A: Gemini 3.8 Flash (State-of-the-Art Preview)
+    for idx, key in enumerate(reversed(GEMINI_KEYS)):
+        try:
+            c = genai.Client(api_key=key)
+            contents = f"{system_prompt}\n\n{prompt}".strip() if system_prompt else prompt
+            cfg = {"response_mime_type": "application/json"} if json_mode else None
+            r = c.models.generate_content(
+                model="gemini-3.8-flash",
+                contents=contents,
+                config=cfg
+            )
+            if r and r.text:
+                if json_mode:
+                    parsed = clean_json_response(r.text)
+                    if parsed is not None:
+                        print(f"[Cascade SUCCESS]: Gemini Key #{idx+1} (gemini-3.8-flash, JSON)")
+                        return parsed
+                else:
+                    print(f"[Cascade SUCCESS]: Gemini Key #{idx+1} (gemini-3.8-flash)")
+                    return r.text
+        except Exception as e:
+            print(f"[Cascade Error]: Gemini 3.8 Flash Key #{idx+1}: {e}")
+
+    # Tier 2B: Gemini 3.5 Flash Lite (High quota, lightning fast)
     for idx, key in enumerate(GEMINI_KEYS):
         try:
             c = genai.Client(api_key=key)
@@ -532,6 +555,68 @@ def ensure_zoro_intro(body_text):
     if b_lower.startswith("i am zoro") or b_lower.startswith("zoro here") or b_lower.startswith("zoro on deck") or b_lower.startswith("this is zoro"):
         return b
     return f"I am Zoro, Jayant's AI employee at the Lab. {b}"
+
+
+# ─── OFFICIAL BRAND & TOOL LOGO RESOLVER ───
+TOOL_BRAND_LOGOS = {
+    "rabbit": "https://unpkg.com/simple-icons@v11/icons/rabbit.svg",
+    "openai": "https://unpkg.com/simple-icons@v11/icons/openai.svg",
+    "chatgpt": "https://unpkg.com/simple-icons@v11/icons/openai.svg",
+    "gpt": "https://unpkg.com/simple-icons@v11/icons/openai.svg",
+    "anthropic": "https://unpkg.com/simple-icons@v11/icons/anthropic.svg",
+    "claude": "https://unpkg.com/simple-icons@v11/icons/anthropic.svg",
+    "opus": "https://unpkg.com/simple-icons@v11/icons/anthropic.svg",
+    "sonnet": "https://unpkg.com/simple-icons@v11/icons/anthropic.svg",
+    "meta": "https://unpkg.com/simple-icons@v11/icons/meta.svg",
+    "llama": "https://unpkg.com/simple-icons@v11/icons/meta.svg",
+    "google": "https://unpkg.com/simple-icons@v11/icons/google.svg",
+    "gemini": "https://unpkg.com/simple-icons@v11/icons/google.svg",
+    "deepmind": "https://unpkg.com/simple-icons@v11/icons/google.svg",
+    "huggingface": "https://unpkg.com/simple-icons@v11/icons/huggingface.svg",
+    "hugging face": "https://unpkg.com/simple-icons@v11/icons/huggingface.svg",
+    "deepseek": "https://unpkg.com/simple-icons@v11/icons/github.svg",
+    "github": "https://unpkg.com/simple-icons@v11/icons/github.svg",
+    "microsoft": "https://unpkg.com/simple-icons@v11/icons/microsoft.svg",
+    "copilot": "https://unpkg.com/simple-icons@v11/icons/microsoft.svg",
+    "mistral": "https://unpkg.com/simple-icons@v11/icons/mistral.svg",
+    "qwen": "https://unpkg.com/simple-icons@v11/icons/alibabadotcom.svg",
+    "alibaba": "https://unpkg.com/simple-icons@v11/icons/alibabadotcom.svg",
+    "groq": "https://unpkg.com/simple-icons@v11/icons/groq.svg",
+    "perplexity": "https://unpkg.com/simple-icons@v11/icons/perplexity.svg",
+    "midjourney": "https://unpkg.com/simple-icons@v11/icons/midjourney.svg",
+    "nvidia": "https://unpkg.com/simple-icons@v11/icons/nvidia.svg",
+    "apple": "https://unpkg.com/simple-icons@v11/icons/apple.svg",
+    "youtube": "https://unpkg.com/simple-icons@v11/icons/youtube.svg"
+}
+
+def get_tool_brand_logo(topic_text):
+    """Detects if any major AI company/model is mentioned and downloads its official SVG/PNG logo."""
+    if not topic_text:
+        return ""
+    text_lower = topic_text.lower()
+    matched_slug = None
+    for brand, url in TOOL_BRAND_LOGOS.items():
+        if re.search(r'\b' + re.escape(brand) + r'\b', text_lower):
+            matched_slug = (brand, url)
+            break
+            
+    if not matched_slug:
+        return ""
+        
+    brand_name, logo_url = matched_slug
+    local_logo_path = os.path.abspath(os.path.join(CAROUSEL_DIR, f"logo_{brand_name}.svg"))
+    if not os.path.exists(local_logo_path):
+        try:
+            r = requests.get(logo_url, headers=COMMON_HEADERS, timeout=8)
+            if r.status_code == 200 and r.content:
+                with open(local_logo_path, "wb") as f:
+                    f.write(r.content)
+                print(f"[TOOL LOGO]: Successfully fetched official brand logo for {brand_name}")
+        except Exception as e:
+            print(f"[TOOL LOGO ERROR]: Failed fetching logo for {brand_name}: {e}")
+            return ""
+            
+    return local_logo_path.replace("\\", "/") if os.path.exists(local_logo_path) else ""
 
 
 # ─── 5-STYLE INSTAGRAM CAROUSEL RENDERER (FLAGSHIP EDITORIAL 7-SLIDE ENGINE) ───
@@ -783,6 +868,29 @@ Return JSON:
     category = carousel_json.get("categoryTag", "AI BREAKTHROUGH")
     ts = int(time.time())
 
+    # ─── DYNAMIC TOPIC-SPECIFIC VISUAL & LOGO SYNTHESIS ───
+    hero_img_path = ""
+    tool_logo_path = get_tool_brand_logo(topic_title)
+
+    # Generate fresh 3D clay illustration for this specific topic using Agnes AI or Hugging Face FLUX.1
+    clean_topic = topic_title.split(" - ")[0].split(". ")[0].strip()
+    clay_prompt = f"Cute 3D clay character operator for {clean_topic[:50]}, stylized warm lighting, white background, octane 3D render, 8k"
+    dyn_img_file = os.path.abspath(os.path.join(CAROUSEL_DIR, f"clay_{ts}.png"))
+
+    if generate_agnes_image(clay_prompt, dyn_img_file):
+        hero_img_path = dyn_img_file.replace("\\", "/")
+        print(f"[CAROUSEL VISUAL]: Generated fresh 3D clay artwork via Agnes AI: {hero_img_path}")
+    else:
+        raw_flux = generate_flux_image(clay_prompt)
+        if raw_flux:
+            try:
+                with open(dyn_img_file, "wb") as f:
+                    f.write(raw_flux)
+                hero_img_path = dyn_img_file.replace("\\", "/")
+                print(f"[CAROUSEL VISUAL]: Generated fresh 3D clay artwork via Hugging Face FLUX: {hero_img_path}")
+            except Exception as e:
+                print(f"[FLUX Save Error]: {e}")
+
     # For cyberpunk style, generate Agnes AI backgrounds
     bg1, bg2 = "", ""
     if chosen_style == "cyber":
@@ -810,6 +918,10 @@ Return JSON:
                     s["totalSlides"] = len(slides)
                     if "categoryTag" not in s or not s["categoryTag"]:
                         s["categoryTag"] = category
+                    if hero_img_path:
+                        s["heroImage"] = f"file:///{hero_img_path}"
+                    if tool_logo_path:
+                        s["toolLogo"] = f"file:///{tool_logo_path}"
                     page.evaluate("(data) => setSlide(data)", s)
                 else:
                     bg_to_use = (bg1 if idx <= 3 else bg2) if chosen_style == "cyber" else ""

@@ -902,10 +902,10 @@
               </div>
             </div>
 
-            <!-- Hero Agent Preview Card with Voxel Chief Wizard -->
+            <!-- Hero Agent Preview Card with Dynamic 3D Art / Official Logo -->
             <div style="background: #FFFFFF; border: 1.5px solid var(--card-border); border-radius: 20px; padding: 18px 24px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 14px rgba(0,0,0,0.02); margin-bottom: 14px;">
               <div style="display: flex; align-items: center; gap: 18px;">
-                <img src="${CHARS.org_chief}" style="width: 110px; height: 85px; object-fit: cover; border-radius: 12px; border: 1.5px solid var(--card-border); background: #F4EFE6;" alt="Chief Agent">
+                <img src="${data.heroImage || data.toolLogo || CHARS.org_chief}" style="width: 110px; height: 85px; object-fit: contain; border-radius: 12px; border: 1.5px solid var(--card-border); background: #F4EFE6; padding: 4px;" alt="Hero Preview">
                 <div>
                   <div style="font-size: 13px; font-weight: 800; font-family: 'JetBrains Mono'; color: var(--orange);">👑 CHIEF CLAUDE CODE ORCHESTRATOR</div>
                   <div style="font-size: 22px; font-weight: 900; color: #111111; margin: 3px 0;">11 Autonomous Skills Active</div>
@@ -1047,7 +1047,7 @@
             ${specs.map((s, idx) => `
               <div class="specialist-card">
                 <div class="spec-img-wrap">
-                  <img src="${specImgs[idx]}" alt="${s.title}">
+                  <img src="${(s.image || (data.specialistImages && data.specialistImages[idx]) || (idx === 0 && (data.toolLogo || data.heroImage) ? (data.toolLogo || data.heroImage) : specImgs[idx]))}" alt="${s.title}">
                 </div>
                 <div class="spec-body">
                   <div class="spec-title">${s.title}</div>
