@@ -1,6 +1,6 @@
 # JAYANT'S AI LAB — MASTER PRODUCTION SPECIFICATION & CODING AGENT RULEBOOK
 
-> **Document Version**: 2.5 (Production Master - ELI12 & Voice Locked)  
+> **Document Version**: 3.0 (Production Master - Audio Synchronized, Zero Bio, No Prompt Magnet)  
 > **Brand**: Jayant's AI Lab (`@jayantsailab`)  
 > **Location**: South Delhi, India  
 > **Founder Identity**: Jayant — Independent AI engineer, agency founder, and operator. Speaks with contrarian conviction, energetic creator clarity, and zero corporate PR fluff.  
@@ -55,14 +55,18 @@
 ### C. The Avatar Call to Action (CTA)
 * **Target Speaker**: Jayant (Founder Avatar)
 * **Length**: Exactly 1 punchy sentence.
-* **Rule**: Offer our lab's free beginner workflow or step-by-step blueprint. Direct exclusively to Link in Bio or DM (strictly 0 phone numbers).
-  - *Example*: `"Save this breakdown for your team, and check the link in bio for the complete free workflow blueprint."`
+* **Rule**: Direct to comments or DM. **ABSOLUTE BAN ON "IN BIO"** (there is nothing in the bio).
+  - *Example*: `"Save this breakdown for your team, and drop a comment below with your questions."`
 
 ---
 
 ### D. Zoro Voice Track & Audio Synthesis Specification
 * **Target Speaker**: Zoro (Jayant's AI employee)
 * **Accent & Cadence**: Urban Indian English (South Delhi tech founder cadence).
+
+#### 100% SCRIPT-AUDIO SYNCHRONIZATION GUARANTEE:
+* **Audio Synthesis Timing**: Audio synthesis is executed **ONLY AFTER** the Chief Quality Monitor has audited, elevated, and approved the final script.
+* **Zero Discrepancy**: The `.wav` audio track generated and attached on Telegram matches the exact text of `pkg["body"]` written in the Telegram message word-for-word.
 
 #### Tier 1: Google Gemini Flash TTS (Primary)
 * **Model**: `gemini-2.5-flash-preview-tts` (or `gemini-3.1-flash-tts-preview`)
@@ -109,7 +113,7 @@ Modeled after top tech creator aesthetics (`@theautomationguy.ai`, Rowan Cheung,
    - Connecting flowchart branches to 4 functional departments.
 3. **Slide 3: Specialist Fleet (The First Six Hires)**
    - 6 structured cards with titles, tags, and 1-sentence actionable descriptions.
-   - **ZERO CARTOON REPETITION RULE**: The template must NEVER reuse the same 5 clay heads across every carousel. Uses sleek architectural module badges (`01` through `06` tech emblems) or dynamically generated story-specific assets.
+   - **ZERO CARTOON REPETITION RULE**: The template must NEVER reuse the same 5 clay heads across every carousel. Uses sleek architectural vector badge modules (`01` through `06` tech emblems) or dynamically generated story-specific assets.
 4. **Slide 4: Practical Execution Prompts**
    - 4 real-world execution prompts with bulleted task checklists.
 5. **Slide 5: The Cold Numbers (ROI Benchmark)**
@@ -119,10 +123,6 @@ Modeled after top tech creator aesthetics (`@theautomationguy.ai`, Rowan Cheung,
    - 4 real day-to-day enterprise/builder deployment workflows.
 7. **Slide 7: The Transformation & CTA**
    - Bold headline (`Same Team. A More Capable You.`), big save button (`Save This Carousel & Follow @jayantsailab 🔖`), and 3 credibility pills.
-
-### Brand Logo Resolver:
-* Automatically queries official SVG/PNG logos for:
-  `OpenAI`, `ChatGPT`, `Anthropic`, `Claude`, `Meta`, `Llama`, `Google`, `Gemini`, `DeepMind`, `Hugging Face`, `DeepSeek`, `GitHub`, `Microsoft`, `Copilot`, `Mistral`, `Qwen`, `Groq`, `Perplexity`, `Midjourney`.
 
 ---
 
@@ -140,24 +140,26 @@ Powered by Serge Bulaev's **12 Claude Code & Codex LinkedIn Skills**:
     2. *Automate Daily Tasks*: Draft emails and routine summaries in 15 seconds.
     3. *Eliminate Busywork*: Free up 10+ hours every week to focus on growing the business.
   - **The WhatsApp Benchmark**: If you can use WhatsApp, you have the skills to run this today.
-  - **Closing CTA**: Save this post 🔖 and check link in bio for the free beginner guide.
-* **CRITICAL RULE**: **ZERO raw URLs in the post body**. Links kill algorithmic reach; all links are routed to Link in Bio or comments.
+  - **Closing CTA**: Save this post 🔖 and drop a comment below with your thoughts.
+* **CRITICAL RULES**:
+  - **ZERO raw URLs in post body**.
+  - **ZERO 'in bio' references**.
 
 ---
 
-## 4. OMNICHANNEL SOCIAL PACK (TWITTER/X & COMMUNITY)
+## 4. OMNICHANNEL SOCIAL PACK (TWITTER/X)
 
 ### A. Strict $\le$250 Character Tweet
 * **Length**: Max 250 characters (fits comfortably in Twitter/X free limit).
 * **Tone**: Jayant's personal builder perspective. **NEVER SOUND LIKE CORPORATE PR** (*"We are thrilled to announce..."* is strictly banned).
+* **ABSOLUTE BAN ON 'IN BIO'**: Never write "in bio", "link in bio", or "check bio" (there is nothing in the bio).
 * **Structure**:
   - Line 1: Pain point / time sink callout.
   - Line 2: The 20-second automated solution.
-  - Line 3: Zero coding required.
-  - Line 4: Full breakdown in bio.
+  - Line 3: Zero coding required. Work smarter, not harder.
 
 ### B. Prompt of the Day Magnet
-* Ready-to-copy, production-grade prompt template or workflow snippet for the Jayant's AI Lab WhatsApp/Telegram community.
+* **PERMANENTLY REMOVED**: No prompt of the day is generated or dispatched to Telegram.
 
 ---
 
@@ -167,31 +169,22 @@ Every piece of content must pass the autonomous **Quality Gate** before reaching
 1. **Avatar Hook Handover Check**: Must verify handover to Zoro. Auto-appends if missing.
 2. **Zoro Intro Check**: Must verify `"I am Zoro, Jayant's AI employee at the Lab"`. Auto-prepends if missing.
 3. **Zoro Script ELI12 Check**: Must verify word count $\ge 115$ words and ZERO forbidden techno-jargon terms. Auto-elevates to 9.9/10 ELI12 creator style if non-compliant.
-4. **Tweet Compliance Check**: $\le 250$ characters, builder perspective, zero PR fluff.
-5. **LinkedIn Post Check**: 900-1300 chars, 3-step actionable breakdown, zero raw links.
+4. **Tweet Compliance Check**: $\le 250$ characters, builder perspective, zero PR fluff, ZERO 'in bio'.
+5. **LinkedIn Post Check**: 900-1300 chars, 3-step actionable breakdown, zero raw links, ZERO 'in bio'.
 6. **Humanizer & Safety Check**:
    - Strictly 0 em dashes (`—` / `--`).
    - Strictly 0 AI buzzwords (*delve, testament, beacon, tapestry, landscape, revolutionize, game-changer, unlock, navigate, elevate, harness, moreover, furthermore*).
-   - Strictly 0 phone numbers (+91 78800 56262 replaced with `"link in bio"`).
+   - Strictly 0 phone numbers.
+   - Strictly 0 'in bio' / 'link in bio' references.
+7. **Final Audio Generation & Verification**:
+   - Zoro audio is synthesized ONCE on the final approved text.
+   - Guarantees 100% word-for-word parity between Telegram script text and audio track.
 * **Quality Gate Header**: `🛡️ QUALITY AUDIT: 9.9/10 [CHIEF QUALITY GATE PASSED]`.
 
 ---
 
-## 6. MULTI-KEY & MULTI-MODEL CASCADE ARCHITECTURE
-
-Engine automatically fails over across all keys and models:
-1. **Tier 1**: OpenRouter (`deepseek/deepseek-chat`) across `OPENROUTER_API_KEY` $\rightarrow$ `OPENROUTER_API_KEY_2`.
-2. **Tier 2A**: Gemini 3.8 Flash (`gemini-3.8-flash`) across `GEMINI_API_KEY_2` $\rightarrow$ `GEMINI_API_KEY`.
-3. **Tier 2B**: Gemini 3.5 Flash Lite (`gemini-3.5-flash-lite`) across `GEMINI_API_KEY` $\rightarrow$ `GEMINI_API_KEY_2`.
-4. **Tier 2C**: Gemini 3.6 Flash (`gemini-3.6-flash`) across `GEMINI_API_KEY` $\rightarrow$ `GEMINI_API_KEY_2`.
-5. **Tier 3**: Groq (`openai/gpt-oss-120b`) via `GROQ_API_KEY`.
-6. **Tier 4 (Visuals)**: Agnes AI (`agnes-image-2.0-flash`) & Hugging Face FLUX.1 (`FLUX.1-schnell`).
-7. **Tier 5 (Voice)**: Gemini Flash TTS (`voice_name="Rasalgethi"`) $\rightarrow$ Fish Audio (`s2.1-pro-free`).
-
----
-
-## 7. TELEGRAM BOT ROUTING
+## 6. TELEGRAM BOT ROUTING
 Deliver strictly to Jayant's personal chat ID (`7007116692`):
 - **Bot 1: Video Studio Bot** (`TELEGRAM_BOT_TOKEN_VIDEO`) $\rightarrow$ Video Script + Kling/Luma B-Roll Prompts + Zoro Audio Track.
 - **Bot 2: Carousel Studio Bot** (`TELEGRAM_BOT_TOKEN_CAROUSEL`) $\rightarrow$ 7-Slide Editorial Instagram Album (with dynamic 3D clay characters & tool logos).
-- **Bot 3: Social & News Bot** (`TELEGRAM_BOT_TOKEN_SOCIAL`) $\rightarrow$ Strict $\le 250$ Char Tweet + Prompt of the Day + High-Insight LinkedIn Founder Post.
+- **Bot 3: Social & News Bot** (`TELEGRAM_BOT_TOKEN_SOCIAL`) $\rightarrow$ Strict $\le 250$ Char Tweet (No Bio) + High-Insight LinkedIn Founder Post.

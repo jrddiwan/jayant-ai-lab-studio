@@ -549,10 +549,13 @@ def humanize_text(t):
     t = re.sub(r'\s+', ' ', t)
     # 4. Strict scrub of any phone numbers
     for forbidden in ["+91 78800 56262", "+917880056262", "7880056262", "wa.me/917880056262", "wa.me/7880056262"]:
-        t = t.replace(forbidden, "link in bio")
+        t = t.replace(forbidden, "")
     # 5. Clean trailing quotes, hashes, dashes, and markdown artifacts
     t = re.sub(r'[\s,"\'\-#]+$', '', t)
     t = re.sub(r'^[\s,"\'\-#]+', '', t)
+    # 6. Absolute scrub of 'in bio' references (there is nothing in bio)
+    t = re.sub(r'(?i)\s*(?:full\s+)?(?:breakdown|tutorial|blueprint|guide|link)?\s*(?:in|check)\s+(?:the\s+)?bio\.?', '', t)
+    t = re.sub(r'(?i)\s*link\s+in\s+bio\.?', '', t)
     return t.strip()
 
 
@@ -1128,11 +1131,11 @@ def generate_full_studio_package(topic_title, topic_details, source_url="", caro
     selected_story_structure = random.choice(storytelling_structures)
 
     cta_frameworks = [
-        "BLUEPRINT_GIVEAWAY: Offer our lab's production prompt stack + agent workflow architecture. (Save post 🔖 and comment 'BLUEPRINT' or check link in bio).",
+        "BLUEPRINT_GIVEAWAY: Offer our lab's production prompt stack + agent workflow architecture. (Save post 🔖 and drop a comment below).",
         "TACTICAL_CHALLENGE: Challenge founders and builders to plug this pipeline into one bottleneck today and share their benchmark in the comments.",
         "CONTRARIAN_DEBATE: Ask a high-signal polarizing question ('Is this true operational disruption or overhyped PR? Drop your take below, Jayant is replying').",
         "LAB_COMMUNITY_RETENTION: Save this teardown for your next build sprint 🔖 and follow @jayantsailab for unfiltered, production-tested AI deployments.",
-        "PRIVATE_LAB_IMPLEMENTATION: If scaling a business and wanting Jayant's team to engineer this autonomous pipeline custom for your operations, tap link in bio to apply."
+        "PRIVATE_LAB_IMPLEMENTATION: If scaling a business and wanting Jayant's team to engineer this autonomous pipeline custom for your operations, DM Jayant directly."
     ]
     selected_cta = random.choice(cta_frameworks)
 
@@ -1177,15 +1180,16 @@ CRITICAL FORMATTING & SCRIPT SPECIFICATIONS:
 * 3 to 4 specific visual cues with timestamps [00:08 - 00:20] and AI video generation prompts for Kling/Luma/Runway.
 
 [CTA]
-* Exactly 1 punchy sentence for Google Vids Avatar (e.g., "Save this video so you don't lose it, tap the link in bio for the free blueprint, and follow @jayantsailab.")
+* Exactly 1 punchy sentence for Google Vids Avatar (e.g., "Save this video for your next build sprint, drop a comment with your questions, and follow @jayantsailab.")
 
 [TWEET]
-* STRICT LENGTH: Exactly 180 to 250 characters (MUST FIT in a 280-char tweet).
-* VOICE: Simple, high-conviction advice for everyday builders. Zero company PR.
+* STRICT LENGTH: Exactly 140 to 240 characters (MUST FIT in a standard tweet).
+* VOICE: Simple, high-conviction builder perspective. Zero company PR.
+* ABSOLUTE BAN ON 'BIO': NEVER mention 'in bio', 'link in bio', or 'check bio'. There is nothing in the bio.
 * Example:
-  "Stop wasting 3 hours every day on repetitive tasks.
-  The new setup for this tool runs automatically in 20 seconds.
-  Zero coding needed. Full beginner blueprint in bio."
+  "Stop paying people to manually copy-paste data.
+  This new setup automates the entire chore in under 20 seconds.
+  Zero coding needed. Work smarter, not harder."
 
 [LINKEDIN]
 * STRICT LENGTH: Complete 160 to 240 word high-insight founder breakdown in simple English. NEVER OUTPUT JUST A LINK.
@@ -1197,7 +1201,7 @@ CRITICAL FORMATTING & SCRIPT SPECIFICATIONS:
       2. Automated Processing (AI generates the draft in 15 seconds)
       3. Quality Review (Spot-check and approve)
   - The Cold Numbers: Hours saved per week (e.g. 10+ hours saved).
-  - Closing CTA: "Save this post for your team, and check the link in bio for the complete free workflow blueprint."
+  - Closing CTA: "Save this post for your team, and drop a comment below with your thoughts." (NEVER mention 'in bio')
 
 [CAROUSEL]
 Slide 1: High-Impact Curiosity / Contrarian Title Hook
@@ -1207,14 +1211,12 @@ Slide 4: Step-by-Step Blueprint (Input -> Prompt / Model -> Automated Output)
 Slide 5: Quantifiable ROI (Hours saved, cost reduction, or speedup)
 Slide 6: Dynamic CTA (Aligned with the selected CTA framework, saving post & following @jayantsailab)
 
-[PROMPT_OF_THE_DAY]
-(A ready-to-copy, production-grade prompt template or workflow snippet for this topic to share in the Jayant's AI Lab community.)
-
 STRICT WRITING RULES:
 1. ABSOLUTE BAN ON EM DASHES: NEVER use em dashes ('—' or '--'). Use standard commas, periods, or clean line breaks.
 2. ABSOLUTE BAN ON AI BUZZWORDS: NEVER use 'delve', 'testament', 'beacon', 'tapestry', 'landscape', 'revolutionize', 'game-changer', 'unlock', 'navigate', 'elevate', 'harness', 'moreover', 'furthermore', 'in today\\'s fast-paced world', 'buckle up', 'stop scrolling', 'without further ado'.
-3. NO PHONE NUMBERS: Strictly forbidden (+91 78800 56262, 7880056262, wa.me). Direct to Link in Bio or DM.
+3. NO PHONE NUMBERS: Strictly forbidden (+91 78800 56262, 7880056262, wa.me). Direct to comments or DM.
 4. BRAND IDENTITY: Strictly 'Jayant\\'s AI Lab', handle '@jayantsailab', avatar badge 'JL'.
+5. ABSOLUTE BAN ON 'BIO': NEVER mention 'in bio', 'link in bio', 'check bio', or 'bio' anywhere in the output. There is nothing in the bio.
 """
     # Generate via Chief Scriptwriter Engine using resilient multi-tier cascade
     raw_text = call_llm_with_failover(prompt, temperature=0.6, timeout=35)
@@ -1233,7 +1235,7 @@ STRICT WRITING RULES:
             start = m.end()
 
         rest = text[start:]
-        all_tags = ["HOOK", "ZORO_BODY", "B_ROLL_LIST", "CTA", "TWEET", "LINKEDIN", "CAROUSEL", "PROMPT_OF_THE_DAY"]
+        all_tags = ["HOOK", "ZORO_BODY", "B_ROLL_LIST", "CTA", "TWEET", "LINKEDIN", "CAROUSEL"]
         next_pos = len(rest)
         for other in all_tags:
             if other.lower() == tag.lower():
@@ -1247,7 +1249,7 @@ STRICT WRITING RULES:
         extracted = re.sub(r'^[\s,"\'\-#]+', '', extracted)
         return extracted.strip('*"` \t\r\n')
 
-    # Rich, high-conviction fallbacks in simple ELI12 creator style
+    # Rich, high-conviction fallbacks in simple ELI12 creator style (ZERO mentions of bio)
     clean_topic = topic_title.split(" - ")[0].split(". ")[0].strip()
     fallback_hook = f"If you are still spending hours on manual busywork, stop. This new AI breakthrough does it in 15 seconds. Now my AI employee Zoro will show you how."
     fallback_body = (
@@ -1259,9 +1261,9 @@ STRICT WRITING RULES:
         f"The bottom line is simple: if you can send a message on WhatsApp, you already have the skills to put this AI to work today."
     )
     fallback_tweet = (
-        f"Stop wasting 3 hours every day on repetitive tasks.\n"
-        f"The new setup for {clean_topic[:45]} runs automatically in 20 seconds.\n"
-        f"Zero coding needed. Full blueprint in bio."
+        f"Stop wasting 3 hours every day on repetitive tasks.\n\n"
+        f"The new setup for {clean_topic[:45]} does the heavy lifting in 20 seconds.\n\n"
+        f"Zero coding needed. Work smarter, not harder."
     )
     fallback_linkedin = (
         f"Most business owners know they should use AI, but get overwhelmed by technical jargon.\n\n"
@@ -1269,10 +1271,10 @@ STRICT WRITING RULES:
         f"{clean_topic} is a perfect example.\n\n"
         f"Here is how normal teams are using this right now:\n"
         f"1. Cut Research Time: Summarize hours of reading into 3 clear bullet points.\n"
-        f"2. Automate Daily Tasks: Draft emails and customer responses in 15 seconds.\n"
+        f"2. Automate Daily Tasks: Draft emails and routine customer responses in 15 seconds.\n"
         f"3. Verify Results: Make sure every answer is accurate before hitting send.\n\n"
         f"The payoff? Saving 10+ hours every single week without hiring extra staff.\n\n"
-        f"Save this post to test this workflow, and check the link in bio for the complete free beginner guide."
+        f"Save this post to test this workflow with your team, and drop a comment below with your thoughts."
     )
 
     hook = extract_tag("HOOK", raw_text) or fallback_hook
@@ -1282,7 +1284,6 @@ STRICT WRITING RULES:
     tweet = extract_tag("TWEET", raw_text) or fallback_tweet
     linkedin = extract_tag("LINKEDIN", raw_text) or fallback_linkedin
     carousel = extract_tag("CAROUSEL", raw_text) or "Slide 1: Breaking AI Update\nSlide 2: Check it out!"
-    prompt_magnet = extract_tag("PROMPT_OF_THE_DAY", raw_text) or "Test this tool today in your workflow."
 
     # Signature format guarantees
     hook = ensure_hook_handover(humanize_text(hook))
@@ -1293,10 +1294,6 @@ STRICT WRITING RULES:
 
     if len(tweet) > 250:
         tweet = tweet[:247] + "..."
-
-
-    # Voice track synthesis via Gemini 2.5 Flash TTS (Rasalgethi + Indian Directors Notes) + Fish Audio s2.1-pro-free fallback
-    audio_path = synthesize_zoro_voice(body)
 
     # Render 6-slide carousel using the chosen style
     carousel_images = render_instagram_carousel(topic_title, carousel, style=carousel_style)
@@ -1309,9 +1306,7 @@ STRICT WRITING RULES:
         "tweet": tweet,
         "linkedin": linkedin,
         "carousel": carousel,
-        "carousel_images": carousel_images,
-        "prompt_magnet": prompt_magnet,
-        "audio_path": audio_path
+        "carousel_images": carousel_images
     }
 
 
@@ -1380,25 +1375,32 @@ Return ONLY the final monologue text without quotes.
             body = humanize_text(elevated_body)
             body = ensure_zoro_intro(body)
 
-    # 4. Tweet Check (<= 250 chars, Jayant's founder voice, ELI12 creator style)
+    # 4. Tweet Check (<= 250 chars, Jayant's founder voice, ELI12 creator style, ZERO BIO)
     clean_topic = topic_title.split(" - ")[0].split(". ")[0].strip()
+    tweet = re.sub(r'(?i)\s*(?:full\s+)?(?:breakdown|tutorial|blueprint|guide|link)?\s*(?:in|check)\s+(?:the\s+)?bio\.?', '', tweet).strip()
+    tweet = re.sub(r'(?i)\s*link\s+in\s+bio\.?', '', tweet).strip()
     tweet_has_jargon = any(j in tweet.lower() for j in ["deterministic", "api moats", "sub-agent", "token velocity", "vram"])
     tweet_has_pr = any(pr in tweet.lower() for pr in ["thrilled to announce", "we are pleased", "proud to introduce", "please welcome"])
-    if len(tweet) > 250 or tweet_has_jargon or tweet_has_pr:
-        issues.append(f"Tweet non-compliant (length: {len(tweet)}, jargon: {tweet_has_jargon}, pr: {tweet_has_pr})")
+    tweet_has_bio = any(b in tweet.lower() for b in ["in bio", "link in bio", "check bio", "in the bio"])
+
+    if len(tweet) > 250 or tweet_has_jargon or tweet_has_pr or tweet_has_bio:
+        issues.append(f"Tweet non-compliant (length: {len(tweet)}, jargon: {tweet_has_jargon}, pr: {tweet_has_pr}, bio: {tweet_has_bio})")
         tweet = (
             f"Stop wasting 3 hours every day on repetitive tasks.\n\n"
             f"The new setup for {clean_topic[:42]} does the heavy lifting in 20 seconds.\n\n"
-            f"Zero coding needed. If you can use WhatsApp, you can use this.\n\n"
-            f"Full breakdown in bio."
+            f"Zero coding needed. Work smarter, not harder."
         )
         if len(tweet) > 250:
             tweet = tweet[:247] + "..."
 
-    # 5. LinkedIn Check (Complete founder post, 3-step actionable system, 0 raw links, ELI12 creator style)
+    # 5. LinkedIn Check (Complete founder post, 3-step actionable system, 0 raw links, 0 bio, ELI12 creator style)
+    linkedin = re.sub(r'(?i)\s*(?:check\s+)?(?:the\s+)?link\s+in\s+bio(?:\s+for\s+[^\.\n]+)?\.?', 'Drop a comment below with your thoughts.', linkedin).strip()
+    linkedin = re.sub(r'(?i)\s*(?:in|check)\s+(?:the\s+)?bio\.?', '', linkedin).strip()
     linkedin_has_jargon = any(j in linkedin.lower() for j in ["deterministic routing", "api moats", "token velocity", "execution latency"])
-    if len(linkedin.split()) < 90 or "http" in linkedin[:40] or "1." not in linkedin or linkedin_has_jargon:
-        issues.append("LinkedIn post too short, has jargon, or missing 3-step breakdown")
+    linkedin_has_bio = any(b in linkedin.lower() for b in ["in bio", "link in bio"])
+
+    if len(linkedin.split()) < 90 or "http" in linkedin[:40] or "1." not in linkedin or linkedin_has_jargon or linkedin_has_bio:
+        issues.append("LinkedIn post non-compliant (length/jargon/bio)")
         linkedin = (
             f"Most business owners know they should use AI, but get overwhelmed by technical jargon.\n\n"
             f"The truth? You don't need complex code. You just need simple systems that eliminate boring busywork.\n\n"
@@ -1408,21 +1410,27 @@ Return ONLY the final monologue text without quotes.
             f"2. Automate Daily Tasks: Draft emails and routine summaries in 15 seconds.\n"
             f"3. Eliminate Busywork: Free up 10+ hours every week to focus on growing the business.\n\n"
             f"If you can send a message on WhatsApp, you already have the skills to run this.\n\n"
-            f"Save this post for your team, and check the link in bio for the complete beginner guide."
+            f"Save this post to test this workflow with your team, and drop a comment below with your thoughts."
         )
 
     # 6. Safety & Humanizer Double Pass
     hook = humanize_text(hook)
     body = humanize_text(body)
+    body = ensure_zoro_intro(body)
     tweet = humanize_text(tweet)
     linkedin = humanize_text(linkedin)
     cta = humanize_text(cta)
+
+    # 7. Synthesize Zoro Voice Track strictly for the FINAL APPROVED script
+    print(f"[QUALITY MONITOR AGENT]: Synthesizing Zoro audio for final approved script ({len(body.split())} words)...")
+    audio_path = synthesize_zoro_voice(body)
 
     pkg["hook"] = hook
     pkg["body"] = body
     pkg["tweet"] = tweet
     pkg["linkedin"] = linkedin
     pkg["cta"] = cta
+    pkg["audio_path"] = audio_path
     pkg["quality_score"] = "9.9/10"
     pkg["quality_status"] = "CHIEF QUALITY GATE PASSED"
     pkg["quality_audited_issues"] = issues
@@ -1430,7 +1438,7 @@ Return ONLY the final monologue text without quotes.
     if issues:
         print(f"[QUALITY MONITOR AGENT]: Upgraded draft ({issues}) -> 9.9/10 PASSED")
     else:
-        print("[QUALITY MONITOR AGENT]: Draft passed all 6 quality dimensions -> 9.9/10 PASSED")
+        print("[QUALITY MONITOR AGENT]: Draft passed all quality dimensions -> 9.9/10 PASSED")
 
     return pkg
 
@@ -1770,7 +1778,6 @@ def deliver_production_package(title, details, source_url="", source_name=""):
             f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
             f"🌐 *ORIGINAL INTEL SOURCE:* {src_link}\n\n"
             f"🐦 *STRICT <= 250 CHAR TWEET:*\n`{pkg.get('tweet', '')}`\n\n"
-            f"💡 *PROMPT OF THE DAY MAGNET (WhatsApp Community):*\n```\n{pkg.get('prompt_magnet', '')}\n```\n\n"
             f"💼 *HIGH-INSIGHT LINKEDIN POST:*\n{pkg.get('linkedin', '')}"
         )
         send_tg_message(TARGET_CHAT_ID, social_msg, bot_token=TELEGRAM_BOT_TOKEN_SOCIAL)
@@ -1914,7 +1921,6 @@ def telegram_listener():
                         f"🛡️ *QUALITY AUDIT:* `9.9/10 [CHIEF QUALITY GATE PASSED]`\n"
                         f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
                         f"🐦 *STRICT <= 250 CHAR TWEET:*\n`{pkg['tweet']}`\n\n"
-                        f"💡 *PROMPT OF THE DAY MAGNET (WhatsApp Community):*\n```\n{pkg['prompt_magnet']}\n```\n\n"
                         f"💼 *HIGH-INSIGHT LINKEDIN POST:*\n{pkg['linkedin']}"
                     )
                     send_tg_message(chat_id, social_msg, bot_token=TELEGRAM_BOT_TOKEN_SOCIAL)
