@@ -550,6 +550,9 @@ def humanize_text(t):
     # 4. Strict scrub of any phone numbers
     for forbidden in ["+91 78800 56262", "+917880056262", "7880056262", "wa.me/917880056262", "wa.me/7880056262"]:
         t = t.replace(forbidden, "link in bio")
+    # 5. Clean trailing quotes, hashes, dashes, and markdown artifacts
+    t = re.sub(r'[\s,"\'\-#]+$', '', t)
+    t = re.sub(r'^[\s,"\'\-#]+', '', t)
     return t.strip()
 
 
@@ -557,6 +560,7 @@ def ensure_hook_handover(hook_text):
     if not hook_text:
         return "The biggest AI breakthrough of the week just dropped. Now my AI employee Zoro will tell you about it."
     h = hook_text.strip().strip('"').strip("'")
+    h = re.sub(r'[\s,"\'\-#]+$', '', h)
     h_lower = h.lower()
     if "zoro" in h_lower and any(w in h_lower for w in ["employee", "tell you", "break down", "breakdown", "show you", "explain", "walk you"]):
         return h
@@ -568,6 +572,7 @@ def ensure_zoro_intro(body_text):
     if not body_text:
         return "I am Zoro, Jayant's AI employee at the Lab. Here is the operational breakdown."
     b = body_text.strip().strip('"').strip("'")
+    b = re.sub(r'[\s,"\'\-#]+$', '', b)
     b_lower = b.lower()
     if b_lower.startswith("i am zoro") or b_lower.startswith("zoro here") or b_lower.startswith("zoro on deck") or b_lower.startswith("this is zoro"):
         return b
@@ -1238,6 +1243,8 @@ STRICT WRITING RULES:
                 next_pos = m_other.start()
 
         extracted = rest[:next_pos].strip()
+        extracted = re.sub(r'[\s,"\'\-#]+$', '', extracted)
+        extracted = re.sub(r'^[\s,"\'\-#]+', '', extracted)
         return extracted.strip('*"` \t\r\n')
 
     # Rich, high-conviction fallbacks in simple ELI12 creator style
