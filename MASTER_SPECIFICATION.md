@@ -1,10 +1,10 @@
 # JAYANT'S AI LAB — MASTER PRODUCTION SPECIFICATION & CODING AGENT RULEBOOK
 
-> **Document Version**: 3.0 (Production Master - Audio Synchronized, Zero Bio, No Prompt Magnet)  
+> **Document Version**: 3.1 (Strict 30-Second School-Kid Zoro Script & Agnes AI Fleet)  
 > **Brand**: Jayant's AI Lab (`@jayantsailab`)  
 > **Location**: South Delhi, India  
 > **Founder Identity**: Jayant — Independent AI engineer, agency founder, and operator. Speaks with contrarian conviction, energetic creator clarity, and zero corporate PR fluff.  
-> **AI Employee**: ZORO — Jayant's autonomous AI employee (Voice: `Rasalgethi`, male urban Indian English / South Delhi cadence).
+> **AI Employee**: ZORO — Jayant's autonomous AI employee (Voice: `Rasalgethi`, male urban Indian English / South Delhi cadence, strictly $\le 30$ seconds audio).
 
 ---
 
@@ -29,26 +29,34 @@
 
 ---
 
-### B. ZORO Body Script (The ELI12 Creator-Style Monologue)
+### B. ZORO Body Script (Strict 30-Second School-Kid Monologue)
 * **Target Speaker**: ZORO (Jayant's AI employee)
-* **Creator Inspiration**: Modeled after top accessible AI creators — **Vaibhav Sisinty**, **Matt Wolfe**, and **The AI Search**.
-* **Target Audience**: Everyday non-technical business owners, freelancers, creators, and operators.
-* **Strict Length**: Exactly 130 to 175 words (45 to 60 seconds of conversational audio).
-* **NEVER WRITE 2 LINES**: Any script under 115 words is strictly rejected by the Quality Gate.
-* **MANDATORY SIGNATURE OPENING**:
-  Zoro **MUST ALWAYS OPEN** by introducing himself.
-  - *Standard*: `"I am Zoro, Jayant's AI employee at the Lab..."`
-  - *Allowed Variations*:
-    - `"Zoro here, Jayant's AI employee in South Delhi..."`
-    - `"I am Zoro, Jayant's AI employee. Here is how this actually works..."`
-* **FORBIDDEN TECHNO-BABBLE**:
-  - Strictly banned from using engineer jargon that alienates non-technical listeners:
-    *NO "token velocity", NO "deterministic routing", NO "VRAM footprint", NO "latency in ms", NO "sub-agent moats", NO "API moats", NO "inference latency".*
-* **4-Part ELI12 Architecture**:
-  1. **The Everyday Headache**: The boring, repetitive manual chore that wastes 3 to 4 hours every single day.
-  2. **The Simple Analogy**: Explain the tool like an eager, tireless digital assistant or intern doing 4 hours of heavy research in 20 seconds.
-  3. **The Tangible Impact**: Real-world benefit (e.g., cutting 10+ hours of busywork a week, 80% manual chores eliminated at Jayant's AI Lab).
-  4. **The Zero-Barrier Rule**: *"If you can send a message on WhatsApp or write an email, you already know how to use this tool today."*
+* **HARD DURATION LIMIT**: **STRICTLY UNDER 30 SECONDS OF SPOKEN AUDIO** ($\le 30.0$ seconds).
+  - Standard English speaking pace is 2.3 words/second.
+  - **Strict Word Count**: **STRICTLY 60 TO 75 WORDS TOTAL**. Any script over 75 words will exceed 30 seconds and is strictly rejected by the Quality Gate!
+* **TEACH LIKE TO A 12-YEAR-OLD SCHOOL KID**:
+  - Explain the tool so simply that a school kid instantly gets it.
+  - Use physical, relatable analogies:
+    - *Example*: Having 50 pages of boring homework to read, and an invisible robot buddy reads the entire book in 5 seconds and gives you the exact answers.
+    - *Example*: A secret video game cheat code that cleans your room automatically.
+* **HOW TO SOUND TECHNICAL WITHOUT JARGON**:
+  - Explain the substance of what the technology actually does in plain English.
+  - **FORBIDDEN JARGON**: Zero techno-babble. Banned words: *token velocity, deterministic routing, VRAM footprint, latency in ms, sub-agent moats, API moats, inference latency, vector embeddings, gradient descent, quantization*.
+* **DYNAMIC ZORO INTRO (VARIED EVERY TIME)**:
+  - Zoro must always introduce himself as Jayant's AI employee, but with fresh opening lines every time (never the same static sentence):
+    1. `"Hey, I am Zoro, Jayant's AI employee at the Lab..."`
+    2. `"Zoro here, Jayant's AI employee in South Delhi..."`
+    3. `"Zoro here, Jayant's AI employee, and today I have got something wild for you..."`
+    4. `"I am Zoro, Jayant's AI employee. Let me show you what happened behind the scenes..."`
+    5. `"Zoro here, Jayant's AI employee at the Lab. Let's break down the real numbers..."`
+    6. `"This is Zoro, Jayant's AI employee. If you want to save hours of manual grind, listen closely..."`
+    7. `"Zoro on deck, Jayant's AI employee. Here is the blueprint you need..."`
+    8. `"I am Zoro, Jayant's AI employee. Let's cut through the hype and look at the real workflow..."`
+    9. `"Zoro here from Jayant's AI Lab, and I am going to show you how to automate this today..."`
+* **3-PART 30-SECOND STRUCTURE (60–75 words)**:
+  1. **Dynamic Intro & School-Kid Pain**: The boring grind or chore everyone hates.
+  2. **Invisible Robot Buddy Solution**: How the AI handles the entire task in seconds.
+  3. **Punchy WhatsApp Benchmark**: *"If you can send a message on WhatsApp, you already have the skills to use this today."*
 
 ---
 
@@ -111,9 +119,18 @@ Modeled after top tech creator aesthetics (`@theautomationguy.ai`, Rowan Cheung,
 2. **Slide 2: System Architecture & Org Chart**
    - Leader orchestrator card (`ZORO - Chief AI Orchestrator`).
    - Connecting flowchart branches to 4 functional departments.
-3. **Slide 3: Specialist Fleet (The First Six Hires)**
+3. **Slide 3: Specialist Fleet (The First Six Hires — Agnes AI Clay Avatar Fleet)**
    - 6 structured cards with titles, tags, and 1-sentence actionable descriptions.
-   - **ZERO CARTOON REPETITION RULE**: The template must NEVER reuse the same 5 clay heads across every carousel. Uses sleek architectural vector badge modules (`01` through `06` tech emblems) or dynamically generated story-specific assets.
+   - **AGNES AI 3D CLAY AVATAR FLEET**:
+     - Uses 12 distinct 3D clay characters generated via Agnes AI (`agnes-image-2.0-flash`) saved in `assets/avatars/`:
+       - `avatar_01_dev.png`, `avatar_02_robot.png`, `avatar_03_analyst.png`, `avatar_04_coder.png`, `avatar_05_detective.png`, `avatar_06_builder.png`, `avatar_07_creative.png`, `avatar_08_executive.png`, `avatar_09_ninja.png`, `avatar_10_astronaut.png`, `avatar_11_scientist.png`, `avatar_12_growth.png`.
+     - 6 distinct avatars are dynamically selected and bound to the 6 cards (zero repetition across cards).
+     - **Card 1 Official Tool Logo Badge**: A floating circular 42x42px brand badge on Card 1 displaying the official SVG logo of the featured tool/model (OpenAI, Claude, Rabbit, HuggingFace, etc.).
+   - **MOBILE-FIRST LARGE TYPOGRAPHY**:
+     - `.spec-title`: **24px bold** (`#111111`) — crystal clear on smartphone feeds.
+     - `.spec-desc`: **16.5px bold** (`#2D2A24`, line-height 1.35) — easily readable without zooming.
+     - `.spec-tag`: **11px orange monospace** (`#E04F16`).
+     - Image card height: **175px** with smooth gradient backing.
 4. **Slide 4: Practical Execution Prompts**
    - 4 real-world execution prompts with bulleted task checklists.
 5. **Slide 5: The Cold Numbers (ROI Benchmark)**

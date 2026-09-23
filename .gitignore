@@ -6,6 +6,7 @@ seen_topics.json
 api_quota.json
 *.wav
 *.png
+!assets/avatars/*.png
 __pycache__/
 *.pyc
 !fonts/

@@ -93,11 +93,13 @@ FREENEWSAPI_API_KEY = os.getenv("FREENEWSAPI_API_KEY", "")
 TG_API_BASE = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
 OUTPUT_DIR = "telegram_outputs"
 CAROUSEL_DIR = "carousel_outputs"
+AVATAR_FLEET_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "assets", "avatars"))
 SEEN_FILE = "seen_topics.json"
 QUOTA_FILE = "api_quota.json"
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 os.makedirs(CAROUSEL_DIR, exist_ok=True)
+os.makedirs(AVATAR_FLEET_DIR, exist_ok=True)
 
 # Baseline timestamp: Only accept releases published after startup
 AUTOMATION_START_TIME = datetime.now(timezone.utc)
@@ -571,15 +573,49 @@ def ensure_hook_handover(hook_text):
     return f"{clean_h}. Now my AI employee Zoro will tell you about it."
 
 
+# ─── ZORO DYNAMIC CREATOR INTROS (ALWAYS FRESH, NEVER REPETITIVE) ───
+ZORO_DYNAMIC_INTROS = [
+    "I am Zoro, Jayant's AI employee at the Lab.",
+    "Zoro here, Jayant's AI employee in South Delhi.",
+    "This is Zoro, Jayant's AI employee. Let's get straight into it.",
+    "Zoro on deck, Jayant's AI employee. Here is how this actually works.",
+    "Hey, I am Zoro, Jayant's AI employee at the Lab.",
+    "Zoro here, Jayant's AI employee, and today I have got something wild for you.",
+    "I am Zoro, Jayant's AI employee. Let me show you what happened behind the scenes.",
+    "Zoro here, Jayant's AI employee at the Lab. Let's break down the real numbers.",
+    "This is Zoro, Jayant's AI employee. If you want to save hours of manual grind, listen closely.",
+    "Zoro on deck, Jayant's AI employee. Here is the blueprint you need.",
+    "I am Zoro, Jayant's AI employee. Let's cut through the hype and look at the real workflow.",
+    "Zoro here from Jayant's AI Lab, and I am going to show you how to automate this today."
+]
+
 def ensure_zoro_intro(body_text):
     if not body_text:
-        return "I am Zoro, Jayant's AI employee at the Lab. Here is the operational breakdown."
+        return random.choice(ZORO_DYNAMIC_INTROS)
     b = body_text.strip().strip('"').strip("'")
     b = re.sub(r'[\s,"\'\-#]+$', '', b)
     b_lower = b.lower()
-    if b_lower.startswith("i am zoro") or b_lower.startswith("zoro here") or b_lower.startswith("zoro on deck") or b_lower.startswith("this is zoro"):
+    
+    # Check if text already starts with a dynamic intro referencing Zoro as an AI employee
+    has_valid_intro = (
+        b_lower.startswith("i am zoro") or 
+        b_lower.startswith("zoro here") or 
+        b_lower.startswith("zoro on deck") or 
+        b_lower.startswith("this is zoro") or
+        b_lower.startswith("hey, i am zoro") or
+        b_lower.startswith("hey i am zoro") or
+        b_lower.startswith("zoro speaking")
+    ) and any(kw in b_lower[:120] for kw in ["employee", "jayant", "lab"])
+    
+    if has_valid_intro:
         return b
-    return f"I am Zoro, Jayant's AI employee at the Lab. {b}"
+        
+    fresh_intro = random.choice(ZORO_DYNAMIC_INTROS)
+    if b_lower.startswith("i am zoro"):
+        parts = re.split(r'(?<=[.!?])\s+', b, maxsplit=1)
+        if len(parts) > 1:
+            return f"{fresh_intro} {parts[1]}"
+    return f"{fresh_intro} {b}"
 
 
 # ─── OFFICIAL BRAND & TOOL LOGO RESOLVER ───
@@ -928,9 +964,11 @@ Return JSON:
 
     slide_paths = []
     try:
+        template_full = os.path.join(os.path.dirname(__file__), template_file)
+        if not os.path.exists(template_full):
+            template_full = os.path.abspath(template_file)
+        template_path = os.path.abspath(template_full).replace("\\", "/")
         from playwright.sync_api import sync_playwright
-        template_path = os.path.abspath(template_file).replace("\\", "/")
-
         with sync_playwright() as p:
             browser = p.chromium.launch(args=["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"])
             page = browser.new_page(viewport={"width": 1080, "height": 1350}, device_scale_factor=2)
@@ -947,6 +985,26 @@ Return JSON:
                         s["heroImage"] = f"file:///{hero_img_path}"
                     if tool_logo_path:
                         s["toolLogo"] = f"file:///{tool_logo_path}"
+
+                    # For Slide 3 (grid_cards / specialists): supply dynamic Agnes AI 3D clay avatars
+                    if s.get("slideType") == "grid_cards" or idx == 3:
+                        avatars_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "assets", "avatars"))
+                        avatar_pool = []
+                        if os.path.exists(avatars_dir):
+                            avatar_pool = [
+                                os.path.join(avatars_dir, f).replace("\\", "/")
+                                for f in sorted(os.listdir(avatars_dir))
+                                if f.endswith((".png", ".jpg", ".webp"))
+                            ]
+                        if avatar_pool:
+                            shuffled = list(avatar_pool)
+                            random.shuffle(shuffled)
+                            spec_avatars = [f"file:///{av}" for av in shuffled[:6]]
+                            # If a custom hero 3D clay image was generated for this topic, put it on Card 1!
+                            if hero_img_path and len(spec_avatars) > 0:
+                                spec_avatars[0] = f"file:///{hero_img_path}"
+                            s["specialistAvatars"] = spec_avatars
+
                     page.evaluate("(data) => setSlide(data)", s)
                 else:
                     bg_to_use = (bg1 if idx <= 3 else bg2) if chosen_style == "cyber" else ""
@@ -1164,17 +1222,21 @@ CRITICAL FORMATTING & SCRIPT SPECIFICATIONS:
   - "...Now my AI employee Zoro will walk you through the entire benchmark."
 
 [ZORO_BODY]
-* STRICT LENGTH: Exactly 130 to 175 words (45 to 60 seconds speaking time).
-* STYLE: ELI12 (Explain Like I'm 12) modeled after top tech creators (Vaibhav Sisinty, Matt Wolfe, The AI Search).
-* AUDIENCE: A non-technical business owner, student, or creator who DOES NOT code.
-* MANDATORY OPENING: Zoro MUST open with: "I am Zoro, Jayant's AI employee at the Lab."
-* STRICT BAN ON TECHNO-JARGON: NEVER use "deterministic routing", "token throughput", "inference latency", "VRAM", "API moats", "sub-agent schemas".
-* STRUCTURE:
-  1. Zoro Self-Introduction & The Everyday Pain: Explain the annoying chore (spending 3 hours writing emails, copy-pasting data, or reading long PDFs).
-  2. The Simple Analogy: Explain what the tool does like an invisible smart intern sitting next to you.
-  3. The Real-Life Win: Simple, tangible numbers (e.g. cuts a 4-hour task to 30 seconds, saves $1,000 a month, or finishes before your coffee gets cold).
-  4. The No-Code Takeaway: "You don't need any coding skills. If you can type on WhatsApp, you can automate this today."
-* Write a continuous conversational monologue. No brackets or stage directions.
+* STRICT LENGTH LIMIT: Strictly under 30 seconds spoken audio! Exactly 60 to 75 words TOTAL. If it is longer than 75 words, it is rejected.
+* TEACH TO A SCHOOL KID: Write as if you are explaining this exciting tech breakthrough to a 12-year-old school kid! Keep it fun, simple, and crystal clear.
+* HOW TO SOUND TECHNICAL WITHOUT JARGON: Explain the actual mechanics of what the tool does using everyday physical analogies (like an invisible robot helper, a magical homework notebook, or an autopilot clone).
+* FORBIDDEN WORDS: NEVER use engineer or corporate words like "deterministic routing", "tokens", "latency", "VRAM", "API moats", "sub-agent", "schemas", "infrastructure", "optimization".
+* MANDATORY DYNAMIC OPENING: Zoro MUST introduce himself as Jayant's AI employee, with fresh natural energy every time! Examples:
+  - "Zoro here, Jayant's AI employee in South Delhi..."
+  - "I am Zoro, Jayant's AI employee at the Lab..."
+  - "Zoro on deck, Jayant's AI employee. Here is how this works..."
+  - "This is Zoro, Jayant's AI employee. Check this out..."
+  - "Hey, I am Zoro, Jayant's AI employee at the Lab..."
+* 3-PART 30-SECOND STRUCTURE:
+  1. Dynamic Intro & The Pain: (e.g., "Imagine having 50 pages of boring homework to read...")
+  2. The Magic Tech Solution: (e.g., "This new AI is like an invisible robot buddy that reads the whole book in five seconds and explains it simply...")
+  3. The Real Result: (e.g., "It turns hours of chores into 20 seconds. If you can text on WhatsApp, you can use this today!")
+* Write a continuous spoken monologue with zero stage directions. Exactly 60 to 75 words!
 
 [B_ROLL_LIST]
 * 3 to 4 specific visual cues with timestamps [00:08 - 00:20] and AI video generation prompts for Kling/Luma/Runway.
@@ -1249,16 +1311,16 @@ STRICT WRITING RULES:
         extracted = re.sub(r'^[\s,"\'\-#]+', '', extracted)
         return extracted.strip('*"` \t\r\n')
 
-    # Rich, high-conviction fallbacks in simple ELI12 creator style (ZERO mentions of bio)
+    # Rich, high-conviction fallbacks in simple 30-second school-kid creator style (ZERO mentions of bio)
     clean_topic = topic_title.split(" - ")[0].split(". ")[0].strip()
     fallback_hook = f"If you are still spending hours on manual busywork, stop. This new AI breakthrough does it in 15 seconds. Now my AI employee Zoro will show you how."
+    dynamic_intro = random.choice(ZORO_DYNAMIC_INTROS)
     fallback_body = (
-        f"I am Zoro, Jayant's AI employee at the Lab. If you run a business or create content, you know how exhausting manual busywork is. "
-        f"Spending four hours every day answering the same questions or sorting through data burns your time and energy. "
-        f"That is where {clean_topic} comes in. Think of it like hiring a tireless digital assistant who works twenty-four-seven without complaining. "
-        f"You don't need to know how to write a single line of code. You just give it one simple sentence in plain English, and it handles the entire research and drafting process in under twenty seconds. "
-        f"At Jayant's AI Lab, we set this up for everyday workflows and cut weekly manual chores by over eighty percent. "
-        f"The bottom line is simple: if you can send a message on WhatsApp, you already have the skills to put this AI to work today."
+        f"{dynamic_intro} Imagine having fifty pages of boring homework to read every single day. "
+        f"Normally, it takes hours of painful slog. "
+        f"This new AI from {clean_topic} is like having an invisible robot buddy who reads the entire book in five seconds and writes down the exact answers for you. "
+        f"It turns three hours of tedious chores into twenty seconds. "
+        f"If you can send a message on WhatsApp, you already know how to use this today."
     )
     fallback_tweet = (
         f"Stop wasting 3 hours every day on repetitive tasks.\n\n"
@@ -1339,7 +1401,7 @@ def audit_and_enhance_content(pkg, topic_title, topic_details):
     # 2. Zoro Self-Introduction
     body = ensure_zoro_intro(body)
 
-    # 3. Zoro Body Script Depth & ELI12 Creator Style Check
+    # 3. Zoro Body Script Depth & ELI12 School-Kid Style Check (Strict 30s / 60-75 words limit)
     word_count = len(body.split())
     forbidden_jargon = [
         "token velocity", "deterministic routing", "vram", "latency ms", 
@@ -1348,27 +1410,33 @@ def audit_and_enhance_content(pkg, topic_title, topic_details):
     ]
     has_jargon = [j for j in forbidden_jargon if j in body.lower()]
     
-    if word_count < 115 or has_jargon:
-        reason = f"{word_count} words" if word_count < 115 else f"contained techno-jargon: {has_jargon}"
+    if word_count > 80 or word_count < 55 or has_jargon:
+        reason = f"{word_count} words (must be 60-75 words / under 30s)" if (word_count > 80 or word_count < 55) else f"contained techno-jargon: {has_jargon}"
         issues.append(f"Zoro body non-compliant ({reason})")
+        dynamic_intro = random.choice(ZORO_DYNAMIC_INTROS)
         elevation_prompt = f"""You are the Chief Quality Monitor for Jayant's AI Lab.
-The current draft for Zoro's body script is either too short ({word_count} words) or contains technical jargon that a non-technical person cannot understand.
+The current draft for Zoro's body script is non-compliant ({reason}).
 TOPIC: {topic_title}
 DETAILS: {topic_details}
 CURRENT DRAFT: {body}
 
-Elevate this to a 9.9/10 viral creator-style script (modeled after Vaibhav Sisinty, Matt Wolfe, and The AI Search).
-STRICT RULES:
-1. MUST open with: "I am Zoro, Jayant's AI employee at the Lab."
-2. MUST be exactly 130 to 175 words.
-3. EXPLAIN LIKE I'M 12 (ELI12): Write for everyday business owners, freelancers, and creators. FORBIDDEN: Do not mention token velocity, VRAM, deterministic routing, API moats, or latency.
-4. STRUCTURE:
-   - Everyday Headache: The boring, manual grind people hate doing.
-   - Simple Analogy: Compare the tool to a tireless digital assistant or intern working 24/7.
-   - Tangible Impact: Explain how Jayant's AI Lab uses it to save 10+ hours a week or eliminate manual chores.
-   - Zero-Barrier Rule: "If you can use WhatsApp or send an email, you can use this tool today."
+Elevate this to a 9.9/10 viral creator-style script explained so simply that a 12-year-old school kid can instantly understand it.
+
+CRITICAL HARD CONSTRAINTS:
+1. AUDIO DURATION LIMIT: MUST BE STRICTLY UNDER 30 SECONDS OF SPOKEN AUDIO.
+   - That means STRICTLY 60 TO 75 WORDS TOTAL.
+   - If your response is over 75 words, the audio will fail and be rejected!
+2. DYNAMIC INTRO: Start with: "{dynamic_intro}"
+3. TEACH LIKE TO A SCHOOL KID:
+   - Use fun, relatable analogies (e.g., an invisible robot helper doing your 50 pages of boring homework, or a cheat code for chores).
+   - Zero techno-babble: NEVER say token velocity, deterministic, VRAM, API moats, latency, vector embeddings, or corporate buzzwords.
+4. STRUCTURE (within 60-75 words):
+   - School-Kid Pain: The boring chore everyone hates doing.
+   - School-Kid Analogy: How this tool acts like an invisible robot buddy doing it in seconds.
+   - Punchy Zero-Barrier Finish: If you can text on WhatsApp, you can use this today.
 5. Spoken, energetic English. NO em dashes, NO robotic phrases.
-Return ONLY the final monologue text without quotes.
+
+Return ONLY the final monologue text (60 to 75 words) without quotes or extra commentary.
 """
         elevated_body = call_llm_with_failover(elevation_prompt, temperature=0.5, timeout=30)
         if elevated_body:
