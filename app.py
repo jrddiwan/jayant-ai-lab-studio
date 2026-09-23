@@ -74,6 +74,8 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 AGNES_KEYS = [k for k in [os.getenv("AGNES_API_KEY", ""), os.getenv("AGNES_API_KEY_2", "")] if k]
 HF_TOKENS = [k for k in [os.getenv("HF_TOKEN", ""), os.getenv("HF_TOKEN_2", "")] if k]
 OPENROUTER_KEYS = [k for k in [os.getenv("OPENROUTER_API_KEY", ""), os.getenv("OPENROUTER_API_KEY_2", "")] if k]
+FISH_API_KEY = os.getenv("FISH_API_KEY", "sk-fish-BeTKz_YUTsBXtwd-LUHDl9M_1Yh3w32btZEa-716cJ4")
+FISH_REF_ID = os.getenv("FISH_REF_ID", "fb7ec16ca51a45a5a4db881244d7990a")
 
 CF_CREDS = []
 if os.getenv("CF_ACCOUNT") and os.getenv("CF_TOKEN"):
@@ -995,8 +997,8 @@ APPROVE: [Tool Name] | [One-line core reason]
 def synthesize_zoro_voice(body_text):
     """
     Synthesizes Zoro's voice track strictly using Gemini Flash TTS with the official
-    voice requested by Jayant: ZORO_VOICE (Rasalgethi) and South Delhi cadence.
-    Cycles across all Gemini API keys for maximum reliability.
+    voice requested by Jayant: voice_name="Rasalgethi" using Google AI Studio's DIRECTORS NOTES accent syntax.
+    If both Gemini keys are rate-limited, immediately fails over to Fish Audio (model: s2.1-pro-free).
     """
     clean_text = body_text.strip()
     for bracket in ["[cheerfully]", "[excitedly]", "[energetically]", "[confidently]", "[upbeat]"]:
@@ -1006,18 +1008,22 @@ def synthesize_zoro_voice(body_text):
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     timestamp = int(time.time())
     wav_path = os.path.join(OUTPUT_DIR, f"zoro_{timestamp}.wav")
+    mp3_path = os.path.join(OUTPUT_DIR, f"zoro_{timestamp}.mp3")
 
     voice_to_use = ZORO_VOICE or "Rasalgethi"
-    speech_prompt = f"""Audio Profile:
-* Speaker: Zoro, senior AI engineer and tech founder at Jayant's AI Lab in South Delhi, India.
-* Accent: Authentic Indian English accent with distinct South Delhi urban Indian intonation, natural Indian phonetic pronunciation, and energetic cadence.
-* Tone: Confident, fast-paced, authoritative builder tone.
-* Pace: Dynamic tech founder pace.
 
-Transcript:
-{clean_text}
+    # Official Google AI Studio DIRECTORS NOTES syntax for precise accent & pacing steering
+    directors_notes_prompt = f"""### DIRECTORS NOTES
+Voice: {voice_to_use}
+Accent: Indian English accent as heard in South Delhi, India
+Pacing: Fast, energetic, confident tech founder cadence
+Emotion: Clear, enthusiastic
+
+### TRANSCRIPT
+[enthusiastic] {clean_text}
 """
 
+    # Tier 1: Google Gemini Flash TTS (Rasalgethi) across all Gemini API keys
     for g_key in GEMINI_KEYS:
         if not g_key:
             continue
@@ -1025,7 +1031,7 @@ Transcript:
             client = genai.Client(api_key=g_key)
             resp = client.models.generate_content(
                 model="gemini-2.5-flash-preview-tts",
-                contents=speech_prompt,
+                contents=directors_notes_prompt,
                 config=types.GenerateContentConfig(
                     response_modalities=["AUDIO"],
                     speech_config=types.SpeechConfig(
@@ -1047,6 +1053,34 @@ Transcript:
                     return wav_path
         except Exception as e:
             print(f"[Gemini TTS Warning on key ...{g_key[-6:]}]: {str(e)[:80]}")
+
+    # Tier 2: Fish Audio API Failover (model: s2.1-pro-free, reference_id: fb7ec16ca51a45a5a4db881244d7990a)
+    if FISH_API_KEY:
+        try:
+            print("[ZORO AUDIO]: Gemini keys busy, failing over to Fish Audio s2.1-pro-free...")
+            r = requests.post(
+                "https://api.fish.audio/v1/tts",
+                headers={
+                    "Authorization": f"Bearer {FISH_API_KEY}",
+                    "Content-Type": "application/json",
+                    "model": "s2.1-pro-free"
+                },
+                json={
+                    "text": clean_text,
+                    "reference_id": FISH_REF_ID,
+                    "format": "mp3"
+                },
+                timeout=30
+            )
+            if r.status_code == 200 and len(r.content) > 1000:
+                with open(mp3_path, "wb") as f:
+                    f.write(r.content)
+                print(f"[ZORO AUDIO]: Generated via Fish Audio s2.1-pro-free ({len(r.content)} bytes -> {mp3_path})")
+                return mp3_path
+            else:
+                print(f"[Fish Audio Error {r.status_code}]: {r.text[:120]}")
+        except Exception as e:
+            print(f"[Fish Audio Call Failed]: {e}")
 
     return None
 
@@ -1122,52 +1156,43 @@ CRITICAL FORMATTING & SCRIPT SPECIFICATIONS:
   - "...Now my AI employee Zoro will walk you through the entire benchmark."
 
 [ZORO_BODY]
-* STRICT LENGTH: Exactly 130 to 180 words (45 to 60 seconds of punchy, engaging audio).
-* NEVER write just 2 lines. This is ZORO's flagship breakdown script.
-* Persona: ZORO, Jayant's AI employee in South Delhi. Confident, sharp, zero marketing fluff.
-* MANDATORY SELF-INTRODUCTION REQUIREMENT:
-  Zoro MUST ALWAYS open by introducing himself!
-  You can vary the phrasing, but the identity must be crystal clear. Examples:
-  - "I am Zoro, Jayant's AI employee at the Lab..."
-  - "Zoro here, Jayant's AI employee in South Delhi..."
-  - "I am Zoro, Jayant's AI employee. Here is what happened under the hood..."
-  - "Zoro on deck, Jayant's AI employee. Let's look at the actual numbers..."
-* Structure:
-  1. Zoro Self-Introduction & The Friction: Why manual workflows fail.
-  2. The Architecture & Metrics: What actually changed under the hood. Quote at least 2 specific technical metrics (e.g. latency, context window, token cost, VRAM footprint, throughput).
-  3. The Lab Teardown: How Jayant's AI Lab is deploying this in production agent pipelines.
-  4. The Engineering Rule: A sharp, memorable rule of thumb for builders.
+* STRICT LENGTH: Exactly 130 to 175 words (45 to 60 seconds speaking time).
+* STYLE: ELI12 (Explain Like I'm 12) modeled after top tech creators (Vaibhav Sisinty, Matt Wolfe, The AI Search).
+* AUDIENCE: A non-technical business owner, student, or creator who DOES NOT code.
+* MANDATORY OPENING: Zoro MUST open with: "I am Zoro, Jayant's AI employee at the Lab."
+* STRICT BAN ON TECHNO-JARGON: NEVER use "deterministic routing", "token throughput", "inference latency", "VRAM", "API moats", "sub-agent schemas".
+* STRUCTURE:
+  1. Zoro Self-Introduction & The Everyday Pain: Explain the annoying chore (spending 3 hours writing emails, copy-pasting data, or reading long PDFs).
+  2. The Simple Analogy: Explain what the tool does like an invisible smart intern sitting next to you.
+  3. The Real-Life Win: Simple, tangible numbers (e.g. cuts a 4-hour task to 30 seconds, saves $1,000 a month, or finishes before your coffee gets cold).
+  4. The No-Code Takeaway: "You don't need any coding skills. If you can type on WhatsApp, you can automate this today."
 * Write a continuous conversational monologue. No brackets or stage directions.
 
 [B_ROLL_LIST]
 * 3 to 4 specific visual cues with timestamps [00:08 - 00:20] and AI video generation prompts for Kling/Luma/Runway.
 
 [CTA]
-* Exactly 1 punchy sentence for Google Vids Avatar (e.g., "Save this breakdown for your next build sprint and check the link in bio for our raw prompt stack.")
+* Exactly 1 punchy sentence for Google Vids Avatar (e.g., "Save this video so you don't lose it, tap the link in bio for the free blueprint, and follow @jayantsailab.")
 
 [TWEET]
 * STRICT LENGTH: Exactly 180 to 250 characters (MUST FIT in a 280-char tweet).
-* JAYANT'S VOICE: An independent engineer evaluating the tech. NEVER sound like official company PR ("Please welcome...", "We are thrilled to announce...").
-* Format: Bold contrarian observation + 1 technical metric + link in bio.
-* Good Example:
-  "Most teams will waste $10k testing this new model.
-  The smart move?
-  Use it for sub-agent routing at 180 tok/s.
-  Closed API moats are evaporating in real time.
-  Full breakdown in bio."
+* VOICE: Simple, high-conviction advice for everyday builders. Zero company PR.
+* Example:
+  "Stop wasting 3 hours every day on repetitive tasks.
+  The new setup for this tool runs automatically in 20 seconds.
+  Zero coding needed. Full beginner blueprint in bio."
 
 [LINKEDIN]
-* STRICT LENGTH: Complete 160 to 240 word high-insight founder breakdown. NEVER OUTPUT JUST A LINK.
+* STRICT LENGTH: Complete 160 to 240 word high-insight founder breakdown in simple English. NEVER OUTPUT JUST A LINK.
 * Format with clean spacing and line breaks:
-  - Line 1: Bold contrarian hook line.
-  - The Friction: The real operational headache businesses face.
-  - The 3-Step Breakthrough Architecture:
-      1. Ingestion / Data layer
-      2. Model Orchestration
-      3. Deterministic Output
-  - The Cold Numbers: Latency, compute savings, or ROI percentage.
-  - The Founder Rule: How operators can deploy this today.
-  - Closing CTA: "Save this post and drop 'WORKFLOW' in the comments or check link in bio for the complete deployment blueprint."
+  - Line 1: Relatable problem founders and non-coders face.
+  - The Everyday Headache: Why manual work is burning payroll.
+  - The 3-Step Simple System:
+      1. Collect Data (Instant web search / input)
+      2. Automated Processing (AI generates the draft in 15 seconds)
+      3. Quality Review (Spot-check and approve)
+  - The Cold Numbers: Hours saved per week (e.g. 10+ hours saved).
+  - Closing CTA: "Save this post for your team, and check the link in bio for the complete free workflow blueprint."
 
 [CAROUSEL]
 Slide 1: High-Impact Curiosity / Contrarian Title Hook
@@ -1215,30 +1240,32 @@ STRICT WRITING RULES:
         extracted = rest[:next_pos].strip()
         return extracted.strip('*"` \t\r\n')
 
-    # Rich, high-conviction fallbacks in Jayant's builder style
+    # Rich, high-conviction fallbacks in simple ELI12 creator style
     clean_topic = topic_title.split(" - ")[0].split(". ")[0].strip()
-    fallback_hook = f"The biggest AI breakthrough of the week just dropped, and it changes how we build. Now my AI employee Zoro will tell you about it."
+    fallback_hook = f"If you are still spending hours on manual busywork, stop. This new AI breakthrough does it in 15 seconds. Now my AI employee Zoro will show you how."
     fallback_body = (
-        f"I am Zoro, Jayant's AI employee at the Lab. Let's look at {clean_topic}. "
-        f"Traditional setups are hitting hard compute bottlenecks, but this new release changes the math. "
-        f"In our initial benchmarks, inference latency dropped to 45ms while token throughput scaled to 160 tokens per second. "
-        f"At Jayant's Lab, we are already plugging this into our client agent architectures to eliminate manual API friction. "
-        f"The rule of thumb is simple: stop paying for closed, slow wrappers when high-speed architecture is ready right now."
+        f"I am Zoro, Jayant's AI employee at the Lab. If you run a business or create content, you know how exhausting manual busywork is. "
+        f"Spending four hours every day answering the same questions or sorting through data burns your time and energy. "
+        f"That is where {clean_topic} comes in. Think of it like hiring a tireless digital assistant who works twenty-four-seven without complaining. "
+        f"You don't need to know how to write a single line of code. You just give it one simple sentence in plain English, and it handles the entire research and drafting process in under twenty seconds. "
+        f"At Jayant's AI Lab, we set this up for everyday workflows and cut weekly manual chores by over eighty percent. "
+        f"The bottom line is simple: if you can send a message on WhatsApp, you already have the skills to put this AI to work today."
     )
     fallback_tweet = (
-        f"Most teams will waste weeks testing {clean_topic[:50]}.\n"
-        f"The smart move? Deploy it for sub-agent routing at scale.\n"
-        f"Full architecture breakdown in bio."
+        f"Stop wasting 3 hours every day on repetitive tasks.\n"
+        f"The new setup for {clean_topic[:45]} runs automatically in 20 seconds.\n"
+        f"Zero coding needed. Full blueprint in bio."
     )
     fallback_linkedin = (
-        f"The bottleneck in autonomous AI workflows isn't capability. It's latency and cost.\n\n"
-        f"{clean_topic} just shifted the operational landscape.\n\n"
-        f"Here is how we are evaluating this in Jayant's AI Lab:\n"
-        f"1. Ingestion: Clean data preprocessing before routing to the model.\n"
-        f"2. Execution: Leveraging high token velocity to cut sub-agent wait times.\n"
-        f"3. Verification: Deterministic linting to ensure zero hallucinations.\n\n"
-        f"The result? Faster execution with a fraction of traditional cloud compute bills.\n\n"
-        f"Save this post for your next architecture sprint, and check the link in bio for the complete workflow stack."
+        f"Most business owners know they should use AI, but get overwhelmed by technical jargon.\n\n"
+        f"The secret? You don't need complex code. You just need simple systems that eliminate boring busywork.\n\n"
+        f"{clean_topic} is a perfect example.\n\n"
+        f"Here is how normal teams are using this right now:\n"
+        f"1. Cut Research Time: Summarize hours of reading into 3 clear bullet points.\n"
+        f"2. Automate Daily Tasks: Draft emails and customer responses in 15 seconds.\n"
+        f"3. Verify Results: Make sure every answer is accurate before hitting send.\n\n"
+        f"The payoff? Saving 10+ hours every single week without hiring extra staff.\n\n"
+        f"Save this post to test this workflow, and check the link in bio for the complete free beginner guide."
     )
 
     hook = extract_tag("HOOK", raw_text) or fallback_hook
@@ -1261,7 +1288,7 @@ STRICT WRITING RULES:
         tweet = tweet[:247] + "..."
 
 
-    # Voice track synthesis via Gemini 2.5 Flash TTS (Puck) + Edge-TTS fallback
+    # Voice track synthesis via Gemini 2.5 Flash TTS (Rasalgethi + Indian Directors Notes) + Fish Audio s2.1-pro-free fallback
     audio_path = synthesize_zoro_voice(body)
 
     # Render 6-slide carousel using the chosen style
@@ -1289,9 +1316,9 @@ def audit_and_enhance_content(pkg, topic_title, topic_details):
     Evaluates:
     1. Avatar Hook Handover to Zoro
     2. Zoro Self-Introduction ("I am Zoro, Jayant's AI employee...")
-    3. Zoro Body Script Depth (130-180 words, 2+ technical metrics, no 2-line briefs)
-    4. Tweet Length & Builder Perspective (<= 250 chars, Jayant's founder voice, NOT company PR)
-    5. LinkedIn Post Completeness (160-240 words, 3-step architecture, 0 raw links)
+    3. Zoro Body Script: ELI12 Creator Style (130-175 words, simple analogies, zero techno-babble)
+    4. Tweet Length & Creator Voice (<= 250 chars, Jayant's founder voice, NOT company PR or jargon)
+    5. LinkedIn Post Completeness (160-240 words, 3-step actionable system, 0 raw links, 0 jargon)
     6. Humanizer & Safety (0 em dashes, 0 AI buzzwords, 0 phone numbers)
     
     If any dimension is rated mediocre (<9.5/10), the Monitor actively elevates it to 9.9/10!
@@ -1310,24 +1337,35 @@ def audit_and_enhance_content(pkg, topic_title, topic_details):
     # 2. Zoro Self-Introduction
     body = ensure_zoro_intro(body)
 
-    # 3. Zoro Body Script Depth & Metrics
+    # 3. Zoro Body Script Depth & ELI12 Creator Style Check
     word_count = len(body.split())
-    metrics_found = re.findall(r'\b\d+(?:\.\d+)?(?:\%|x|k|m|s|ms|b|gb|tok/s)?\b', body)
-    if word_count < 115 or len(metrics_found) < 2:
-        issues.append(f"Zoro body lacked depth ({word_count} words, {len(metrics_found)} metrics)")
+    forbidden_jargon = [
+        "token velocity", "deterministic routing", "vram", "latency ms", 
+        "sub-agent moats", "api moats", "inference latency", "vector embedding", 
+        "context windows", "gradient descent", "quantization", "tensor parallelism"
+    ]
+    has_jargon = [j for j in forbidden_jargon if j in body.lower()]
+    
+    if word_count < 115 or has_jargon:
+        reason = f"{word_count} words" if word_count < 115 else f"contained techno-jargon: {has_jargon}"
+        issues.append(f"Zoro body non-compliant ({reason})")
         elevation_prompt = f"""You are the Chief Quality Monitor for Jayant's AI Lab.
-The current draft for Zoro's body script is only {word_count} words and lacks depth.
+The current draft for Zoro's body script is either too short ({word_count} words) or contains technical jargon that a non-technical person cannot understand.
 TOPIC: {topic_title}
 DETAILS: {topic_details}
 CURRENT DRAFT: {body}
 
-Elevate this to a 9.9/10 production script.
+Elevate this to a 9.9/10 viral creator-style script (modeled after Vaibhav Sisinty, Matt Wolfe, and The AI Search).
 STRICT RULES:
 1. MUST open with: "I am Zoro, Jayant's AI employee at the Lab."
-2. MUST be exactly 130 to 180 words.
-3. MUST quote at least 2 specific technical metrics (e.g. latency, token speed, memory, or cost).
-4. MUST explain the friction, the core architecture, how Jayant's AI Lab deploys it in client pipelines, and an engineering rule.
-5. NO em dashes, NO buzzwords.
+2. MUST be exactly 130 to 175 words.
+3. EXPLAIN LIKE I'M 12 (ELI12): Write for everyday business owners, freelancers, and creators. FORBIDDEN: Do not mention token velocity, VRAM, deterministic routing, API moats, or latency.
+4. STRUCTURE:
+   - Everyday Headache: The boring, manual grind people hate doing.
+   - Simple Analogy: Compare the tool to a tireless digital assistant or intern working 24/7.
+   - Tangible Impact: Explain how Jayant's AI Lab uses it to save 10+ hours a week or eliminate manual chores.
+   - Zero-Barrier Rule: "If you can use WhatsApp or send an email, you can use this tool today."
+5. Spoken, energetic English. NO em dashes, NO robotic phrases.
 Return ONLY the final monologue text without quotes.
 """
         elevated_body = call_llm_with_failover(elevation_prompt, temperature=0.5, timeout=30)
@@ -1335,26 +1373,35 @@ Return ONLY the final monologue text without quotes.
             body = humanize_text(elevated_body)
             body = ensure_zoro_intro(body)
 
-    # 4. Tweet Check (<= 250 chars, Jayant's builder perspective)
+    # 4. Tweet Check (<= 250 chars, Jayant's founder voice, ELI12 creator style)
     clean_topic = topic_title.split(" - ")[0].split(". ")[0].strip()
-    if len(tweet) > 250 or any(pr in tweet.lower() for pr in ["thrilled to announce", "we are pleased", "proud to introduce", "please welcome"]):
-        issues.append(f"Tweet non-compliant (length: {len(tweet)})")
-        tweet = f"Most teams will waste $10k testing {clean_topic[:48]}.\nThe smart move? Deploy it for deterministic sub-agent routing.\nClosed API moats are disappearing in real time.\nFull breakdown in bio."
+    tweet_has_jargon = any(j in tweet.lower() for j in ["deterministic", "api moats", "sub-agent", "token velocity", "vram"])
+    tweet_has_pr = any(pr in tweet.lower() for pr in ["thrilled to announce", "we are pleased", "proud to introduce", "please welcome"])
+    if len(tweet) > 250 or tweet_has_jargon or tweet_has_pr:
+        issues.append(f"Tweet non-compliant (length: {len(tweet)}, jargon: {tweet_has_jargon}, pr: {tweet_has_pr})")
+        tweet = (
+            f"Stop wasting 3 hours every day on repetitive tasks.\n\n"
+            f"The new setup for {clean_topic[:42]} does the heavy lifting in 20 seconds.\n\n"
+            f"Zero coding needed. If you can use WhatsApp, you can use this.\n\n"
+            f"Full breakdown in bio."
+        )
         if len(tweet) > 250:
             tweet = tweet[:247] + "..."
 
-    # 5. LinkedIn Check (Complete founder post, 3-step architecture)
-    if len(linkedin.split()) < 90 or "http" in linkedin[:40] or "1." not in linkedin:
-        issues.append("LinkedIn post too short or missing 3-step architecture")
+    # 5. LinkedIn Check (Complete founder post, 3-step actionable system, 0 raw links, ELI12 creator style)
+    linkedin_has_jargon = any(j in linkedin.lower() for j in ["deterministic routing", "api moats", "token velocity", "execution latency"])
+    if len(linkedin.split()) < 90 or "http" in linkedin[:40] or "1." not in linkedin or linkedin_has_jargon:
+        issues.append("LinkedIn post too short, has jargon, or missing 3-step breakdown")
         linkedin = (
-            f"The bottleneck in autonomous AI workflows is rarely model size. It is execution latency and deterministic routing.\n\n"
-            f"{clean_topic} just changed the math for operators.\n\n"
-            f"Here is how we are evaluating this in Jayant's AI Lab:\n"
-            f"1. Ingestion: Pre-filtering noise and validating schemas before model calls.\n"
-            f"2. Execution: Routing domain tasks to high-throughput specialized workers.\n"
-            f"3. Verification: Deterministic linting gates to guarantee zero hallucinations.\n\n"
-            f"The result? Faster cycle times with 80% lower token spend.\n\n"
-            f"Save this post for your next build sprint, and check the link in bio for the complete deployment blueprint."
+            f"Most business owners know they should use AI, but get overwhelmed by technical jargon.\n\n"
+            f"The truth? You don't need complex code. You just need simple systems that eliminate boring busywork.\n\n"
+            f"{clean_topic} is a game changer for normal workflows.\n\n"
+            f"Here is how everyday teams are using this right now:\n"
+            f"1. Cut Research Time: Turn hours of reading into 3 clear action points.\n"
+            f"2. Automate Daily Tasks: Draft emails and routine summaries in 15 seconds.\n"
+            f"3. Eliminate Busywork: Free up 10+ hours every week to focus on growing the business.\n\n"
+            f"If you can send a message on WhatsApp, you already have the skills to run this.\n\n"
+            f"Save this post for your team, and check the link in bio for the complete beginner guide."
         )
 
     # 6. Safety & Humanizer Double Pass
