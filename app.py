@@ -36,6 +36,8 @@ import time
 import json
 import wave
 import re
+import subprocess
+import glob
 
 if sys.stdout and hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -50,7 +52,7 @@ import urllib.parse
 from datetime import datetime, timezone
 import xml.etree.ElementTree as ET
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 from google import genai
 from google.genai import types
 import wave
@@ -357,6 +359,29 @@ def send_tg_audio(chat_id, audio_path, caption="", bot_token=None):
                         requests.post(url_master, files={"audio": f2}, data=data, timeout=35)
     except Exception as e:
         print(f"Error sending TG audio: {e}")
+
+
+def send_tg_video(chat_id, video_path, caption="", bot_token=None):
+    if not video_path or not os.path.exists(video_path):
+        print(f"[TG sendVideo Error]: Video file does not exist: {video_path}")
+        return
+    token = bot_token or TELEGRAM_BOT_TOKEN
+    url = f"{_get_tg_base(token)}/sendVideo"
+    try:
+        with open(video_path, "rb") as f:
+            files = {"video": f}
+            data = {"chat_id": str(chat_id), "caption": caption}
+            r = requests.post(url, files=files, data=data, timeout=90)
+            if r.status_code == 200:
+                print(f"[TG sendVideo]: Video dispatched successfully ({os.path.basename(video_path)}) to {chat_id}")
+            else:
+                print(f"[TG sendVideo Error {r.status_code}]: {r.text[:120]}. Retrying with master bot token...")
+                if token != TELEGRAM_BOT_TOKEN:
+                    url_master = f"{_get_tg_base(TELEGRAM_BOT_TOKEN)}/sendVideo"
+                    with open(video_path, "rb") as f2:
+                        requests.post(url_master, files={"video": f2}, data=data, timeout=90)
+    except Exception as e:
+        print(f"Error sending TG video: {e}")
 
 
 def send_tg_album(chat_id, images, caption="", bot_token=None):
@@ -942,33 +967,51 @@ ZORO_DYNAMIC_INTROS = [
     "Zoro here from Jayant's AI Lab, and I am going to show you how to automate this today."
 ]
 
+def is_zoro_intro_sentence(s):
+    s_lower = s.lower().strip()
+    patterns = [
+        r'^(?:hey,?\s+)?(?:i am|i\'m|this is|it\'s|yo,?\s+i\'m)\s+zoro\b',
+        r'^zoro\s+(?:here|on deck|speaking)\b',
+        r'\bzoro\b.*?\b(?:ai\s+employee|employee|jayant|the\s+lab)\b',
+        r'\b(?:ai\s+employee|employee|jayant)\b.*?\bzoro\b'
+    ]
+    return any(re.search(p, s_lower) for p in patterns)
+
 def ensure_zoro_intro(body_text):
     if not body_text:
         return random.choice(ZORO_DYNAMIC_INTROS)
     b = body_text.strip().strip('"').strip("'")
     b = re.sub(r'[\s,"\'\-#]+$', '', b)
-    b_lower = b.lower()
     
-    # Check if text already starts with a dynamic intro referencing Zoro as an AI employee
-    has_valid_intro = (
-        b_lower.startswith("i am zoro") or 
-        b_lower.startswith("zoro here") or 
-        b_lower.startswith("zoro on deck") or 
-        b_lower.startswith("this is zoro") or
-        b_lower.startswith("hey, i am zoro") or
-        b_lower.startswith("hey i am zoro") or
-        b_lower.startswith("zoro speaking")
-    ) and any(kw in b_lower[:120] for kw in ["employee", "jayant", "lab"])
-    
-    if has_valid_intro:
-        return b
+    sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', b) if s.strip()]
+    if not sentences:
+        return random.choice(ZORO_DYNAMIC_INTROS)
         
+    # Check for intro sentences among the first 3 sentences
+    intro_indices = [i for i, s in enumerate(sentences[:3]) if is_zoro_intro_sentence(s)]
+    
+    if len(intro_indices) > 1:
+        # Multiple intros detected! Keep only the first intro, drop subsequent duplicate intros
+        pruned_sentences = []
+        for i, s in enumerate(sentences):
+            if i in intro_indices[1:]:
+                continue # drop redundant duplicate intro
+            pruned_sentences.append(s)
+        return " ".join(pruned_sentences)
+    elif len(intro_indices) == 1:
+        # Exactly one intro exists in the opening
+        if intro_indices[0] == 0:
+            return " ".join(sentences)
+        else:
+            # If intro was sentence 1 or 2 instead of 0, move it to the front
+            intro = sentences.pop(intro_indices[0])
+            sentences.insert(0, intro)
+            return " ".join(sentences)
+            
+    # No intro exists at all -> prepend a fresh dynamic intro
     fresh_intro = random.choice(ZORO_DYNAMIC_INTROS)
-    if b_lower.startswith("i am zoro"):
-        parts = re.split(r'(?<=[.!?])\s+', b, maxsplit=1)
-        if len(parts) > 1:
-            return f"{fresh_intro} {parts[1]}"
-    return f"{fresh_intro} {b}"
+    return f"{fresh_intro} {' '.join(sentences)}"
+
 
 
 # ─── OFFICIAL BRAND & TOOL LOGO RESOLVER ───
@@ -1624,6 +1667,355 @@ Emotion: Clear, enthusiastic
     return None
 
 
+# ─── SYNCHRONIZED ZORO VIDEO ENGINE (AGNES VIDEO + EXACT TIMESTAMPS + ANIMATED SCENES) ───
+
+def split_sentence_into_two_parts(sentence):
+    s = sentence.strip()
+    words = s.split()
+    if len(words) <= 3:
+        mid = max(1, len(words) // 2)
+        return [" ".join(words[:mid]), " ".join(words[mid:])]
+
+    mid_char = len(s) // 2
+    candidates = []
+    
+    # 1. Punctuation splits: , ; -
+    for m in re.finditer(r'[,;\—\-]', s):
+        pos = m.start()
+        if 0.2 * len(s) <= pos <= 0.8 * len(s):
+            dist = abs(pos - mid_char)
+            candidates.append((dist, pos, pos + 1))
+            
+    # 2. Conjunction splits: and, but, because, so, while, when, which, that, or
+    if not candidates:
+        for m in re.finditer(r'\b(and|but|because|so|while|when|which|that|or|to|with|by)\b', s, re.IGNORECASE):
+            pos = m.start()
+            if 0.25 * len(s) <= pos <= 0.75 * len(s):
+                dist = abs(pos - mid_char)
+                candidates.append((dist, pos, pos))
+
+    if candidates:
+        candidates.sort(key=lambda x: x[0])
+        _, split_start, split_end = candidates[0]
+        p1 = s[:split_start].strip().rstrip(',;-')
+        p2 = s[split_end:].strip().lstrip(',;-')
+        if p1 and p2:
+            return [p1, p2]
+
+    mid = len(words) // 2
+    p1 = " ".join(words[:mid]).strip().rstrip(',;-')
+    p2 = " ".join(words[mid:]).strip().lstrip(',;-')
+    return [p1, p2]
+
+
+def split_script_into_parts(script_text):
+    sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', script_text) if s.strip()]
+    parts = []
+    for sentence in sentences:
+        two_parts = split_sentence_into_two_parts(sentence)
+        for p in two_parts:
+            if p.strip():
+                parts.append(p.strip())
+    return parts
+
+
+def get_audio_duration(audio_path):
+    if not audio_path or not os.path.exists(audio_path):
+        return 20.0
+    try:
+        cmd = [
+            "ffprobe", "-v", "error", "-show_entries", "format=duration",
+            "-of", "default=noprint_wrappers=1:nokey=1", audio_path
+        ]
+        out = subprocess.check_output(cmd, stderr=subprocess.DEVNULL)
+        dur = float(out.decode().strip())
+        if dur > 0:
+            return dur
+    except Exception:
+        pass
+    try:
+        with wave.open(audio_path, 'rb') as wf:
+            return wf.getnframes() / float(wf.getframerate())
+    except Exception:
+        pass
+    return 20.0
+
+
+def calculate_segment_timestamps(parts, total_duration):
+    weights = [max(1, len(p.split())) for p in parts]
+    total_weight = sum(weights) or 1.0
+    
+    segments = []
+    current_time = 0.0
+    for idx, (p, w) in enumerate(zip(parts, weights)):
+        dur = (w / total_weight) * total_duration
+        end_time = current_time + dur if idx < len(parts) - 1 else total_duration
+            
+        segments.append({
+            "index": idx,
+            "text": p,
+            "start": round(current_time, 2),
+            "end": round(end_time, 2),
+            "duration": round(end_time - current_time, 2)
+        })
+        current_time = end_time
+    return segments
+
+
+def request_agnes_video(prompt, duration_sec):
+    """
+    Attempts to generate video clip via Agnes AI Video API (agnes-video-2.5-flash).
+    Falls back gracefully if rate-limited (429) or queue is full (503).
+    """
+    keys = [k for k in AGNES_KEYS if k]
+    for k in keys:
+        try:
+            headers = {"Authorization": f"Bearer {k}", "Content-Type": "application/json"}
+            payload = {
+                "model": "agnes-video-2.5-flash",
+                "prompt": prompt,
+                "seconds": str(max(3, min(10, round(duration_sec)))),
+                "mode": "text",
+                "size": "720P",
+                "aspect_ratio": "9:16"
+            }
+            r = requests.post("https://apihub.agnes-ai.com/v1/videos", headers=headers, json=payload, timeout=5)
+            if r.status_code in (200, 201):
+                res_data = r.json()
+                task_id = res_data.get("id") or res_data.get("video_id") or res_data.get("data", {}).get("id")
+                video_url = res_data.get("video_url") or res_data.get("url") or res_data.get("data", {}).get("url")
+                
+                if video_url and video_url.startswith("http"):
+                    clip_resp = requests.get(video_url, timeout=20)
+                    if clip_resp.status_code == 200 and len(clip_resp.content) > 10000:
+                        return clip_resp.content
+
+                if task_id:
+                    for _ in range(5):
+                        time.sleep(2)
+                        poll_r = requests.get(f"https://apihub.agnes-ai.com/v1/videos/{task_id}", headers=headers, timeout=6)
+                        if poll_r.status_code == 200:
+                            p_data = poll_r.json()
+                            status = p_data.get("status") or p_data.get("data", {}).get("status")
+                            url = p_data.get("video_url") or p_data.get("url") or p_data.get("data", {}).get("url")
+                            if status in ("completed", "succeeded") and url:
+                                dl_r = requests.get(url, timeout=20)
+                                if dl_r.status_code == 200 and len(dl_r.content) > 10000:
+                                    return dl_r.content
+                            elif status in ("failed", "error"):
+                                break
+        except Exception as e:
+            print(f"[Agnes Video Warning]: {e}")
+    return None
+
+
+def create_subtitled_motion_clip(segment, base_img_path, output_clip_path):
+    """
+    Creates an animated 720x1280 (9:16) video clip with smooth zoompan motion
+    and burned-in glassmorphism subtitles timed exactly to the segment duration.
+    """
+    target_w, target_h = 720, 1280
+    base_img = Image.open(base_img_path).convert('RGB')
+    
+    scale = max(target_w / base_img.width, target_h / base_img.height)
+    new_w, new_h = int(base_img.width * scale), int(base_img.height * scale)
+    scaled_img = base_img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+    left = (new_w - target_w) // 2
+    top = (new_h - target_h) // 2
+    frame = scaled_img.crop((left, top, left + target_w, top + target_h))
+
+    # Dark gradient overlay for bottom third
+    overlay = Image.new('RGBA', (target_w, target_h), (0, 0, 0, 0))
+    ov_draw = ImageDraw.Draw(overlay)
+    ov_draw.rectangle([0, target_h - 320, target_w, target_h], fill=(0, 0, 0, 140))
+
+    # Glassmorphism pill badge for subtitle
+    pill_w, pill_h = target_w - 60, 110
+    pill_x = 30
+    pill_y = target_h - 220
+    ov_draw.rounded_rectangle(
+        [pill_x, pill_y, pill_x + pill_w, pill_y + pill_h],
+        radius=22, fill=(15, 23, 42, 230), outline=(56, 189, 248, 220), width=2
+    )
+
+    frame = Image.alpha_composite(frame.convert('RGBA'), overlay).convert('RGB')
+
+    # Subtitle typography
+    try:
+        font = ImageFont.truetype('arial.ttf', 28)
+    except Exception:
+        font = ImageFont.load_default()
+
+    draw_final = ImageDraw.Draw(frame)
+    text = segment['text']
+    
+    words = text.split()
+    lines = []
+    curr_line = []
+    for w in words:
+        test_line = " ".join(curr_line + [w])
+        bbox = draw_final.textbbox((0, 0), test_line, font=font)
+        if bbox[2] - bbox[0] > pill_w - 40:
+            if curr_line:
+                lines.append(" ".join(curr_line))
+                curr_line = [w]
+            else:
+                lines.append(w)
+                curr_line = []
+        else:
+            curr_line.append(w)
+    if curr_line:
+        lines.append(" ".join(curr_line))
+
+    line_h = 34
+    total_text_h = len(lines) * line_h
+    start_y = pill_y + (pill_h - total_text_h) // 2
+    for l_idx, line in enumerate(lines[:2]):
+        l_bbox = draw_final.textbbox((0, 0), line, font=font)
+        lw = l_bbox[2] - l_bbox[0]
+        lx = pill_x + (pill_w - lw) // 2
+        ly = start_y + l_idx * line_h
+        draw_final.text((lx, ly), line, font=font, fill=(255, 255, 255))
+
+    temp_frame_path = output_clip_path.replace(".mp4", "_frame.png")
+    frame.save(temp_frame_path)
+
+    duration = max(0.5, segment['duration'])
+    fps = 30
+    total_frames = int(duration * fps)
+
+    # Subtle cinematic push-in
+    vf = f"zoompan=z='min(zoom+0.0006,1.08)':d={total_frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=720x1280:fps={fps}"
+
+    cmd = [
+        'ffmpeg', '-y', '-loop', '1', '-i', temp_frame_path,
+        '-vf', vf,
+        '-c:v', 'libx264', '-t', str(duration), '-pix_fmt', 'yuv420p',
+        output_clip_path
+    ]
+    subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if os.path.exists(temp_frame_path):
+        try:
+            os.remove(temp_frame_path)
+        except Exception:
+            pass
+    return os.path.exists(output_clip_path)
+
+
+def generate_full_zoro_video(body_text, audio_path, topic_title="", topic_details=""):
+    """
+    Autonomous Video Pipeline:
+    1. Splits script into 2 parts per sentence.
+    2. Calculates sub-second timestamps synchronized with Zoro voice track.
+    3. Generates Agnes Video clips for each part (with automated subtitled motion fallback).
+    4. Assembles the final 9:16 vertical video and muxes the audio track.
+    """
+    if not audio_path or not os.path.exists(audio_path):
+        print("[VIDEO ENGINE]: Cannot generate video, audio track missing.")
+        return None
+
+    try:
+        timestamp = int(time.time())
+        temp_dir = os.path.join(OUTPUT_DIR, f"video_build_{timestamp}")
+        os.makedirs(temp_dir, exist_ok=True)
+        final_video_path = os.path.join(OUTPUT_DIR, f"zoro_video_{timestamp}.mp4")
+
+        # Step 1: Split into 2 parts per sentence
+        parts = split_script_into_parts(body_text)
+        if not parts:
+            return None
+
+        # Step 2: Calculate timestamps from audio duration
+        total_duration = get_audio_duration(audio_path)
+        segments = calculate_segment_timestamps(parts, total_duration)
+        print(f"[VIDEO ENGINE]: {len(segments)} segments calculated for {total_duration:.2f}s audio.")
+
+        # Pool of available 3D clay backdrops
+        clay_pool = glob.glob(os.path.join(CAROUSEL_DIR, "clay_*.png")) + glob.glob(os.path.join(OUTPUT_DIR, "clay_*.png")) + [
+            os.path.join(OUTPUT_DIR, "test_agnes.png"),
+            "test_agnes.png",
+            "test_bg.png"
+        ]
+        clay_pool = [c for c in clay_pool if os.path.exists(c)]
+        if not clay_pool:
+            ph_path = os.path.join(temp_dir, "default_clay.png")
+            Image.new("RGB", (720, 1280), (15, 23, 42)).save(ph_path)
+            clay_pool = [ph_path]
+
+        clip_paths = []
+        agnes_available = True
+        for s in segments:
+            clip_path = os.path.join(temp_dir, f"clip_{s['index']:02d}.mp4")
+            
+            # 1. Try Agnes Video API (with circuit breaker)
+            if agnes_available:
+                agnes_prompt = (
+                    f"3D clay animation character Zoro in tech lab, {s['text']}, "
+                    f"warm studio lighting, 8k resolution, cinematic claymation, 9:16 vertical video"
+                )
+                video_bytes = request_agnes_video(agnes_prompt, s['duration'])
+                if video_bytes:
+                    with open(clip_path, "wb") as f_clip:
+                        f_clip.write(video_bytes)
+                    print(f"[VIDEO ENGINE]: Clip {s['index']+1}/{len(segments)} generated via Agnes Video!")
+                else:
+                    agnes_available = False
+                    print(f"[VIDEO ENGINE]: Agnes Video unavailable/rate-limited. Activating cinematic animated scene engine...")
+            
+            # 2. Fallback to subtitled cinematic motion clip
+            if not os.path.exists(clip_path) or os.path.getsize(clip_path) < 1000:
+                base_img = clay_pool[s['index'] % len(clay_pool)]
+                create_subtitled_motion_clip(s, base_img, clip_path)
+                print(f"[VIDEO ENGINE]: Clip {s['index']+1}/{len(segments)} rendered ({s['duration']}s): {s['text'][:35]}...")
+
+            if os.path.exists(clip_path) and os.path.getsize(clip_path) > 1000:
+                clip_paths.append(clip_path)
+
+        if not clip_paths:
+            print("[VIDEO ENGINE]: No clips could be generated.")
+            return None
+
+        # Step 4: Concatenate and attach audio
+        concat_list = os.path.join(temp_dir, "concat.txt")
+        with open(concat_list, "w") as f_concat:
+            for cp in clip_paths:
+                f_concat.write(f"file '{os.path.basename(cp)}'\n")
+
+        cmd = [
+            "ffmpeg", "-y",
+            "-f", "concat", "-safe", "0", "-i", concat_list,
+            "-i", audio_path,
+            "-c:v", "copy",
+            "-c:a", "aac",
+            "-shortest",
+            final_video_path
+        ]
+        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        
+        # If copy fails, fallback to full re-encode
+        if not os.path.exists(final_video_path) or os.path.getsize(final_video_path) < 5000:
+            cmd_reencode = [
+                "ffmpeg", "-y",
+                "-f", "concat", "-safe", "0", "-i", concat_list,
+                "-i", audio_path,
+                "-c:v", "libx264", "-pix_fmt", "yuv420p",
+                "-c:a", "aac",
+                "-shortest",
+                final_video_path
+            ]
+            subprocess.run(cmd_reencode, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+        if os.path.exists(final_video_path) and os.path.getsize(final_video_path) > 5000:
+            print(f"[VIDEO ENGINE]: FINAL ZORO VIDEO GENERATED -> {final_video_path} ({os.path.getsize(final_video_path)} bytes)")
+            return final_video_path
+        else:
+            print("[VIDEO ENGINE]: Final assembly did not produce valid video.")
+            return None
+    except Exception as e:
+        print(f"[VIDEO ENGINE ERROR]: {e}")
+        return None
+
+
 # ─── MASTER SCRIPTWRITING ENGINE (1,000 VIRAL HOOKS, LINKEDIN SKILLS, STORYTELLING & HUMANIZER) ───
 def generate_full_studio_package(topic_title, topic_details, source_url="", carousel_style="auto"):
     # Dynamically select creator hook and CTA frameworks from the 1,000 Viral Hook vault & LinkedIn Skills
@@ -1991,12 +2383,19 @@ Return only the final monologue text — no preamble, no word count, no notes.
     print(f"[QUALITY MONITOR AGENT]: Synthesizing Zoro audio for final approved script ({len(body.split())} words)...")
     audio_path = synthesize_zoro_voice(body)
 
+    # 8. Generate Synchronized Zoro Video (Agnes Video + Subtitled Motion Scenes)
+    video_path = None
+    if audio_path and os.path.exists(audio_path):
+        print(f"[VIDEO ENGINE]: Synthesizing full synchronized video for Zoro...")
+        video_path = generate_full_zoro_video(body, audio_path, topic_title, topic_details)
+
     pkg["hook"] = hook
     pkg["body"] = body
     pkg["tweet"] = tweet
     pkg["linkedin"] = linkedin
     pkg["cta"] = cta
     pkg["audio_path"] = audio_path
+    pkg["video_path"] = video_path
     pkg["quality_score"] = "9.9/10"
     pkg["quality_status"] = "CHIEF QUALITY GATE PASSED"
     pkg["quality_audited_issues"] = issues
@@ -2431,9 +2830,11 @@ def deliver_production_package(title, details, source_url="", source_name="", vi
             f"🤖 *ZORO BODY SCRIPT (ELI12):*\n{pkg.get('body', '')}\n\n"
             f"📢 *YOUR CTA (Google Vids Avatar):*\n{pkg.get('cta', '')}\n\n"
             f"🎥 *AUTOMATED B-ROLL SCENE LIST & AI PROMPTS:*\n{pkg.get('b_roll', '')}\n\n"
-            f"🎧 *ZORO's audio track is attached below!*"
+            f"🎬 *ZORO's synchronized video and audio track are attached below!*"
         )
         send_tg_message(TARGET_CHAT_ID, video_msg, bot_token=TELEGRAM_BOT_TOKEN_VIDEO)
+        if pkg.get('video_path') and os.path.exists(pkg['video_path']):
+            send_tg_video(TARGET_CHAT_ID, pkg['video_path'], caption=f"🎬 ZORO Synchronized Video ({ZORO_VOICE} • South Delhi Cadence)", bot_token=TELEGRAM_BOT_TOKEN_VIDEO)
         if pkg.get('audio_path') and os.path.exists(pkg['audio_path']):
             send_tg_audio(TARGET_CHAT_ID, pkg['audio_path'], caption=f"🎙️ ZORO Audio ({ZORO_VOICE} • South Delhi Cadence)", bot_token=TELEGRAM_BOT_TOKEN_VIDEO)
     except Exception as e:
@@ -2725,9 +3126,11 @@ def telegram_listener():
                         f"🤖 *ZORO BODY SCRIPT (ELI12):*\n{pkg['body']}\n\n"
                         f"📢 *YOUR CTA (Google Vids Avatar):*\n{pkg['cta']}\n\n"
                         f"🎥 *AUTOMATED B-ROLL SCENE LIST & AI PROMPTS:*\n{pkg['b_roll']}\n\n"
-                        f"🎧 *ZORO's audio track is attached below!*"
+                        f"🎬 *ZORO's synchronized video and audio track are attached below!*"
                     )
                     send_tg_message(chat_id, video_msg, bot_token=TELEGRAM_BOT_TOKEN_VIDEO)
+                    if pkg.get('video_path') and os.path.exists(pkg['video_path']):
+                        send_tg_video(chat_id, pkg['video_path'], caption=f"🎬 ZORO Synchronized Video ({ZORO_VOICE} • South Delhi Cadence)", bot_token=TELEGRAM_BOT_TOKEN_VIDEO)
                     if pkg.get('audio_path') and os.path.exists(pkg['audio_path']):
                         send_tg_audio(chat_id, pkg['audio_path'], caption=f"🎙️ ZORO Audio ({ZORO_VOICE} • South Delhi Cadence)", bot_token=TELEGRAM_BOT_TOKEN_VIDEO)
 
