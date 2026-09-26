@@ -83,6 +83,42 @@ if os.getenv("CF_ACCOUNT") and os.getenv("CF_TOKEN"):
 if os.getenv("CF_ACCOUNT_2") and os.getenv("CF_TOKEN_2"):
     CF_CREDS.append((os.getenv("CF_ACCOUNT_2"), os.getenv("CF_TOKEN_2")))
 
+
+# ─── ACTIVE ROUND-ROBIN KEY LOAD BALANCER ───
+class RoundRobinPool:
+    """Thread-safe cyclic key iterator that rotates keys evenly on every request to fully utilize daily quotas."""
+    def __init__(self, items, name="Pool"):
+        self.items = [x for x in items if x]
+        self.index = 0
+        self.name = name
+        self._lock = threading.Lock()
+
+    def get_all_ordered(self):
+        """Returns all items starting from current rotated index (for balanced rotation + failover)."""
+        with self._lock:
+            if not self.items:
+                return []
+            idx = self.index % len(self.items)
+            self.index = (self.index + 1) % len(self.items)
+            return self.items[idx:] + self.items[:idx]
+
+    def get_current(self):
+        with self._lock:
+            if not self.items:
+                return None
+            return self.items[self.index % len(self.items)]
+
+    def __len__(self):
+        return len(self.items)
+
+
+GEMINI_POOL = RoundRobinPool(GEMINI_KEYS, name="Gemini")
+OPENROUTER_POOL = RoundRobinPool(OPENROUTER_KEYS, name="OpenRouter")
+AGNES_POOL = RoundRobinPool(AGNES_KEYS, name="Agnes AI")
+HF_POOL = RoundRobinPool(HF_TOKENS, name="Hugging Face")
+CF_POOL = RoundRobinPool(CF_CREDS, name="Cloudflare")
+
+
 # ─── 5 NEWS & SEARCH APIS ───
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "")
 NEWSDATA_API_KEY = os.getenv("NEWSDATA_API_KEY", "")
@@ -275,12 +311,27 @@ def send_tg_photo(chat_id, photo_url_or_bytes, caption="", bot_token=None):
             r = requests.post(url, json={"chat_id": chat_id, "photo": photo_url_or_bytes, "caption": caption, "parse_mode": "Markdown"}, timeout=20)
             if r.status_code != 200:
                 requests.post(url, json={"chat_id": chat_id, "photo": photo_url_or_bytes, "caption": caption}, timeout=20)
-        else:
-            files = {"photo": photo_url_or_bytes}
-            data = {"chat_id": chat_id, "caption": caption, "parse_mode": "Markdown"}
+        elif isinstance(photo_url_or_bytes, (bytes, bytearray)):
+            files = {"photo": ("image.png", io.BytesIO(photo_url_or_bytes), "image/png")}
+            data = {"chat_id": str(chat_id), "caption": caption, "parse_mode": "Markdown"}
             r = requests.post(url, files=files, data=data, timeout=25)
             if r.status_code != 200:
-                requests.post(url, files={"photo": photo_url_or_bytes}, data={"chat_id": chat_id, "caption": caption}, timeout=25)
+                files_retry = {"photo": ("image.png", io.BytesIO(photo_url_or_bytes), "image/png")}
+                requests.post(url, files=files_retry, data={"chat_id": str(chat_id), "caption": caption}, timeout=25)
+        elif isinstance(photo_url_or_bytes, str) and os.path.exists(photo_url_or_bytes):
+            with open(photo_url_or_bytes, "rb") as f:
+                files = {"photo": f}
+                data = {"chat_id": str(chat_id), "caption": caption, "parse_mode": "Markdown"}
+                r = requests.post(url, files=files, data=data, timeout=25)
+                if r.status_code != 200:
+                    with open(photo_url_or_bytes, "rb") as f2:
+                        requests.post(url, files={"photo": f2}, data={"chat_id": str(chat_id), "caption": caption}, timeout=25)
+        else:
+            files = {"photo": photo_url_or_bytes}
+            data = {"chat_id": str(chat_id), "caption": caption, "parse_mode": "Markdown"}
+            r = requests.post(url, files=files, data=data, timeout=25)
+            if r.status_code != 200:
+                requests.post(url, files={"photo": photo_url_or_bytes}, data={"chat_id": str(chat_id), "caption": caption}, timeout=25)
     except Exception as e:
         print(f"Error sending TG photo: {e}")
 
@@ -359,17 +410,17 @@ def send_tg_album(chat_id, images, caption="", bot_token=None):
     return False
 
 
-# ─── VISUAL GENERATION (AGNES AI / FLUX.1) ───
+# ─── ACTIVE MULTI-KEY VISUAL GENERATION SUITE ───
 def generate_agnes_image(prompt, save_path):
-    """Generates cinematic AI background art using Agnes AI with FLUX.1 failover."""
-    for key in AGNES_KEYS:
+    """Generates 3D clay character operator mascot art using Agnes AI (actively rotating Key 1 & 2)."""
+    for key in AGNES_POOL.get_all_ordered():
         try:
             r = requests.post(
                 "https://apihub.agnes-ai.com/v1/images/generations",
                 headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
                 json={
                     "model": "agnes-image-2.0-flash",
-                    "prompt": f"{prompt}, dark atmospheric cinematic lighting, octane render, 8k, neon emerald green and obsidian dark mode, clean composition without text",
+                    "prompt": f"{prompt}, 3D miniature clay character operator in futuristic AI studio, cute figurine style, warm lighting, octane render, 8k, vibrant colors, clean composition without text",
                     "size": "1024x1024"
                 },
                 timeout=30
@@ -378,39 +429,80 @@ def generate_agnes_image(prompt, save_path):
                 data = r.json().get("data", [])
                 if data and data[0].get("url"):
                     urllib.request.urlretrieve(data[0]["url"], save_path)
+                    print(f"[Visual Triad]: Agnes AI 3D Clay Image successfully generated -> {os.path.basename(save_path)}")
                     return True
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[Visual Triad Agnes Warn]: {e}")
 
-    raw_flux = generate_flux_image(f"{prompt}, dark cinematic octane render, 8k")
-    if raw_flux:
+    # Fallback to Cloudflare if Agnes is busy
+    raw_cf = generate_cloudflare_image(f"{prompt}, 3D clay character style, octane render")
+    if raw_cf:
         with open(save_path, "wb") as f:
-            f.write(raw_flux)
+            f.write(raw_cf)
         return True
     return False
 
 
+def generate_cloudflare_image(prompt):
+    """Generates photorealistic system concept & architecture cards using Cloudflare Workers AI (rotating Account 1 & 2)."""
+    for account, token in CF_POOL.get_all_ordered():
+        try:
+            cf_url = f"https://api.cloudflare.com/client/v4/accounts/{account}/ai/run/@cf/bytedance/stable-diffusion-xl-lightning"
+            r = requests.post(
+                cf_url,
+                headers={"Authorization": f"Bearer {token}"},
+                json={"prompt": f"{prompt}, photorealistic tech architecture, modern minimal glassmorphism, clean developer workspace, soft ambient lighting, 8k"},
+                timeout=20
+            )
+            if r.status_code == 200 and r.content:
+                print(f"[Visual Triad]: Cloudflare Workers AI SDXL Concept Card generated ({len(r.content)} bytes)")
+                return r.content
+        except Exception as e:
+            print(f"[Visual Triad Cloudflare Warn]: {e}")
+    return None
+
+
 def generate_flux_image(prompt):
-    """Generate high-res visual proof card via Hugging Face FLUX.1-schnell with Cloudflare fallback."""
-    for token in HF_TOKENS:
+    """Generates high-res cyber tech proof cards via Hugging Face FLUX.1 (rotating Token 1 & 2) with Cloudflare fallback."""
+    for token in HF_POOL.get_all_ordered():
         try:
             api_url = "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell"
             headers = {"Authorization": f"Bearer {token}"}
-            res = requests.post(api_url, headers=headers, json={"inputs": prompt}, timeout=25)
+            res = requests.post(
+                api_url,
+                headers=headers,
+                json={"inputs": f"{prompt}, futuristic tech proof card, dark mode cyber aesthetic, neon emerald accents, 8k"},
+                timeout=25
+            )
             if res.status_code == 200 and res.content:
+                print(f"[Visual Triad]: Hugging Face FLUX.1 Cyber Card generated ({len(res.content)} bytes)")
                 return res.content
         except Exception:
             pass
 
-    for account, token in CF_CREDS:
-        try:
-            cf_url = f"https://api.cloudflare.com/client/v4/accounts/{account}/ai/run/@cf/bytedance/stable-diffusion-xl-lightning"
-            r = requests.post(cf_url, headers={"Authorization": f"Bearer {token}"}, json={"prompt": prompt}, timeout=20)
-            if r.status_code == 200 and r.content:
-                return r.content
-        except Exception:
-            pass
-    return None
+    # Seamless fallback to Cloudflare
+    return generate_cloudflare_image(prompt)
+
+
+def generate_full_visual_suite(topic_title, topic_details=""):
+    """
+    Actively utilizes all visual keys to generate 3 distinct assets for every approved package:
+    1. Agnes AI 3D Clay Operator -> Instagram Carousel cover slide
+    2. Cloudflare Workers AI SDXL -> Photorealistic Architecture / In-Action Concept Card (LinkedIn)
+    3. Hugging Face FLUX.1 -> Dark-Mode Cyber Tech Card (Twitter/X)
+    """
+    ts = int(time.time())
+    clay_path = os.path.join(CAROUSEL_DIR, f"clay_{ts}.png")
+    generate_agnes_image(f"3D clay character operator managing {topic_title[:60]}", clay_path)
+
+    cf_card = generate_cloudflare_image(f"Photorealistic enterprise system workflow and data flow for {topic_title[:60]}")
+    flux_card = generate_flux_image(f"Cyber futuristic dark mode proof card for {topic_title[:60]}")
+
+    return {
+        "clay_path": clay_path if os.path.exists(clay_path) else None,
+        "cf_image_bytes": cf_card,
+        "flux_image_bytes": flux_card
+    }
 
 
 # ─── UNIFIED MULTI-PROVIDER & MULTI-KEY LLM FAILOVER CASCADE ───
@@ -438,152 +530,177 @@ def clean_json_response(text):
     return None
 
 
-def call_llm_with_failover(prompt, system_prompt="", json_mode=False, temperature=0.6, timeout=35):
-    """
-    Robust multi-provider, multi-key failover cascade:
-    Tier 1: OpenRouter (DeepSeek V3 / deepseek-chat) across OPENROUTER_KEYS (Key 1 -> Key 2)
-    Tier 2: Gemini 3.5 Flash Lite across GEMINI_KEYS (Key 1 -> Key 2)
-    Tier 3: Gemini 3.6 Flash across GEMINI_KEYS (Key 1 -> Key 2)
-    Tier 4: Groq (openai/gpt-oss-120b)
-    """
-    # Tier 1: OpenRouter (DeepSeek V3)
-    for idx, key in enumerate(OPENROUTER_KEYS):
-        try:
-            msgs = []
-            if system_prompt:
-                msgs.append({"role": "system", "content": system_prompt})
-            msgs.append({"role": "user", "content": prompt})
-            payload = {
-                "model": "deepseek/deepseek-chat",
-                "messages": msgs,
-                "temperature": temperature
-            }
+def _try_openrouter(key, prompt, system_prompt="", json_mode=False, temperature=0.6, timeout=35):
+    try:
+        msgs = []
+        if system_prompt:
+            msgs.append({"role": "system", "content": system_prompt})
+        msgs.append({"role": "user", "content": prompt})
+        payload = {
+            "model": "deepseek/deepseek-chat",
+            "messages": msgs,
+            "temperature": temperature
+        }
+        if json_mode:
+            payload["response_format"] = {"type": "json_object"}
+        res = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+            json=payload,
+            timeout=timeout
+        )
+        if res.status_code == 200:
+            txt = res.json()["choices"][0]["message"]["content"]
             if json_mode:
-                payload["response_format"] = {"type": "json_object"}
-            res = requests.post(
-                "https://openrouter.ai/api/v1/chat/completions",
-                headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-                json=payload,
-                timeout=timeout
-            )
-            if res.status_code == 200:
-                txt = res.json()["choices"][0]["message"]["content"]
-                if json_mode:
-                    parsed = clean_json_response(txt)
-                    if parsed is not None:
-                        print(f"[Cascade SUCCESS]: OpenRouter Key #{idx+1} (DeepSeek V3, JSON)")
-                        return parsed
-                else:
-                    print(f"[Cascade SUCCESS]: OpenRouter Key #{idx+1} (DeepSeek V3)")
-                    return txt
+                parsed = clean_json_response(txt)
+                if parsed is not None:
+                    print(f"[Cascade SUCCESS]: OpenRouter Key ...{key[-4:]} (DeepSeek V3, JSON)")
+                    return parsed
             else:
-                print(f"[Cascade Warn]: OpenRouter Key #{idx+1} status {res.status_code}: {res.text[:80]}")
-        except Exception as e:
-            print(f"[Cascade Error]: OpenRouter Key #{idx+1}: {e}")
+                print(f"[Cascade SUCCESS]: OpenRouter Key ...{key[-4:]} (DeepSeek V3)")
+                return txt
+        else:
+            print(f"[Cascade Warn]: OpenRouter Key ...{key[-4:]} status {res.status_code}: {res.text[:80]}")
+    except Exception as e:
+        print(f"[Cascade Error]: OpenRouter Key ...{key[-4:]}: {e}")
+    return None
 
-    # Tier 2A: Gemini 3.8 Flash (State-of-the-Art Preview)
-    for idx, key in enumerate(reversed(GEMINI_KEYS)):
-        try:
-            c = genai.Client(api_key=key)
-            contents = f"{system_prompt}\n\n{prompt}".strip() if system_prompt else prompt
-            cfg = {"response_mime_type": "application/json"} if json_mode else None
-            r = c.models.generate_content(
-                model="gemini-3.8-flash",
-                contents=contents,
-                config=cfg
-            )
-            if r and r.text:
-                if json_mode:
-                    parsed = clean_json_response(r.text)
-                    if parsed is not None:
-                        print(f"[Cascade SUCCESS]: Gemini Key #{idx+1} (gemini-3.8-flash, JSON)")
-                        return parsed
-                else:
-                    print(f"[Cascade SUCCESS]: Gemini Key #{idx+1} (gemini-3.8-flash)")
-                    return r.text
-        except Exception as e:
-            print(f"[Cascade Error]: Gemini 3.8 Flash Key #{idx+1}: {e}")
 
-    # Tier 2B: Gemini 3.5 Flash Lite (High quota, lightning fast)
-    for idx, key in enumerate(GEMINI_KEYS):
-        try:
-            c = genai.Client(api_key=key)
-            contents = f"{system_prompt}\n\n{prompt}".strip() if system_prompt else prompt
-            cfg = {"response_mime_type": "application/json"} if json_mode else None
-            r = c.models.generate_content(
-                model="gemini-3.5-flash-lite",
-                contents=contents,
-                config=cfg
-            )
-            if r and r.text:
-                if json_mode:
-                    parsed = clean_json_response(r.text)
-                    if parsed is not None:
-                        print(f"[Cascade SUCCESS]: Gemini Key #{idx+1} (gemini-3.5-flash-lite, JSON)")
-                        return parsed
-                else:
-                    print(f"[Cascade SUCCESS]: Gemini Key #{idx+1} (gemini-3.5-flash-lite)")
-                    return r.text
-        except Exception as e:
-            print(f"[Cascade Error]: Gemini Key #{idx+1} (gemini-3.5-flash-lite): {e}")
-
-    # Tier 3: Gemini 3.6 Flash
-    for idx, key in enumerate(GEMINI_KEYS):
-        try:
-            c = genai.Client(api_key=key)
-            contents = f"{system_prompt}\n\n{prompt}".strip() if system_prompt else prompt
-            cfg = {"response_mime_type": "application/json"} if json_mode else None
-            r = c.models.generate_content(
-                model="gemini-3.6-flash",
-                contents=contents,
-                config=cfg
-            )
-            if r and r.text:
-                if json_mode:
-                    parsed = clean_json_response(r.text)
-                    if parsed is not None:
-                        print(f"[Cascade SUCCESS]: Gemini Key #{idx+1} (gemini-3.6-flash, JSON)")
-                        return parsed
-                else:
-                    print(f"[Cascade SUCCESS]: Gemini Key #{idx+1} (gemini-3.6-flash)")
-                    return r.text
-        except Exception as e:
-            print(f"[Cascade Error]: Gemini Key #{idx+1} (gemini-3.6-flash): {e}")
-
-    # Tier 4: Groq (120B)
-    if GROQ_API_KEY:
-        try:
-            msgs = []
-            if system_prompt:
-                msgs.append({"role": "system", "content": system_prompt})
-            msgs.append({"role": "user", "content": prompt})
-            payload = {
-                "model": "openai/gpt-oss-120b",
-                "messages": msgs,
-                "temperature": temperature
-            }
+def _try_gemini(key, model_name, prompt, system_prompt="", json_mode=False, timeout=35):
+    try:
+        c = genai.Client(api_key=key)
+        contents = f"{system_prompt}\n\n{prompt}".strip() if system_prompt else prompt
+        cfg = {"response_mime_type": "application/json"} if json_mode else None
+        r = c.models.generate_content(
+            model=model_name,
+            contents=contents,
+            config=cfg
+        )
+        if r and r.text:
             if json_mode:
-                payload["response_format"] = {"type": "json_object"}
-            res = requests.post(
-                "https://api.groq.com/openai/v1/chat/completions",
-                headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"},
-                json=payload,
-                timeout=timeout
-            )
-            if res.status_code == 200:
-                txt = res.json()["choices"][0]["message"]["content"]
-                if json_mode:
-                    parsed = clean_json_response(txt)
-                    if parsed is not None:
-                        print("[Cascade SUCCESS]: Groq 120B (JSON)")
-                        return parsed
-                else:
-                    print("[Cascade SUCCESS]: Groq 120B")
-                    return txt
+                parsed = clean_json_response(r.text)
+                if parsed is not None:
+                    print(f"[Cascade SUCCESS]: Gemini Key ...{key[-4:]} ({model_name}, JSON)")
+                    return parsed
             else:
-                print(f"[Cascade Warn]: Groq status {res.status_code}: {res.text[:80]}")
-        except Exception as e:
-            print(f"[Cascade Error]: Groq: {e}")
+                print(f"[Cascade SUCCESS]: Gemini Key ...{key[-4:]} ({model_name})")
+                return r.text
+    except Exception as e:
+        print(f"[Cascade Error]: Gemini Key ...{key[-4:]} ({model_name}): {e}")
+    return None
+
+
+def _try_groq(prompt, system_prompt="", json_mode=False, temperature=0.6, timeout=35):
+    if not GROQ_API_KEY:
+        return None
+    try:
+        msgs = []
+        if system_prompt:
+            msgs.append({"role": "system", "content": system_prompt})
+        msgs.append({"role": "user", "content": prompt})
+        payload = {
+            "model": "openai/gpt-oss-120b",
+            "messages": msgs,
+            "temperature": temperature
+        }
+        if json_mode:
+            payload["response_format"] = {"type": "json_object"}
+        res = requests.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"},
+            json=payload,
+            timeout=timeout
+        )
+        if res.status_code == 200:
+            txt = res.json()["choices"][0]["message"]["content"]
+            if json_mode:
+                parsed = clean_json_response(txt)
+                if parsed is not None:
+                    print("[Cascade SUCCESS]: Groq 120B (JSON)")
+                    return parsed
+            else:
+                print("[Cascade SUCCESS]: Groq 120B")
+                return txt
+        else:
+            print(f"[Cascade Warn]: Groq status {res.status_code}: {res.text[:80]}")
+    except Exception as e:
+        print(f"[Cascade Error]: Groq: {e}")
+    return None
+
+
+def call_llm_with_failover(prompt, system_prompt="", json_mode=False, temperature=0.6, timeout=35, preferred=None):
+    """
+    Robust multi-provider, multi-key failover cascade with specialized provider preference:
+    - preferred="groq": Groq 120B -> Gemini Pool -> OpenRouter Pool
+    - preferred="gemini": Gemini Pool (Flash Lite -> Flash 3.8 -> Flash 3.6) -> OpenRouter Pool -> Groq
+    - preferred="openrouter" (default): OpenRouter Pool (DeepSeek V3) -> Gemini Pool -> Groq
+    Uses thread-safe RoundRobinPool rotation across all keys to ensure 100% daily quota utilization.
+    """
+    pref = (preferred or "openrouter").lower()
+
+    if pref == "groq":
+        # 1. Groq (High daily limit 14,400)
+        res = _try_groq(prompt, system_prompt, json_mode, temperature, timeout)
+        if res is not None:
+            return res
+        # 2. Gemini Pool
+        for key in GEMINI_POOL.get_all_ordered():
+            res = _try_gemini(key, "gemini-3.5-flash-lite", prompt, system_prompt, json_mode, timeout)
+            if res is not None:
+                return res
+        # 3. OpenRouter Pool
+        for key in OPENROUTER_POOL.get_all_ordered():
+            res = _try_openrouter(key, prompt, system_prompt, json_mode, temperature, timeout)
+            if res is not None:
+                return res
+
+    elif pref == "gemini":
+        # 1. Gemini Pool (Flash Lite -> Flash 3.8 -> Flash 3.6)
+        for key in GEMINI_POOL.get_all_ordered():
+            res = _try_gemini(key, "gemini-3.5-flash-lite", prompt, system_prompt, json_mode, timeout)
+            if res is not None:
+                return res
+        for key in GEMINI_POOL.get_all_ordered():
+            res = _try_gemini(key, "gemini-3.8-flash", prompt, system_prompt, json_mode, timeout)
+            if res is not None:
+                return res
+        for key in GEMINI_POOL.get_all_ordered():
+            res = _try_gemini(key, "gemini-3.6-flash", prompt, system_prompt, json_mode, timeout)
+            if res is not None:
+                return res
+        # 2. OpenRouter Pool
+        for key in OPENROUTER_POOL.get_all_ordered():
+            res = _try_openrouter(key, prompt, system_prompt, json_mode, temperature, timeout)
+            if res is not None:
+                return res
+        # 3. Groq
+        res = _try_groq(prompt, system_prompt, json_mode, temperature, timeout)
+        if res is not None:
+            return res
+
+    else:  # pref == "openrouter" or fallback
+        # 1. OpenRouter Pool (DeepSeek V3)
+        for key in OPENROUTER_POOL.get_all_ordered():
+            res = _try_openrouter(key, prompt, system_prompt, json_mode, temperature, timeout)
+            if res is not None:
+                return res
+        # 2. Gemini Pool
+        for key in GEMINI_POOL.get_all_ordered():
+            res = _try_gemini(key, "gemini-3.5-flash-lite", prompt, system_prompt, json_mode, timeout)
+            if res is not None:
+                return res
+        for key in GEMINI_POOL.get_all_ordered():
+            res = _try_gemini(key, "gemini-3.8-flash", prompt, system_prompt, json_mode, timeout)
+            if res is not None:
+                return res
+        for key in GEMINI_POOL.get_all_ordered():
+            res = _try_gemini(key, "gemini-3.6-flash", prompt, system_prompt, json_mode, timeout)
+            if res is not None:
+                return res
+        # 3. Groq
+        res = _try_groq(prompt, system_prompt, json_mode, temperature, timeout)
+        if res is not None:
+            return res
 
     return None
 
@@ -757,7 +874,7 @@ CAROUSEL_STYLES = {
 }
 
 
-def render_instagram_carousel(topic_title, topic_details, style="editorial"):
+def render_instagram_carousel(topic_title, topic_details, style="editorial", hero_img_override=None):
     """
     Renders ultra-crisp 1080x1350 portrait carousel slides.
     Flagship: 'editorial' produces 7 warm, magazine-grade slides modeled after @theautomationguy.ai
@@ -1010,7 +1127,7 @@ Return JSON:
 }}
 """
 
-    carousel_json = call_llm_with_failover(user_prompt, system_prompt=system_prompt, json_mode=True, temperature=0.5)
+    carousel_json = call_llm_with_failover(user_prompt, system_prompt=system_prompt, json_mode=True, temperature=0.5, preferred="openrouter")
 
     if not carousel_json or "slides" not in carousel_json or not carousel_json["slides"]:
         return []
@@ -1023,24 +1140,28 @@ Return JSON:
     hero_img_path = ""
     tool_logo_path = get_tool_brand_logo(topic_title)
 
-    # Generate fresh 3D clay illustration for this specific topic using Agnes AI or Hugging Face FLUX.1
-    clean_topic = topic_title.split(" - ")[0].split(". ")[0].strip()
-    clay_prompt = f"Cute 3D clay character operator for {clean_topic[:50]}, stylized warm lighting, white background, octane 3D render, 8k"
-    dyn_img_file = os.path.abspath(os.path.join(CAROUSEL_DIR, f"clay_{ts}.png"))
-
-    if generate_agnes_image(clay_prompt, dyn_img_file):
-        hero_img_path = dyn_img_file.replace("\\", "/")
-        print(f"[CAROUSEL VISUAL]: Generated fresh 3D clay artwork via Agnes AI: {hero_img_path}")
+    if hero_img_override and os.path.exists(hero_img_override):
+        hero_img_path = hero_img_override.replace("\\", "/")
+        print(f"[CAROUSEL VISUAL]: Reusing pre-generated 3D clay artwork: {hero_img_path}")
     else:
-        raw_flux = generate_flux_image(clay_prompt)
-        if raw_flux:
-            try:
-                with open(dyn_img_file, "wb") as f:
-                    f.write(raw_flux)
-                hero_img_path = dyn_img_file.replace("\\", "/")
-                print(f"[CAROUSEL VISUAL]: Generated fresh 3D clay artwork via Hugging Face FLUX: {hero_img_path}")
-            except Exception as e:
-                print(f"[FLUX Save Error]: {e}")
+        # Generate fresh 3D clay illustration for this specific topic using Agnes AI or Hugging Face FLUX.1
+        clean_topic = topic_title.split(" - ")[0].split(". ")[0].strip()
+        clay_prompt = f"Cute 3D clay character operator for {clean_topic[:50]}, stylized warm lighting, white background, octane 3D render, 8k"
+        dyn_img_file = os.path.abspath(os.path.join(CAROUSEL_DIR, f"clay_{ts}.png"))
+
+        if generate_agnes_image(clay_prompt, dyn_img_file):
+            hero_img_path = dyn_img_file.replace("\\", "/")
+            print(f"[CAROUSEL VISUAL]: Generated fresh 3D clay artwork via Agnes AI: {hero_img_path}")
+        else:
+            raw_flux = generate_flux_image(clay_prompt)
+            if raw_flux:
+                try:
+                    with open(dyn_img_file, "wb") as f:
+                        f.write(raw_flux)
+                    hero_img_path = dyn_img_file.replace("\\", "/")
+                    print(f"[CAROUSEL VISUAL]: Generated fresh 3D clay artwork via Hugging Face FLUX: {hero_img_path}")
+                except Exception as e:
+                    print(f"[FLUX Save Error]: {e}")
 
     # For cyberpunk style, generate Agnes AI backgrounds
     bg1, bg2 = "", ""
@@ -1154,7 +1275,7 @@ APPROVE: <Tool Name> | <one-line reason it clears all 3 checks>
 
 Do not explain your reasoning outside the single output line. Do not use markdown.
 """
-    out = call_llm_with_failover(eval_prompt, temperature=0.2, timeout=20)
+    out = call_llm_with_failover(eval_prompt, temperature=0.2, timeout=20, preferred="groq")
     if out:
         out = out.strip()
         if out.startswith("APPROVE"):
@@ -1219,7 +1340,7 @@ OUTPUT FORMAT — You MUST reply with valid JSON only, exactly in this format:
   "target_angle": "<1-sentence viral hook angle if approved, or blank if rejected>"
 }}
 """
-    res = call_llm_with_failover(viral_prompt, json_mode=True, temperature=0.2, timeout=25)
+    res = call_llm_with_failover(viral_prompt, json_mode=True, temperature=0.2, timeout=25, preferred="gemini")
     if not res:
         return False, 0, "Viral evaluator unavailable / timeout", ""
     
@@ -1476,7 +1597,7 @@ em-dash ban across all sections. Fix anything that fails, then output the final
 package only — no notes about what you checked.
 """
     # Generate via Chief Scriptwriter Engine using resilient multi-tier cascade
-    raw_text = call_llm_with_failover(prompt, temperature=0.6, timeout=35)
+    raw_text = call_llm_with_failover(prompt, temperature=0.6, timeout=35, preferred="openrouter")
 
     def extract_tag(tag, text):
         if not text:
@@ -1552,8 +1673,11 @@ package only — no notes about what you checked.
     if len(tweet) > 250:
         tweet = tweet[:247] + "..."
 
-    # Render 6-slide carousel using the chosen style
-    carousel_images = render_instagram_carousel(topic_title, carousel, style=carousel_style)
+    # Actively generate Full Visual Suite across all visual keys (Agnes AI, Cloudflare SDXL, HF FLUX.1)
+    visuals = generate_full_visual_suite(topic_title, topic_details)
+
+    # Render 7-slide carousel using the chosen style, reusing pre-generated 3D clay operator mascot
+    carousel_images = render_instagram_carousel(topic_title, carousel, style=carousel_style, hero_img_override=visuals.get("clay_path"))
 
     return {
         "hook": hook,
@@ -1563,7 +1687,10 @@ package only — no notes about what you checked.
         "tweet": tweet,
         "linkedin": linkedin,
         "carousel": carousel,
-        "carousel_images": carousel_images
+        "carousel_images": carousel_images,
+        "clay_path": visuals.get("clay_path"),
+        "cf_image_bytes": visuals.get("cf_image_bytes"),
+        "flux_image_bytes": visuals.get("flux_image_bytes")
     }
 
 
@@ -1636,7 +1763,7 @@ HARD CONSTRAINTS:
 
 Return only the final monologue text — no preamble, no word count, no notes.
 """
-        elevated_body = call_llm_with_failover(elevation_prompt, temperature=0.5, timeout=30)
+        elevated_body = call_llm_with_failover(elevation_prompt, temperature=0.5, timeout=30, preferred="openrouter")
         if elevated_body:
             body = humanize_text(elevated_body)
             body = ensure_zoro_intro(body)
@@ -2116,6 +2243,24 @@ def deliver_production_package(title, details, source_url="", source_name="", vi
             f"💼 *HIGH-INSIGHT LINKEDIN POST:*\n{pkg.get('linkedin', '')}"
         )
         send_tg_message(TARGET_CHAT_ID, social_msg, bot_token=TELEGRAM_BOT_TOKEN_SOCIAL)
+
+        # Deliver Visual Asset #2: Cloudflare SDXL Architecture Card (LinkedIn)
+        if pkg.get("cf_image_bytes"):
+            send_tg_photo(
+                TARGET_CHAT_ID,
+                pkg["cf_image_bytes"],
+                caption=f"🖼️ *Visual Asset #2: Photorealistic Concept Card (Cloudflare SDXL)*\n📌 *For LinkedIn / Community:* {title[:60]}\n🛡️ *Engine:* Cloudflare Workers AI SDXL-Lightning",
+                bot_token=TELEGRAM_BOT_TOKEN_SOCIAL
+            )
+
+        # Deliver Visual Asset #3: Hugging Face FLUX.1 Cyber Proof Card (X / Twitter)
+        if pkg.get("flux_image_bytes"):
+            send_tg_photo(
+                TARGET_CHAT_ID,
+                pkg["flux_image_bytes"],
+                caption=f"⚡ *Visual Asset #3: Dark-Mode Cyber Proof Card (HF FLUX.1)*\n📌 *For X / Twitter:* {title[:60]}\n🛡️ *Engine:* Hugging Face FLUX.1 Schnell",
+                bot_token=TELEGRAM_BOT_TOKEN_SOCIAL
+            )
     except Exception as e:
         print(f"[Social Bot Dispatch Error]: {e}")
 
@@ -2331,10 +2476,23 @@ def telegram_listener():
                     )
                     send_tg_message(chat_id, social_msg, bot_token=TELEGRAM_BOT_TOKEN_SOCIAL)
 
-                    # Hugging Face FLUX.1 visual proof card
-                    img_bytes = generate_flux_image(f"Futuristic tech proof card for {text[:60]}, dark mode cyber aesthetic, 8k")
-                    if img_bytes:
-                        send_tg_photo(chat_id, img_bytes, caption="🖼️ Hugging Face FLUX.1 Visual Proof Card", bot_token=TELEGRAM_BOT_TOKEN_SOCIAL)
+                    # Deliver Visual Asset #2: Cloudflare SDXL Architecture Card (LinkedIn)
+                    if pkg.get("cf_image_bytes"):
+                        send_tg_photo(
+                            chat_id,
+                            pkg["cf_image_bytes"],
+                            caption=f"🖼️ *Visual Asset #2: Photorealistic Concept Card (Cloudflare SDXL)*\n📌 *For LinkedIn / Community:* {text[:60]}\n🛡️ *Engine:* Cloudflare Workers AI SDXL-Lightning",
+                            bot_token=TELEGRAM_BOT_TOKEN_SOCIAL
+                        )
+
+                    # Deliver Visual Asset #3: Hugging Face FLUX.1 Cyber Proof Card (X / Twitter)
+                    if pkg.get("flux_image_bytes"):
+                        send_tg_photo(
+                            chat_id,
+                            pkg["flux_image_bytes"],
+                            caption=f"⚡ *Visual Asset #3: Dark-Mode Cyber Proof Card (HF FLUX.1)*\n📌 *For X / Twitter:* {text[:60]}\n🛡️ *Engine:* Hugging Face FLUX.1 Schnell",
+                            bot_token=TELEGRAM_BOT_TOKEN_SOCIAL
+                        )
 
         except Exception as e:
             print(f"Error in TG listener: {e}")

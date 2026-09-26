@@ -21,17 +21,11 @@ flowchart TD
         S1 & S2 & S3 & S4 --> S5
     end
 
-    subgraph Step2["Step 2: Multi-Layered Filter & 90% Viral Engagement Gate"]
-        G1{"Layer 1: evaluate_news_worth()<br>Actionable Tool in 24h?"}
-        G2{"Layer 2: evaluate_viral_potential()<br>5 Pillars: Score >= 90/100?"}
-        G3{"Layer 3: RadarGovernor<br>2.5h Cooldown & Max 4/Day?"}
+    subgraph Step2["Step 2: Executive Quality Gate"]
+        G1{"evaluate_news_worth()<br>Groq 120B / DeepSeek V3 / Gemini"}
         S5 --> G1
-        G1 -- "Fail (Gossip/Fluff)" --> Drop["Discard Topic (Suppressed)"]
-        G1 -- "Pass" --> G2
-        G2 -- "Fail (Score < 90)" --> Drop
-        G2 -- "Pass (Score >= 90)" --> G3
-        G3 -- "Cooldown Active" --> Hold["Hold / Defer"]
-        G3 -- "Clear" --> Step3
+        G1 -- "REJECT (Gossip / Fluff)" --> Drop["Discard Topic"]
+        G1 -- "APPROVE: Tool Name | Reason" --> Step3
     end
 
     subgraph Step3["Step 3: Master Studio Scriptwriter Engine"]
@@ -105,31 +99,39 @@ flowchart TD
 
 ---
 
-### STEP 2: Multi-Layered Filter & 90% Viral Engagement Prediction Gate
-* **Goal**: Completely eliminate notification overload on Telegram. Enforce a **$\ge 90\%$ predicted viral breakout threshold** so only 1 to 3 supreme, high-engagement drops reach Telegram daily.
+### STEP 2: Executive Quality Gate (Topic Filtering)
+* **Goal**: Separate real AI breakthroughs from corporate PR, gossip, podcast banter, and vague opinion pieces.
+* **Function**: `evaluate_news_worth(title, summary)`
+* **LLM Cascade**:
+  - Tier 1: OpenRouter DeepSeek V3 (`deepseek/deepseek-chat`)
+  - Tier 2: Gemini 3.8 Flash (`gemini-3.8-flash`) / Gemini 3.5 Flash Lite
+  - Tier 3: Groq 120B (`openai/gpt-oss-120b`)
+* **Prompt**:
+  ```text
+  You are the Executive Producer for Jayant's AI Lab. You screen incoming AI news for a
+  daily short-form video series. Be strict — most items should be rejected.
 
-#### Layer 1: Technical Usability & Freshness Gate (`evaluate_news_worth`)
-* **Checks**:
-  1. Concrete tool/framework usable by a business owner or solo creator within 24 hours?
-  2. Concrete "how it works", not funding rounds, benchmarks, or personnel gossip?
-  3. Genuinely new demo/walkthrough?
-* **If Failed**: Marked `FILTERED_NOT_USABLE`, logged, and permanently suppressed.
+  TITLE: {title}
+  SUMMARY: {summary}
 
-#### Layer 2: 90% Viral Engagement & Breakout Predictor Gate (`evaluate_viral_potential`)
-* **Checks**: Evaluates the topic across the **5 Viral Content Pillars** (0–20 points each, 100 points total):
-  1. **Shock / Wow Factor (0–20)**: Does it feel like magic or sci-fi? Does it create an instant pattern-interrupt?
-  2. **Mass Relatability & Utility (0–20)**: Can non-technical business owners, solo creators, or everyday knowledge workers use it to save hours or make money? (Severely penalizes niche developer-only Python/CUDA scripts).
-  3. **Visual Demo Saliency (0–20)**: Can the breakthrough be visually demonstrated in 15–30s or a 7-slide high-contrast carousel?
-  4. **Urgency & FOMO (0–20)**: Does not knowing this put the viewer at an operational disadvantage?
-  5. **Actionability & Stealability (0–20)**: Can the viewer immediately try the workflow without friction or high costs?
-* **Hard Threshold**: Must score $\ge 90/100$ AND receive `viral_verdict: "APPROVE_VIRAL"`.
-* **If Score < 90**: Marked `FILTERED_LOW_VIRAL (Score: XX/100)` and **NEVER dispatched to Telegram**.
+  Decide using this test, in order:
+  1. Does this describe a specific tool, model, framework, or workflow that a business
+     owner or solo creator could start using within 24 hours?
+  2. Is there a concrete "how it works" or "what it does," not just funding news,
+     personnel changes, opinion pieces, or benchmarks with no usable product?
+  3. Would a demo or walkthrough of this be genuinely new to someone who already
+     follows AI news casually?
 
-#### Layer 3: Pacing Cooldown & Daily Frequency Governor (`RadarGovernor`)
-* **Cooldown**: Enforces a minimum **2.5-hour interval (9,000 seconds)** between automated radar deliveries.
-* **Daily Cap**: Enforces a maximum of **4 automated deliveries per 24 hours**.
-* **State Persistence**: Tracked in `radar_governor.json` so cloud restarts never trigger message bursts.
-* **Manual Override**: Any topic sent directly by Jayant to Telegram DM bypasses the cooldown and generates instantly on demand.
+  If ANY of the three fails, reject.
+
+  OUTPUT FORMAT — reply with exactly one line, nothing else:
+  REJECT: <5-10 word reason>
+  OR
+  APPROVE: <Tool Name> | <one-line reason it clears all 3 checks>
+
+  Do not explain your reasoning outside the single output line. Do not use markdown.
+  ```
+* **Behind the Scenes**: If the model returns `REJECT:`, the topic is recorded in memory and suppressed. If `APPROVE:`, it immediately enters the production pipeline.
 
 ---
 
