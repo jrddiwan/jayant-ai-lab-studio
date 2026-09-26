@@ -96,6 +96,7 @@ CAROUSEL_DIR = "carousel_outputs"
 AVATAR_FLEET_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "assets", "avatars"))
 SEEN_FILE = "seen_topics.json"
 QUOTA_FILE = "api_quota.json"
+RADAR_GOVERNOR_FILE = "radar_governor.json"
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 os.makedirs(CAROUSEL_DIR, exist_ok=True)
@@ -181,6 +182,72 @@ class QuotaManager:
         data["usage"][service_name] = data["usage"].get(service_name, 0) + 1
         cls._save(data)
         print(f"[QUOTA]: {service_name} used {data['usage'][service_name]} / {API_LIMITS.get(service_name, 0)} today")
+
+
+# ─── RADAR DISPATCH GOVERNOR (PREVENTS NOTIFICATION OVERLOAD) ───
+MIN_RADAR_COOLDOWN_SECONDS = 9000  # 2.5 hours (150 minutes) minimum between automated dispatches
+MAX_DAILY_RADAR_DISPATCHES = 4     # Maximum 4 automated studio packages per day
+
+class RadarGovernor:
+    @staticmethod
+    def _load():
+        if os.path.exists(RADAR_GOVERNOR_FILE):
+            try:
+                with open(RADAR_GOVERNOR_FILE, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                pass
+        return {"last_dispatch_ts": 0, "dispatches_today": 0, "current_date": ""}
+
+    @staticmethod
+    def _save(data):
+        try:
+            with open(RADAR_GOVERNOR_FILE, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
+        except Exception as e:
+            print(f"Error saving radar governor state: {e}")
+
+    @classmethod
+    def can_dispatch(cls):
+        data = cls._load()
+        now = time.time()
+        today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        
+        # Reset count on date change
+        if data.get("current_date") != today_str:
+            data["current_date"] = today_str
+            data["dispatches_today"] = 0
+            cls._save(data)
+
+        # Check daily cap
+        if data.get("dispatches_today", 0) >= MAX_DAILY_RADAR_DISPATCHES:
+            reason = f"Daily limit reached ({data.get('dispatches_today')}/{MAX_DAILY_RADAR_DISPATCHES})"
+            print(f"[RADAR GOVERNOR]: {reason}. Skipping automated dispatch.")
+            return False, reason
+
+        # Check cooldown
+        last_ts = data.get("last_dispatch_ts", 0)
+        elapsed = now - last_ts
+        if elapsed < MIN_RADAR_COOLDOWN_SECONDS:
+            remaining_mins = int((MIN_RADAR_COOLDOWN_SECONDS - elapsed) / 60)
+            reason = f"Cooldown active ({remaining_mins}m remaining)"
+            print(f"[RADAR GOVERNOR]: {reason}. Skipping automated dispatch.")
+            return False, reason
+
+        return True, "Ready"
+
+    @classmethod
+    def record_dispatch(cls):
+        data = cls._load()
+        today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        if data.get("current_date") != today_str:
+            data["current_date"] = today_str
+            data["dispatches_today"] = 0
+        data["last_dispatch_ts"] = time.time()
+        data["dispatches_today"] = data.get("dispatches_today", 0) + 1
+        cls._save(data)
+        print(f"[RADAR GOVERNOR]: Recorded dispatch {data['dispatches_today']}/{MAX_DAILY_RADAR_DISPATCHES} for today ({today_str})")
+
 
 
 # ─── TELEGRAM BROADCAST HELPERS ───
@@ -1094,6 +1161,92 @@ Do not explain your reasoning outside the single output line. Do not use markdow
             return True, out.replace("APPROVE:", "").strip()
         elif out.startswith("REJECT"):
             return False, out.replace("REJECT:", "").strip()
+    return False, "Evaluation timeout or rejected by default"
+
+
+# ─── LAYER 2: 90% VIRAL ENGAGEMENT PREDICTOR GATE ───
+VIRAL_SCORE_THRESHOLD = 90  # Strict >=90% probability of viral breakout required
+
+def evaluate_viral_potential(title, details="", source=""):
+    """
+    Evaluates whether an approved story has a >= 90% probability of viral breakout and mass audience engagement.
+    Evaluates against 5 Viral Pillars (0-20 points each, 100 total):
+      1. Shock / Wow Factor (0-20): Counter-intuitive, breakthrough or "magic" capability that stops the scroll.
+      2. Mass Audience Relatability & Utility (0-20): Solves a real problem for solo creators, business owners, or everyday knowledge workers. (Severely penalizes developer-only Python/CUDA scripts).
+      3. Visual Demo Saliency (0-20): Can be visually proven in a 15-30s video or high-contrast 7-slide carousel.
+      4. Urgency & FOMO (0-20): High stakes—ignoring it means falling behind in business/productivity.
+      5. Actionability & Stealability (0-20): Immediate zero/low-cost barrier to test right now.
+      
+    Returns:
+      (is_viral: bool, score: int, reason: str, viral_angle: str)
+    """
+    viral_prompt = f"""You are the Head of Viral Content & Audience Engagement for Jayant's AI Lab.
+Your job is to rigorously evaluate AI news items and PREDICT whether a short-form video (Reel/Short) or Instagram Carousel on this story has a 90%+ probability of exploding in engagement and going viral.
+
+Be ruthlessly selective. Out of 100 tech news stories, only 2 or 3 are true 90%+ viral hits.
+Most tech stories are boring incremental updates, minor library patches, enterprise PR, or developer-only tools that get zero engagement from normal people.
+
+TOPIC TITLE: {title}
+SOURCE / CONTEXT: {source}
+DETAILS: {details}
+
+Evaluate the story across the 5 Viral Pillars (0-20 points each):
+1. WOW FACTOR / SHOCK VALUE (0-20): Does it feel like magic or sci-fi? Does it make someone stop scrolling immediately?
+2. MASS BUSINESS & CREATOR RELATABILITY (0-20): Can a regular business owner, solo creator, student, or non-technical professional use it to save hours or make money? (If it requires Python/Docker/CUDA, max score 5).
+3. VISUAL DEMO SALIENCY (0-20): Can you show a mind-blowing before/after or visual result in 15 seconds on screen?
+4. URGENCY & FOMO (0-20): Does not knowing this make the viewer feel like they are falling behind?
+5. STEALABILITY / ACTIONABILITY (0-20): Can the viewer try this tool or workflow right now on their laptop or phone for free/cheap?
+
+SCORING CRITERIA:
+- 0 to 69: BORING / NICHE / FLUFF. Will fail on social media.
+- 70 to 89: SOLID TECH NEWS, but lacks mainstream breakout virality. Do not dispatch.
+- 90 to 100: ULTRA-VIRAL BREAKOUT HIT. Universal appeal, shocking capability, instant visual proof, immediate utility.
+
+THRESHOLD: Minimum {VIRAL_SCORE_THRESHOLD}/100 required to approve.
+
+OUTPUT FORMAT — You MUST reply with valid JSON only, exactly in this format:
+{{
+  "pillar_scores": {{
+    "wow_factor": <0-20>,
+    "mass_relatability": <0-20>,
+    "visual_saliency": <0-20>,
+    "urgency_fomo": <0-20>,
+    "stealability": <0-20>
+  }},
+  "total_score": <sum of 5 pillars, 0-100>,
+  "viral_verdict": "APPROVE_VIRAL" or "REJECT_LOW_ENGAGEMENT",
+  "viral_reason": "<15-20 word concise breakdown of why it will or will not go viral>",
+  "target_angle": "<1-sentence viral hook angle if approved, or blank if rejected>"
+}}
+"""
+    res = call_llm_with_failover(viral_prompt, json_mode=True, temperature=0.2, timeout=25)
+    if not res:
+        return False, 0, "Viral evaluator unavailable / timeout", ""
+    
+    if isinstance(res, str):
+        try:
+            res = json.loads(res)
+        except Exception:
+            clean = clean_json_response(res)
+            res = clean if clean else {}
+
+    score = 0
+    verdict = ""
+    reason = ""
+    angle = ""
+
+    if isinstance(res, dict):
+        score = int(res.get("total_score", 0))
+        verdict = str(res.get("viral_verdict", "")).strip().upper()
+        reason = str(res.get("viral_reason", "")).strip()
+        angle = str(res.get("target_angle", "")).strip()
+        pillars = res.get("pillar_scores")
+        if isinstance(pillars, dict) and (score == 0 or score is None):
+            score = sum(int(v) for v in pillars.values() if isinstance(v, (int, float, str)) and str(v).isdigit())
+
+    is_viral = (score >= VIRAL_SCORE_THRESHOLD) and ("APPROVE" in verdict or "VIRAL" in verdict)
+    return is_viral, score, reason, angle
+
 
 def synthesize_zoro_voice(body_text):
     """
@@ -1812,24 +1965,81 @@ def check_youtube_uploads():
                         seen_topics[vid_id] = {"title": title, "channel": channel_name, "processed": True}
                         save_memory()
 
+                        # Layer 1: Technical Usability Gate
                         is_worthy, reason = evaluate_news_worth(title)
+                        if not is_worthy:
+                            RECENT_FEED.insert(0, {
+                                "time": datetime.now(timezone.utc).strftime("%H:%M:%S"),
+                                "source": f"YouTube ({channel_name})",
+                                "title": title,
+                                "url": video_url,
+                                "status": "FILTERED_NOT_USABLE",
+                                "reason": reason
+                            })
+                            if len(RECENT_FEED) > 40:
+                                RECENT_FEED.pop()
+                            print(f"[RADAR SUPPRESSED - NOT USABLE]: {title} -> {reason}")
+                            continue
+
+                        # Layer 2: 90% Viral Engagement Prediction Gate
+                        is_viral, v_score, v_reason, v_angle = evaluate_viral_potential(
+                            title,
+                            details=f"Covered by {channel_name} on YouTube: {video_url}",
+                            source=f"YouTube ({channel_name})"
+                        )
+                        if not is_viral:
+                            RECENT_FEED.insert(0, {
+                                "time": datetime.now(timezone.utc).strftime("%H:%M:%S"),
+                                "source": f"YouTube ({channel_name})",
+                                "title": title,
+                                "url": video_url,
+                                "status": f"FILTERED_LOW_VIRAL ({v_score}/100)",
+                                "reason": v_reason
+                            })
+                            if len(RECENT_FEED) > 40:
+                                RECENT_FEED.pop()
+                            print(f"[RADAR SUPPRESSED - LOW VIRAL ({v_score}/100)]: {title} -> {v_reason}")
+                            continue
+
+                        # Layer 3: Pacing Cooldown Governor
+                        can_send, gov_reason = RadarGovernor.can_dispatch()
+                        if not can_send:
+                            RECENT_FEED.insert(0, {
+                                "time": datetime.now(timezone.utc).strftime("%H:%M:%S"),
+                                "source": f"YouTube ({channel_name})",
+                                "title": title,
+                                "url": video_url,
+                                "status": f"HELD_COOLDOWN ({v_score}/100)",
+                                "reason": gov_reason
+                            })
+                            if len(RECENT_FEED) > 40:
+                                RECENT_FEED.pop()
+                            print(f"[RADAR HELD - COOLDOWN]: {title} ({gov_reason})")
+                            continue
+
+                        # Approved & cleared through all layers!
+                        print(f"[RADAR APPROVED FOR DISPATCH ({v_score}/100)]: {title} ({v_reason})")
+                        RadarGovernor.record_dispatch()
                         RECENT_FEED.insert(0, {
                             "time": datetime.now(timezone.utc).strftime("%H:%M:%S"),
                             "source": f"YouTube ({channel_name})",
                             "title": title,
                             "url": video_url,
-                            "status": "APPROVED" if is_worthy else "FILTERED",
-                            "reason": reason
+                            "status": f"DISPATCHED_VIRAL ({v_score}/100)",
+                            "reason": v_reason
                         })
                         if len(RECENT_FEED) > 40:
                             RECENT_FEED.pop()
 
-                        if not is_worthy:
-                            print(f"[RADAR SUPPRESSED]: {title} -> {reason}")
-                            continue
-
-                        print(f"[RADAR APPROVED]: {title} ({reason})")
-                        deliver_production_package(title, f"Covered by {channel_name} on YouTube: {video_url}", source_url=video_url, source_name=f"YouTube ({channel_name})")
+                        deliver_production_package(
+                            title,
+                            f"Covered by {channel_name} on YouTube: {video_url}",
+                            source_url=video_url,
+                            source_name=f"YouTube ({channel_name})",
+                            viral_score=v_score,
+                            viral_reason=v_reason,
+                            viral_angle=v_angle
+                        )
 
         except Exception as e:
             print(f"Error checking YouTube channel {channel_name}: {e}")
@@ -1838,7 +2048,7 @@ def check_youtube_uploads():
 
 
 # ─── MASTER RADAR AGGREGATOR & DISPATCHER ───
-def deliver_production_package(title, details, source_url="", source_name=""):
+def deliver_production_package(title, details, source_url="", source_name="", viral_score=None, viral_reason="", viral_angle=""):
     """Generates, audits (9.9/10 Quality Gate), and delivers the multi-asset production package."""
     # Flagship: Warm Magazine Editorial (7 slides @theautomationguy.ai aesthetic with clear branding)
     chosen_style = "editorial"
@@ -1853,11 +2063,21 @@ def deliver_production_package(title, details, source_url="", source_name=""):
     src_display = source_name or "AI Intelligence Radar"
     src_link = f"[{src_display}]({source_url})" if source_url else f"`{src_display}`"
 
+    viral_block = ""
+    if viral_score is not None:
+        viral_block = (
+            f"🔥 *VIRAL BREAKOUT PREDICTOR:* `{viral_score}/100 [>=90% THRESHOLD PASSED]`\n"
+            f"💡 *WHY IT GOES VIRAL:* _{viral_reason}_\n"
+        )
+        if viral_angle:
+            viral_block += f"🎯 *RECOMMENDED VIRAL ANGLE:* _{viral_angle}_\n"
+
     # 1. Video Production Package (Delivered via Video Bot)
     try:
         video_msg = (
             f"🎬 *RADAR PRODUCTION PACK (9.9/10)*\n"
             f"🛡️ *QUALITY AUDIT:* `9.9/10 [CHIEF QUALITY GATE PASSED]`\n"
+            f"{viral_block}"
             f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
             f"🌐 *SOURCE:* {src_link}\n"
             f"📰 *HEADLINE:* {title}\n"
@@ -1877,7 +2097,8 @@ def deliver_production_package(title, details, source_url="", source_name=""):
     # 2. Instagram Carousel Album (Delivered via Carousel Studio Bot)
     try:
         if pkg.get('carousel_images'):
-            send_tg_album(TARGET_CHAT_ID, pkg['carousel_images'], caption=f"📱 *Instagram Carousel ({chosen_style.upper()} • 9.9/10): {title[:60]}*\n🛡️ *Quality Gate:* `9.9/10 PASSED`\n🌐 *Source:* {src_link}", bot_token=TELEGRAM_BOT_TOKEN_CAROUSEL)
+            v_score_tag = f" • Viral: {viral_score}%" if viral_score is not None else ""
+            send_tg_album(TARGET_CHAT_ID, pkg['carousel_images'], caption=f"📱 *Instagram Carousel ({chosen_style.upper()} • 9.9/10{v_score_tag}): {title[:60]}*\n🛡️ *Quality Gate:* `9.9/10 PASSED`\n🌐 *Source:* {src_link}", bot_token=TELEGRAM_BOT_TOKEN_CAROUSEL)
         else:
             print("[Carousel Bot] No carousel images generated.")
     except Exception as e:
@@ -1888,6 +2109,7 @@ def deliver_production_package(title, details, source_url="", source_name=""):
         social_msg = (
             f"📢 *OMNICHANNEL SOCIAL DISTRIBUTION PACK (9.9/10)*\n"
             f"🛡️ *QUALITY AUDIT:* `9.9/10 [CHIEF QUALITY GATE PASSED]`\n"
+            f"{viral_block}"
             f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
             f"🌐 *ORIGINAL INTEL SOURCE:* {src_link}\n\n"
             f"🐦 *STRICT <= 250 CHAR TWEET:*\n`{pkg.get('tweet', '')}`\n\n"
@@ -1940,25 +2162,83 @@ def check_all_radar_sources():
         seen_topics[url] = {"title": title, "source": source, "type": item_type, "date": datetime.now(timezone.utc).isoformat()}
         save_memory()
 
+        # Layer 1: Technical Usability Gate
         is_worthy, reason = evaluate_news_worth(title)
+        if not is_worthy:
+            RECENT_FEED.insert(0, {
+                "time": datetime.now(timezone.utc).strftime("%H:%M:%S"),
+                "source": source,
+                "title": title,
+                "url": url,
+                "status": "FILTERED_NOT_USABLE",
+                "reason": reason
+            })
+            if len(RECENT_FEED) > 40:
+                RECENT_FEED.pop()
+            print(f"[RADAR HIT SUPPRESSED - NOT USABLE]: [{source}] {title} -> {reason}")
+            continue
+
+        # Layer 2: 90% Viral Engagement Prediction Gate
+        is_viral, v_score, v_reason, v_angle = evaluate_viral_potential(
+            title,
+            details=f"Discovered on {source}: {url}",
+            source=source
+        )
+        if not is_viral:
+            RECENT_FEED.insert(0, {
+                "time": datetime.now(timezone.utc).strftime("%H:%M:%S"),
+                "source": source,
+                "title": title,
+                "url": url,
+                "status": f"FILTERED_LOW_VIRAL ({v_score}/100)",
+                "reason": v_reason
+            })
+            if len(RECENT_FEED) > 40:
+                RECENT_FEED.pop()
+            print(f"[RADAR HIT SUPPRESSED - LOW VIRAL ({v_score}/100)]: [{source}] {title} -> {v_reason}")
+            continue
+
+        # Layer 3: Pacing Cooldown Governor
+        can_send, gov_reason = RadarGovernor.can_dispatch()
+        if not can_send:
+            RECENT_FEED.insert(0, {
+                "time": datetime.now(timezone.utc).strftime("%H:%M:%S"),
+                "source": source,
+                "title": title,
+                "url": url,
+                "status": f"HELD_COOLDOWN ({v_score}/100)",
+                "reason": gov_reason
+            })
+            if len(RECENT_FEED) > 40:
+                RECENT_FEED.pop()
+            print(f"[RADAR HIT HELD - COOLDOWN]: [{source}] {title} ({gov_reason})")
+            continue
+
+        # Approved & cleared through all layers!
+        LAST_DISPATCHED_TYPE = item_type
+        print(f"[RADAR HIT APPROVED FOR DISPATCH ({v_score}/100)]: [{source}] {title} ({v_reason})")
+        RadarGovernor.record_dispatch()
         RECENT_FEED.insert(0, {
             "time": datetime.now(timezone.utc).strftime("%H:%M:%S"),
             "source": source,
             "title": title,
             "url": url,
-            "status": "APPROVED" if is_worthy else "FILTERED",
-            "reason": reason
+            "status": f"DISPATCHED_VIRAL ({v_score}/100)",
+            "reason": v_reason
         })
         if len(RECENT_FEED) > 40:
             RECENT_FEED.pop()
 
-        if is_worthy:
-            LAST_DISPATCHED_TYPE = item_type
-            print(f"[RADAR HIT APPROVED]: [{source}] {title} ({reason})")
-            deliver_production_package(title, f"Discovered on {source}: {url}", source_url=url, source_name=source)
-            break  # Process 1 high-signal item per sweep to prevent spamming
-        else:
-            print(f"[RADAR HIT SUPPRESSED]: [{source}] {title} -> {reason}")
+        deliver_production_package(
+            title,
+            f"Discovered on {source}: {url}",
+            source_url=url,
+            source_name=source,
+            viral_score=v_score,
+            viral_reason=v_reason,
+            viral_angle=v_angle
+        )
+        break  # Process 1 high-signal item per sweep
 
 
 def master_radar_loop():
@@ -2003,15 +2283,26 @@ def telegram_listener():
                             break
 
                     print(f"[MANUAL REQUEST]: {text} (Style: {style})")
-                    send_tg_message(chat_id, f"⚡ *Got it! Generating complete Studio Distribution Package & {style.upper()} Carousel... (Takes ~30s)*", bot_token=TELEGRAM_BOT_TOKEN_VIDEO)
+                    send_tg_message(chat_id, f"⚡ *Got it! Evaluating virality & generating complete Studio Package ({style.upper()})... (Takes ~30s)*", bot_token=TELEGRAM_BOT_TOKEN_VIDEO)
+
+                    # Evaluate viral potential for strategic insight
+                    is_viral, v_score, v_reason, v_angle = evaluate_viral_potential(text, text, source="Jayant On-Demand DM")
 
                     pkg = generate_full_studio_package(text, text, source_url="", carousel_style=style)
                     pkg = audit_and_enhance_content(pkg, text, text)
+
+                    viral_block = (
+                        f"🔥 *VIRAL PREDICTOR:* `{v_score}/100 {'[HIGH VIRALITY]' if is_viral else '[MODERATE/NICHE]'}`\n"
+                        f"💡 *VIRAL INSIGHT:* _{v_reason}_\n"
+                    )
+                    if v_angle:
+                        viral_block += f"🎯 *RECOMMENDED VIRAL ANGLE:* _{v_angle}_\n"
 
                     # Video Pack (Delivered via Video Bot)
                     video_msg = (
                         f"🎬 *VIDEO PRODUCTION PACKAGE READY (9.9/10)*\n"
                         f"🛡️ *QUALITY AUDIT:* `9.9/10 [CHIEF QUALITY GATE PASSED]`\n"
+                        f"{viral_block}"
                         f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
                         f"🎨 *Carousel Style:* `{style.upper()}`\n\n"
                         f"🎯 *YOUR HOOK (Google Vids Avatar):*\n_{pkg['hook']}_\n\n"
@@ -2026,12 +2317,14 @@ def telegram_listener():
 
                     # Instagram Carousel (Delivered via Carousel Bot)
                     if pkg['carousel_images']:
-                        send_tg_album(chat_id, pkg['carousel_images'], caption=f"📱 *Instagram Carousel Deliverable ({style.upper()} • 9.9/10): {text[:60]}*\n🛡️ *Quality Gate:* `9.9/10 PASSED`", bot_token=TELEGRAM_BOT_TOKEN_CAROUSEL)
+                        v_score_tag = f" • Viral: {v_score}%" if v_score else ""
+                        send_tg_album(chat_id, pkg['carousel_images'], caption=f"📱 *Instagram Carousel Deliverable ({style.upper()} • 9.9/10{v_score_tag}): {text[:60]}*\n🛡️ *Quality Gate:* `9.9/10 PASSED`", bot_token=TELEGRAM_BOT_TOKEN_CAROUSEL)
 
                     # Social Pack (Delivered via Social Bot)
                     social_msg = (
                         f"📢 *OMNICHANNEL SOCIAL DISTRIBUTION PACK (9.9/10)*\n"
                         f"🛡️ *QUALITY AUDIT:* `9.9/10 [CHIEF QUALITY GATE PASSED]`\n"
+                        f"{viral_block}"
                         f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
                         f"🐦 *STRICT <= 250 CHAR TWEET:*\n`{pkg['tweet']}`\n\n"
                         f"💼 *HIGH-INSIGHT LINKEDIN POST:*\n{pkg['linkedin']}"
@@ -2059,6 +2352,8 @@ class HealthHandler(BaseHTTPRequestHandler):
             self.end_headers()
             payload = {
                 "quotas": QuotaManager._load(),
+                "radar_governor": RadarGovernor._load(),
+                "viral_threshold": VIRAL_SCORE_THRESHOLD,
                 "recent_feed": RECENT_FEED,
                 "sources_online": True,
                 "bot_routing": {

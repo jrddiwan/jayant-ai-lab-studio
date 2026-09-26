@@ -205,3 +205,28 @@ Deliver strictly to Jayant's personal chat ID (`7007116692`):
 - **Bot 1: Video Studio Bot** (`TELEGRAM_BOT_TOKEN_VIDEO`) $\rightarrow$ Video Script + Kling/Luma B-Roll Prompts + Zoro Audio Track.
 - **Bot 2: Carousel Studio Bot** (`TELEGRAM_BOT_TOKEN_CAROUSEL`) $\rightarrow$ 7-Slide Editorial Instagram Album (with dynamic 3D clay characters & tool logos).
 - **Bot 3: Social & News Bot** (`TELEGRAM_BOT_TOKEN_SOCIAL`) $\rightarrow$ Strict $\le 250$ Char Tweet (No Bio) + High-Insight LinkedIn Founder Post.
+
+---
+
+## 7. MULTI-LAYERED FILTER & 90% VIRAL ENGAGEMENT PREDICTION GATE
+
+To permanently eliminate Telegram notification overload and guarantee only breakout, high-engagement content reaches Jayant's Telegram:
+
+1. **Layer 1: Technical Usability & Actionability Gate (`evaluate_news_worth`)**:
+   - Strictly enforces the 3-step test: usable in 24 hours, concrete "how it works", genuinely new.
+   - Suppresses podcast banter, funding PR, benchmarks, and non-actionable fluff.
+2. **Layer 2: 90% Viral Engagement & Breakout Predictor Gate (`evaluate_viral_potential`)**:
+   - Evaluates the topic across the **5 Viral Content Pillars** (0–20 points each, 100 total):
+     1. *Shock / Wow Factor (0–20)*: Counter-intuitive, breakthrough or "magic" capability that stops the scroll.
+     2. *Mass Audience Relatability & Utility (0–20)*: Solves a real problem for solo creators, business owners, or everyday knowledge workers. (Severely penalizes developer-only Python/CUDA scripts).
+     3. *Visual Demo Saliency (0–20)*: Can be visually proven in a 15–30s video or high-contrast 7-slide carousel.
+     4. *Urgency & FOMO (0–20)*: High stakes—ignoring it means falling behind in business/productivity.
+     5. *Actionability & Stealability (0–20)*: Immediate zero/low-cost barrier to test right now.
+   - **Hard Threshold**: Must score **$\ge 90/100$** AND receive `APPROVE_VIRAL`.
+   - **Suppression Policy**: Any story scoring $< 90$ is logged as `FILTERED_LOW_VIRAL` and **NEVER sent to Telegram**.
+3. **Layer 3: Dispatch Pacing & Frequency Governor (`RadarGovernor`)**:
+   - Minimum **2.5-hour interval (9,000 seconds)** cooldown between automated radar deliveries.
+   - Maximum **4 automated studio packages per 24 hours**.
+   - State persisted in `radar_governor.json` across cloud restarts.
+   - Jayant's direct Telegram DM commands bypass the cooldown and generate on demand.
+
