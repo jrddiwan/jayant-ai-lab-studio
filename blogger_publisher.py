@@ -201,9 +201,9 @@ def generate_blogger_article_html(topic_title, topic_details="", source_url="", 
     styled_html = f"""<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.7; color: #222; max-width: 780px; margin: 0 auto; font-size: 16px;">
 {cleaned}
 <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 35px 0;" />
-<div style="background: #f8f9fa; border-left: 4px solid #00c853; padding: 16px; border-radius: 4px; font-size: 14px; color: #444;">
-  <p style="margin: 0 0 8px 0;"><strong>Published by Jayant's AI Lab</strong> — South Delhi, India</p>
-  <p style="margin: 0;">Autonomous AI Engineering, Daily Tech Intelligence & Production Workflows. Connect on Telegram: <a href="https://t.me/jayantsailab" style="color: #0070f3; text-decoration: none;">@jayantsailab</a></p>
+<div style="background: #f8fafc; border-left: 4px solid #00c853; padding: 16px; border-radius: 6px; font-size: 14px; color: #444;">
+  <p style="margin: 0 0 6px 0; font-weight: 700; color: #0f172a;">Jayant's AI Lab</p>
+  <p style="margin: 0;">Daily AI Intelligence, Technical Research & Production Workflows. Connect on Telegram: <a href="https://t.me/jayantsailab" style="color: #00873a; font-weight: 600; text-decoration: none;">@jayantsailab</a></p>
 </div>
 </div>"""
 

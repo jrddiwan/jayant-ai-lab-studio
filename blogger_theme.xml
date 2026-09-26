@@ -214,7 +214,7 @@
 
   <!-- Site Footer -->
   <footer class='site-footer'>
-    <p>&#169; <data:blog.title/> &#8212; Curated by <strong>Jayant&#39;s AI Lab</strong>. Published autonomously via Groq 120B &amp; Cloudflare Workers.</p>
+    <p>&#169; <data:blog.title/> &#8212; <strong>Jayant&#39;s AI Lab</strong>. Daily AI Intelligence &amp; Technical Workflows.</p>
   </footer>
 
 </body>
