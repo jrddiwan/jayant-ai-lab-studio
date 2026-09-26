@@ -12,20 +12,15 @@
 
 ### A. The Avatar Hook (Google Vids Avatar / Jayant)
 * **Target Speaker**: Jayant (Founder Avatar)
-* **Strict Length**: Exactly 12 to 22 words (4 to 6 seconds speaking time).
-* **Source Taxonomy**: Selected from the **1,000 Viral Hooks Vault** (`1,000 Viral Hooks (PBL) 2.pdf`):
-  1. *Educational 60-Second Speed Run*: "Can you tell us how to {result} in 60 seconds? Here is exactly how much {action} you need."
-  2. *The Decade Condensation*: "It took me 10 years to learn this, but I will teach it to you in less than 60 seconds."
-  3. *Before vs After / Old vs New*: "This is an old manual agency setup, and this is an autonomous agent lab. For this cost, you could have all of this."
-  4. *Contrarian / Myth Buster*: "They said '{famous_quote}'. That is a lie. Here is what actually happens in production."
-  5. *Wake-Up Pain*: "Stop paying $4,000/mo retainers for manual AI tasks. You are burning hours without even realizing it."
+* **Structure**: **EXACTLY 3 POWERFUL LINES**:
+  - **Line 1 (Pattern Interrupt / Contrarian Premise)**: A punchy, scroll-stopping premise from Jayant's builder perspective.
+  - **Line 2 (Concrete Reality / Metric / Proof)**: High-conviction reality or quantifiable speed/cost benchmark.
+  - **Line 3 (Clean Signature Handover)**: Introduces Zoro smoothly and cleanly.
 * **MANDATORY SIGNATURE HANDOVER**:
-  The hook **MUST ALWAYS END** with Jayant handing over to Zoro.
-  - *Format*: `"[Hook interrupt line]... Now my AI employee Zoro will tell you about it."`
-  - *Stylistic Variations Allowed*:
-    - `"...Now my AI employee Zoro will break down the exact setup."`
-    - `"...Now my AI employee Zoro will show you how we use this at the Lab."`
-    - `"...Now my AI employee Zoro will walk you through the actual numbers."`
+  - The hook **MUST ALWAYS END** with Line 3 handing over to Zoro.
+  - **STRICT RULE**: Mention Zoro **EXACTLY ONCE** in the entire hook (strictly in Line 3).
+  - **BANNED PHRASES**: Never say clunky clichés like *"Pass it to Zoro for the mechanics"* or duplicate Zoro's name.
+  - *Format*: `"Now my AI employee Zoro will show you how."` or `"Now my AI employee Zoro will break down the real workflow."`
 
 ---
 
@@ -62,9 +57,10 @@
 
 ### C. The Avatar Call to Action (CTA)
 * **Target Speaker**: Jayant (Founder Avatar)
-* **Length**: Exactly 1 punchy sentence.
-* **Rule**: Direct to comments or DM. **ABSOLUTE BAN ON "IN BIO"** (there is nothing in the bio).
-  - *Example*: `"Save this breakdown for your team, and drop a comment below with your questions."`
+* **Structure**: **EXACTLY 2 POWERFUL LINES**:
+  - **Line 1 (Tactical Action & Retention)**: Ask for a specific high-value action (e.g., *"Save this breakdown for your next build sprint and drop your biggest automation bottleneck in the comments below."*).
+  - **Line 2 (Authority & Community Retention)**: *"Follow @jayantsailab for battle-tested autonomous AI blueprints you can deploy today."*
+* **Rule**: Direct to comments or save post. **ABSOLUTE BAN ON "IN BIO"** (there is nothing in the bio).
 
 ---
 

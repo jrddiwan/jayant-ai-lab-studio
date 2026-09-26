@@ -820,31 +820,98 @@ def humanize_text(t):
 
 
 def ensure_hook_handover(hook_text):
+    """
+    Enforces a powerful 3-line hook structure:
+    Line 1: High-conviction problem / contrarian premise from Jayant.
+    Line 2: Concrete proof / reality / metric.
+    Line 3: Clean, punchy handover to Zoro (mentioning Zoro exactly ONCE).
+    """
     if not hook_text:
-        return "The biggest AI breakthrough of the week just dropped. Now my AI employee Zoro will show you how."
+        return (
+            "Most creators waste dozens of hours every week on manual busywork that software should solve.\n"
+            "This new AI breakthrough automates the entire workflow locally in seconds with zero coding.\n"
+            "Now my AI employee Zoro will show you how."
+        )
     h = hook_text.strip().strip('"').strip("'")
     h = re.sub(r'[\s,"\'\-#]+$', '', h)
     
-    # 1. Scrub awkward "pass to Zoro for the mechanics" or clunky duplicate handovers
-    h = re.sub(r'(?i)\s*(?:pass\s+(?:it\s+)?to\s+zoro[^.!?]*[.!?]?)', '', h)
-    h = re.sub(r'(?i)\s*(?:over\s+to\s+zoro[^.!?]*[.!?]?)', '', h)
-    h = re.sub(r'(?i)\s*(?:handing\s+(?:over\s+)?to\s+zoro[^.!?]*[.!?]?)', '', h)
-    h = re.sub(r'(?i)\s*(?:let\'?s\s+pass\s+to\s+zoro[^.!?]*[.!?]?)', '', h)
-    h = h.strip()
-    h_lower = h.lower()
+    # 1. Scrub any previous Zoro handover phrases anywhere in the text
+    h = re.sub(r'(?i)\s*(?:pass\s+(?:it\s+)?to\s+zoro[^.!?\n]*[.!?]?)', '', h)
+    h = re.sub(r'(?i)\s*(?:over\s+to\s+zoro[^.!?\n]*[.!?]?)', '', h)
+    h = re.sub(r'(?i)\s*(?:handing\s+(?:over\s+)?to\s+zoro[^.!?\n]*[.!?]?)', '', h)
+    h = re.sub(r'(?i)\s*(?:let\'?s\s+pass\s+to\s+zoro[^.!?\n]*[.!?]?)', '', h)
+    h = re.sub(r'(?i)\s*now\s+my\s+ai\s+employee\s+zoro[^.!?\n]*[.!?]?', '', h)
+    h = re.sub(r'(?i)\s*zoro[,\s]+(?:break\s*down|show|tell|walk|explain|take\s*it|it\'?s\s*your\s*turn)[^.!?\n]*[.!?]?', '', h)
+    h = re.sub(r'(?i)\s*zoro\s+will[^.!?\n]*[.!?]?', '', h)
     
-    # 2. If it already has a clean single mention of Zoro as an AI employee
-    if 'zoro' in h_lower and any(w in h_lower for w in ['employee zoro', 'zoro will show', 'zoro will break', 'zoro will explain', 'zoro will walk', 'zoro will tell']):
-        if h_lower.count('zoro') == 1:
-            return h.rstrip('.!? ') + '.'
-            
-    # 3. Otherwise clean any partial mention and append single crisp handover (mention Zoro once only)
-    h = re.sub(r'(?i)\s*now\s+my\s+ai\s+employee\s+zoro[^.!?]*[.!?]?', '', h)
-    h = re.sub(r'(?i)\s*zoro\s+will[^.!?]*[.!?]?', '', h)
-    clean_h = h.strip().rstrip('.!? ')
-    if not clean_h:
-        clean_h = "The biggest AI breakthrough of the week just dropped"
-    return f"{clean_h}. Now my AI employee Zoro will show you how."
+    # Split text into clean lines or sentences
+    raw_lines = [l.strip().rstrip(".!? ") for l in h.split("\n") if l.strip()]
+    sentences = []
+    for l in raw_lines:
+        s_parts = [s.strip().rstrip(".!? ") for s in re.split(r'(?<=[.!?])\s+', l) if s.strip()]
+        sentences.extend(s_parts)
+
+    # Filter out leftover single words or accidental Zoro mentions
+    valid_sentences = [s for s in sentences if len(s.split()) >= 3 and not re.search(r'(?i)\bzoro\b', s)]
+
+    if len(valid_sentences) >= 2:
+        line1 = valid_sentences[0].rstrip(".!? ")
+        line2 = valid_sentences[1].rstrip(".!? ")
+    elif len(valid_sentences) == 1:
+        line1 = valid_sentences[0].rstrip(".!? ")
+        line2 = "You do not need a $10,000 server rack or high-end GPUs to deploy local autonomous AI for your business"
+    else:
+        line1 = "Most creators waste dozens of hours every week on manual busywork that software should solve"
+        line2 = "This new AI breakthrough automates the entire workflow locally in seconds with zero coding"
+
+    final_hook = f"{line1}.\n{line2}.\nNow my AI employee Zoro will show you how."
+    return final_hook
+
+
+def ensure_powerful_cta(cta_text):
+    """
+    Enforces a powerful 2-line CTA structure:
+    Line 1: High-stakes tactical action (Save blueprint / drop comment).
+    Line 2: Authority & Community retention (Follow @jayantsailab).
+    Strictly forbids 'in bio' references.
+    """
+    if not cta_text:
+        return (
+            "Save this breakdown for your next build sprint and drop your biggest bottleneck in the comments below.\n"
+            "Follow @jayantsailab for battle-tested autonomous AI blueprints you can deploy today."
+        )
+    c = humanize_text(cta_text.strip().strip('"').strip("'"))
+    c = re.sub(r'(?i)\s*(?:full\s+)?(?:breakdown|tutorial|blueprint|guide|link)?\s*(?:in|check)\s+(?:the\s+)?bio\.?', '', c)
+    c = re.sub(r'(?i)\s*link\s+in\s+bio\.?', '', c).strip()
+    
+    raw_lines = [l.strip().rstrip(".!? ") for l in c.split("\n") if l.strip()]
+    sentences = []
+    for l in raw_lines:
+        s_parts = [s.strip().rstrip(".!? ") for s in re.split(r'(?<=[.!?])\s+', l) if s.strip()]
+        sentences.extend(s_parts)
+
+    line2_default = "Follow @jayantsailab for battle-tested autonomous AI blueprints you can deploy today."
+
+    if len(sentences) >= 2:
+        l1 = sentences[0]
+        l2 = sentences[1]
+        l1 = re.sub(r'(?i)\s*(?:and\s+)?follow\s+@?jayantsailab.*', '', l1).strip().rstrip(",. ")
+        if "save" not in l1.lower() and "comment" not in l1.lower():
+            l1 = "Save this breakdown for your next build sprint and drop your thoughts in the comments below"
+        if "jayantsailab" not in l2.lower():
+            l2 = line2_default
+        return f"{l1.rstrip('.!? ')}.\n{l2.rstrip('.!? ')}."
+    elif len(sentences) == 1:
+        l1 = sentences[0]
+        l1 = re.sub(r'(?i)\s*(?:and\s+)?follow\s+@?jayantsailab.*', '', l1).strip().rstrip(",. ")
+        if "save" not in l1.lower() and "comment" not in l1.lower():
+            l1 = f"{l1} — save this post and drop your questions in the comments below"
+        return f"{l1.rstrip('.!? ')}.\n{line2_default}"
+    else:
+        return (
+            "Save this breakdown for your next build sprint and drop your biggest bottleneck in the comments below.\n"
+            "Follow @jayantsailab for battle-tested autonomous AI blueprints you can deploy today."
+        )
 
 
 # ─── ZORO DYNAMIC CREATOR INTROS (ALWAYS FRESH, NEVER REPETITIVE) ───
@@ -1606,10 +1673,11 @@ Produce the following 7 sections in this exact order, each starting with its bra
 label on its own line.
 
 [HOOK]
-- 12 to 22 words total. Count before you finalize.
-- Do not restate the headline. Open with a contrarian or surprising claim from
-  Jayant's builder point of view.
-- Handover constraint: Mention Zoro ONCE and ONLY ONCE in the entire hook. Never write awkward clichés like "Pass it to Zoro for the mechanics". End cleanly with: "Now my AI employee Zoro will show you how." or "Now my AI employee Zoro will break down the real workflow."
+- Must be EXACTLY 3 POWERFUL LINES (separated by line breaks):
+  Line 1: High-conviction contrarian claim or shocking premise from Jayant (e.g. "Most creators waste 20+ hours a week on manual busywork that software should solve.")
+  Line 2: Concrete high-stakes proof, reality, or speed benchmark (e.g. "This new AI breakthrough automates the entire pipeline locally in seconds with zero coding.")
+  Line 3: Clean, high-energy handover introducing Zoro: "Now my AI employee Zoro will show you how." (or "Now my AI employee Zoro will break down the real workflow.")
+- Strict rule: Mention Zoro ONCE and ONLY ONCE in the entire hook (strictly in Line 3). Never write awkward filler like "Pass it to Zoro for the mechanics".
 
 [ZORO_BODY]
 - Exactly 60 to 75 words. Count before you finalize — if it's outside this range,
@@ -1635,8 +1703,10 @@ label on its own line.
   Kling/Luma/Runway (subject, action, camera movement, lighting — no dialogue).
 
 [CTA]
-- One sentence only. Must ask for a specific action (save, comment, follow) — not
-  a vague "check this out."
+- Must be EXACTLY 2 POWERFUL LINES:
+  Line 1: High-stakes tactical retention action (e.g., "Save this breakdown for your team's next sprint and drop your biggest automation bottleneck in the comments below.")
+  Line 2: Authority & community call-to-action: "Follow @jayantsailab for battle-tested autonomous AI blueprints you can deploy today."
+- Absolute ban on "in bio" or "link in bio" (there is nothing in bio).
 
 [TWEET]
 - 140 to 240 characters. Count before you finalize.
@@ -1712,7 +1782,11 @@ package only — no notes about what you checked.
 
     # Rich, high-conviction fallbacks in simple 30-second school-kid creator style (ZERO mentions of bio)
     clean_topic = topic_title.split(" - ")[0].split(". ")[0].strip()
-    fallback_hook = f"If you are still spending hours on manual busywork, stop. This new AI breakthrough does it in 15 seconds. Now my AI employee Zoro will show you how."
+    fallback_hook = (
+        f"Most creators waste dozens of hours every week on manual busywork that software should solve.\n"
+        f"This new AI breakthrough from {clean_topic} automates the entire workflow locally in seconds with zero coding.\n"
+        f"Now my AI employee Zoro will show you how."
+    )
     dynamic_intro = random.choice(ZORO_DYNAMIC_INTROS)
     fallback_body = (
         f"{dynamic_intro} Imagine having fifty pages of boring homework to read every single day. "
@@ -1737,11 +1811,15 @@ package only — no notes about what you checked.
         f"The payoff? Saving 10+ hours every single week without hiring extra staff.\n\n"
         f"Save this post to test this workflow with your team, and drop a comment below with your thoughts."
     )
+    fallback_cta = (
+        "Save this breakdown for your next build sprint and drop your biggest bottleneck in the comments below.\n"
+        "Follow @jayantsailab for battle-tested autonomous AI blueprints you can deploy today."
+    )
 
     hook = extract_tag("HOOK", raw_text) or fallback_hook
     body = extract_tag("ZORO_BODY", raw_text) or fallback_body
     b_roll = extract_tag("B_ROLL_LIST", raw_text) or "• [00:08 - 00:20] Screen capture of tool UI\n• [00:20 - 00:35] Side-by-side speed test"
-    cta = extract_tag("CTA", raw_text) or "Save this breakdown for your next build sprint, and follow @jayantsailab for battle-tested AI blueprints."
+    cta = extract_tag("CTA", raw_text) or fallback_cta
     tweet = extract_tag("TWEET", raw_text) or fallback_tweet
     linkedin = extract_tag("LINKEDIN", raw_text) or fallback_linkedin
     carousel = extract_tag("CAROUSEL", raw_text) or "Slide 1: Breaking AI Update\nSlide 2: Check it out!"
@@ -1749,7 +1827,7 @@ package only — no notes about what you checked.
     # Signature format guarantees
     hook = ensure_hook_handover(humanize_text(hook))
     body = ensure_zoro_intro(humanize_text(body))
-    cta = humanize_text(cta)
+    cta = ensure_powerful_cta(cta)
     tweet = humanize_text(tweet)
     linkedin = humanize_text(linkedin)
 
@@ -1890,12 +1968,12 @@ Return only the final monologue text — no preamble, no word count, no notes.
         )
 
     # 6. Safety & Humanizer Double Pass
-    hook = humanize_text(hook)
+    hook = ensure_hook_handover(hook)
     body = humanize_text(body)
     body = ensure_zoro_intro(body)
     tweet = humanize_text(tweet)
     linkedin = humanize_text(linkedin)
-    cta = humanize_text(cta)
+    cta = ensure_powerful_cta(cta)
 
     # 7. Synthesize Zoro Voice Track strictly for the FINAL APPROVED script
     print(f"[QUALITY MONITOR AGENT]: Synthesizing Zoro audio for final approved script ({len(body.split())} words)...")
