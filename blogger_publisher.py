@@ -132,11 +132,18 @@ def publish_to_blogger(title, html_content, image_paths=None, image_bytes_list=N
     except Exception as e:
         print(f"[BLOGGER SAVE WARN]: {e}")
 
-    if not BLOGGER_POST_EMAIL:
+    load_dotenv()
+    post_email = os.getenv("BLOGGER_POST_EMAIL", BLOGGER_POST_EMAIL)
+    smtp_pass = os.getenv("SMTP_PASS", SMTP_PASS)
+    smtp_user = os.getenv("SMTP_USER", SMTP_USER)
+    smtp_host = os.getenv("SMTP_HOST", SMTP_HOST)
+    smtp_port = int(os.getenv("SMTP_PORT", str(SMTP_PORT)))
+
+    if not post_email:
         print("[BLOGGER INFO]: BLOGGER_POST_EMAIL not configured in .env. Article saved locally only.")
         return False, "BLOGGER_POST_EMAIL not set in .env"
 
-    if not SMTP_PASS:
+    if not smtp_pass:
         print("[BLOGGER INFO]: SMTP_PASS (Gmail App Password) not configured in .env. Article saved locally only.")
         return False, "SMTP_PASS not set in .env"
 
@@ -146,8 +153,8 @@ def publish_to_blogger(title, html_content, image_paths=None, image_bytes_list=N
 
     msg = MIMEMultipart("mixed")
     msg["Subject"] = subject
-    msg["From"] = SMTP_USER
-    msg["To"] = BLOGGER_POST_EMAIL
+    msg["From"] = smtp_user
+    msg["To"] = post_email
     msg["Date"] = datetime.now(timezone.utc).strftime("%a, %d %b %Y %H:%M:%S +0000")
 
     # Add HTML body
@@ -181,16 +188,16 @@ def publish_to_blogger(title, html_content, image_paths=None, image_bytes_list=N
 
     # Dispatch via SMTP
     try:
-        print(f"[BLOGGER]: Connecting to SMTP ({SMTP_HOST}:{SMTP_PORT}) as {SMTP_USER}...")
-        server = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30)
+        print(f"[BLOGGER]: Connecting to SMTP ({smtp_host}:{smtp_port}) as {smtp_user}...")
+        server = smtplib.SMTP(smtp_host, smtp_port, timeout=30)
         server.ehlo()
         server.starttls()
         server.ehlo()
-        server.login(SMTP_USER, SMTP_PASS)
-        server.sendmail(SMTP_USER, [BLOGGER_POST_EMAIL], msg.as_string())
+        server.login(smtp_user, smtp_pass)
+        server.sendmail(smtp_user, [post_email], msg.as_string())
         server.quit()
         print(f"[BLOGGER SUCCESS]: Article published live to Blogger via email -> '{clean_title}'")
         return True, "Published to Blogger successfully"
     except Exception as e:
-        print(f"[BLOGGER SMTP ERROR]: Failed dispatching to {BLOGGER_POST_EMAIL}: {e}")
+        print(f"[BLOGGER SMTP ERROR]: Failed dispatching to {post_email}: {e}")
         return False, str(e)
