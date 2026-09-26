@@ -257,7 +257,8 @@ def publish_to_blogger(title, html_content, image_paths=None, image_bytes_list=N
             if len(extracted) > 10:
                 clean_title = extracted
 
-    subject = f"[AI Tools, Automation, Jayant's AI Lab] {clean_title}"
+    # Use clean, keyword-optimized headline for maximum Google Search ranking and clean UI
+    subject = clean_title
 
     msg = MIMEMultipart("mixed")
     msg["Subject"] = subject

@@ -1,38 +1,61 @@
 /* ================================================================
-   JAYANT'S AI LAB — MODERN TECH PUBLICATION THEME (Substack & Linear Style)
-   Paste this into Blogger: Themes -> Customize -> Advanced -> Add CSS
+   JAYANT'S AI LAB — SUBSTACK & LINEAR MINIMAL PUBLICATION THEME
+   Fixes Contempo uneven overlap, removes desert photo banner,
+   and creates a clean, centered 760px reading container.
+   Paste into: Themes -> Customize -> Advanced -> Add CSS
    ================================================================ */
 
-/* 1. Global Typography & Core Variables */
+/* 1. Global Variables & Background Reset */
 :root {
   --primary-accent: #00c853;       /* Emerald Green */
   --primary-accent-hover: #00e676;
   --bg-color: #ffffff;
-  --text-main: #111827;            /* Deep slate */
+  --text-main: #111827;            /* Deep Slate */
   --text-muted: #64748b;           /* Slate 500 */
-  --card-bg: #ffffff;
   --card-border: #e2e8f0;          /* Crisp 1px border */
   --code-bg: #0d1117;
   --code-text: #00ffaa;
-  --max-article-width: 740px;
+  --max-article-width: 760px;
 }
 
-/* 2. Container & Reading Width */
-.post-outer, .post-body, .blog-posts, .main .widget, .post {
-  max-width: var(--max-article-width) !important;
-  margin: 0 auto !important;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", Helvetica, Arial, sans-serif !important;
-  font-size: 17px !important;
-  line-height: 1.75 !important;
+body {
+  background-color: #ffffff !important;
+  background-image: none !important;
   color: var(--text-main) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif !important;
+  -webkit-font-smoothing: antialiased !important;
 }
 
-/* 3. Header & Publication Branding */
+/* 2. Kill Contempo Desert Photo Banner & Negative Overlaps */
+.bg-photo-container, .bg-photo, .bg-photo-overlay, .centered-top-placeholder {
+  display: none !important;
+  height: 0 !important;
+}
+
+.centered-top-container {
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+}
+
+.centered-bottom, .centered {
+  margin-top: 0 !important;
+  top: 0 !important;
+  max-width: var(--max-article-width) !important;
+  width: 100% !important;
+  padding: 0 16px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  transform: none !important;
+}
+
+/* 3. Clean Site Header Branding (Substack Style) */
 .header-widget, .header-inner, .BlogHeader {
   text-align: center !important;
-  padding: 40px 0 25px 0 !important;
+  padding: 45px 0 25px 0 !important;
   border-bottom: 1px solid var(--card-border) !important;
-  margin-bottom: 35px !important;
+  margin: 0 auto 35px auto !important;
+  max-width: var(--max-article-width) !important;
 }
 
 .header-widget h1, .header-widget h1 a, .titlewrapper h1, .titlewrapper a {
@@ -52,13 +75,49 @@
   letter-spacing: -0.01em !important;
 }
 
-/* 4. Headings */
+/* 4. Balanced, Even, Centered Post Card */
+.post-outer, .post, article {
+  background: #ffffff !important;
+  border: 1px solid var(--card-border) !important;
+  border-radius: 12px !important;
+  padding: 36px 32px !important;
+  margin: 0 auto 36px auto !important;
+  max-width: var(--max-article-width) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03) !important;
+  transform: none !important;
+}
+
+.post-body, .blog-posts, .main .widget {
+  max-width: 100% !important;
+  margin: 0 auto !important;
+  font-size: 17px !important;
+  line-height: 1.8 !important;
+  color: #1f2937 !important;
+}
+
+/* 5. Clean Post Title (No Awkward Breaks) */
+.post-title, .post-title a, h2.post-title, h1.post-title {
+  color: #0f172a !important;
+  font-weight: 800 !important;
+  font-size: 28px !important;
+  text-decoration: none !important;
+  line-height: 1.3 !important;
+  letter-spacing: -0.02em !important;
+  margin-bottom: 16px !important;
+  display: block !important;
+}
+
+.post-title a:hover {
+  color: var(--primary-accent) !important;
+}
+
+/* 6. Typography & Headings */
 .post-body h2 {
   font-size: 24px !important;
   font-weight: 700 !important;
   color: #0f172a !important;
-  margin-top: 38px !important;
-  margin-bottom: 14px !important;
+  margin-top: 40px !important;
+  margin-bottom: 16px !important;
   letter-spacing: -0.02em !important;
   line-height: 1.35 !important;
   border-bottom: 1px solid #f1f5f9 !important;
@@ -69,106 +128,61 @@
   font-size: 20px !important;
   font-weight: 600 !important;
   color: #1e293b !important;
-  margin-top: 28px !important;
-  margin-bottom: 10px !important;
+  margin-top: 30px !important;
+  margin-bottom: 12px !important;
   letter-spacing: -0.01em !important;
 }
 
-/* 5. Paragraphs & Lists */
 .post-body p {
-  margin-bottom: 20px !important;
+  margin-bottom: 22px !important;
 }
 
 .post-body ul, .post-body ol {
   padding-left: 24px !important;
-  margin-bottom: 22px !important;
+  margin-bottom: 24px !important;
 }
 
 .post-body li {
   margin-bottom: 8px !important;
 }
 
-/* 6. Code Blocks (Linear / GitHub Dark style) */
+/* 7. Code Blocks (Dark Terminal) */
 .post-body pre {
   background: var(--code-bg) !important;
   color: var(--code-text) !important;
   padding: 18px 20px !important;
   border-radius: 10px !important;
   overflow-x: auto !important;
-  font-family: "JetBrains Mono", "Fira Code", Menlo, Monaco, Consolas, monospace !important;
+  font-family: "JetBrains Mono", Consolas, monospace !important;
   font-size: 14px !important;
   line-height: 1.5 !important;
   border: 1px solid #30363d !important;
-  margin: 24px 0 !important;
+  margin: 26px 0 !important;
 }
 
-/* 7. Callouts & Quotes */
+/* 8. Callouts & Takeaways */
 .post-body blockquote {
   border-left: 4px solid var(--primary-accent) !important;
   background: #f8fafc !important;
-  padding: 16px 20px !important;
-  margin: 24px 0 !important;
+  padding: 18px 22px !important;
+  margin: 26px 0 !important;
   border-radius: 0 8px 8px 0 !important;
   font-style: italic !important;
   color: #334155 !important;
 }
 
-/* 8. Post Cards on Homepage */
-.post-outer {
-  background: var(--card-bg) !important;
-  border: 1px solid var(--card-border) !important;
-  border-radius: 12px !important;
-  padding: 28px !important;
-  margin-bottom: 30px !important;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
-  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
-}
-
-.post-outer:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 6px 16px rgba(0,0,0,0.08) !important;
-}
-
-/* 9. Post Title Links */
-.post-title a, h2.post-title, h1.post-title {
-  color: #0f172a !important;
-  font-weight: 700 !important;
-  font-size: 26px !important;
-  text-decoration: none !important;
-  line-height: 1.3 !important;
-  letter-spacing: -0.02em !important;
-}
-
-.post-title a:hover {
-  color: var(--primary-accent) !important;
-}
-
-/* 10. Tags & Badges */
-.post-labels a {
-  display: inline-block !important;
-  background: #e6f9ed !important;
-  color: #00873a !important;
-  font-size: 12px !important;
-  font-weight: 600 !important;
-  padding: 4px 10px !important;
-  border-radius: 20px !important;
-  text-decoration: none !important;
-  margin-right: 6px !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.04em !important;
-}
-
-/* 11. Images & Visual Assets */
+/* 9. Images (Responsive & Clean) */
 .post-body img {
   max-width: 100% !important;
   height: auto !important;
   border-radius: 10px !important;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.07) !important;
-  margin: 20px 0 !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06) !important;
+  margin: 24px 0 !important;
+  display: block !important;
 }
 
-/* 12. Minimalist Single Column Focus */
-.sidebar, #sidebar-wrapper, .sidebar-container {
+/* 10. Hide Clutter & Sidebars */
+.sidebar-container, .vertical-ad-container, .sidebar, #sidebar-wrapper {
   display: none !important;
 }
 
@@ -178,23 +192,6 @@
   margin: 0 auto !important;
 }
 
-.blog-pager {
-  padding: 30px 0 !important;
-  text-align: center !important;
-}
-
-.blog-pager a {
-  display: inline-block !important;
-  padding: 8px 18px !important;
-  border-radius: 6px !important;
-  background: #f1f5f9 !important;
-  color: #0f172a !important;
-  font-weight: 600 !important;
-  font-size: 14px !important;
-  text-decoration: none !important;
-  margin: 0 8px !important;
-}
-
-.blog-pager a:hover {
-  background: #e2e8f0 !important;
+.post-share-buttons-top {
+  display: none !important;
 }
