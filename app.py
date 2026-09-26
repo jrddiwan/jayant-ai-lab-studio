@@ -821,14 +821,30 @@ def humanize_text(t):
 
 def ensure_hook_handover(hook_text):
     if not hook_text:
-        return "The biggest AI breakthrough of the week just dropped. Now my AI employee Zoro will tell you about it."
+        return "The biggest AI breakthrough of the week just dropped. Now my AI employee Zoro will show you how."
     h = hook_text.strip().strip('"').strip("'")
     h = re.sub(r'[\s,"\'\-#]+$', '', h)
+    
+    # 1. Scrub awkward "pass to Zoro for the mechanics" or clunky duplicate handovers
+    h = re.sub(r'(?i)\s*(?:pass\s+(?:it\s+)?to\s+zoro[^.!?]*[.!?]?)', '', h)
+    h = re.sub(r'(?i)\s*(?:over\s+to\s+zoro[^.!?]*[.!?]?)', '', h)
+    h = re.sub(r'(?i)\s*(?:handing\s+(?:over\s+)?to\s+zoro[^.!?]*[.!?]?)', '', h)
+    h = re.sub(r'(?i)\s*(?:let\'?s\s+pass\s+to\s+zoro[^.!?]*[.!?]?)', '', h)
+    h = h.strip()
     h_lower = h.lower()
-    if "zoro" in h_lower and any(w in h_lower for w in ["employee", "tell you", "break down", "breakdown", "show you", "explain", "walk you"]):
-        return h
-    clean_h = h.rstrip(".!? ")
-    return f"{clean_h}. Now my AI employee Zoro will tell you about it."
+    
+    # 2. If it already has a clean single mention of Zoro as an AI employee
+    if 'zoro' in h_lower and any(w in h_lower for w in ['employee zoro', 'zoro will show', 'zoro will break', 'zoro will explain', 'zoro will walk', 'zoro will tell']):
+        if h_lower.count('zoro') == 1:
+            return h.rstrip('.!? ') + '.'
+            
+    # 3. Otherwise clean any partial mention and append single crisp handover (mention Zoro once only)
+    h = re.sub(r'(?i)\s*now\s+my\s+ai\s+employee\s+zoro[^.!?]*[.!?]?', '', h)
+    h = re.sub(r'(?i)\s*zoro\s+will[^.!?]*[.!?]?', '', h)
+    clean_h = h.strip().rstrip('.!? ')
+    if not clean_h:
+        clean_h = "The biggest AI breakthrough of the week just dropped"
+    return f"{clean_h}. Now my AI employee Zoro will show you how."
 
 
 # ─── ZORO DYNAMIC CREATOR INTROS (ALWAYS FRESH, NEVER REPETITIVE) ───
@@ -1593,9 +1609,7 @@ label on its own line.
 - 12 to 22 words total. Count before you finalize.
 - Do not restate the headline. Open with a contrarian or surprising claim from
   Jayant's builder point of view.
-- Must end with a handover to Zoro. Vary the phrasing — do not reuse a stock line
-  verbatim across topics. The handover must name Zoro and imply he'll explain the
-  mechanics next.
+- Handover constraint: Mention Zoro ONCE and ONLY ONCE in the entire hook. Never write awkward clichés like "Pass it to Zoro for the mechanics". End cleanly with: "Now my AI employee Zoro will show you how." or "Now my AI employee Zoro will break down the real workflow."
 
 [ZORO_BODY]
 - Exactly 60 to 75 words. Count before you finalize — if it's outside this range,
