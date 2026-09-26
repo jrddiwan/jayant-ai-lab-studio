@@ -804,9 +804,13 @@ def humanize_text(t):
     }
     for bw, rep in buzzwords.items():
         t = re.sub(re.escape(bw), rep, t, flags=re.IGNORECASE)
-    # 3. Clean up punctuation and spacing
+    # 3. Clean up punctuation and spacing (PRESERVE NEWLINES)
     t = re.sub(r' ,', ',', t)
-    t = re.sub(r'\s+', ' ', t)
+    t = re.sub(r'[ \t]+', ' ', t)
+    t = re.sub(r'\r\n', '\n', t)
+    t = re.sub(r' \n', '\n', t)
+    t = re.sub(r'\n ', '\n', t)
+    t = re.sub(r'\n{3,}', '\n\n', t)
     # 4. Strict scrub of any phone numbers
     for forbidden in ["+91 78800 56262", "+917880056262", "7880056262", "wa.me/917880056262", "wa.me/7880056262"]:
         t = t.replace(forbidden, "")
@@ -833,6 +837,9 @@ def ensure_hook_handover(hook_text):
             "Now my AI employee Zoro will show you how."
         )
     h = hook_text.strip().strip('"').strip("'")
+    # Strip any leading tags or numbers like [HOOK], Line 1:, 1., 1Stop, etc.
+    h = re.sub(r'(?i)^\s*(?:\[?hook\]?:?|line\s*\d+[\s:.-]*|\d+[\s:.-]+)', '', h)
+    h = re.sub(r'^\s*\d+([A-Za-z])', r'\1', h)
     h = re.sub(r'[\s,"\'\-#]+$', '', h)
     
     # 1. Scrub any previous Zoro handover phrases anywhere in the text
@@ -848,7 +855,9 @@ def ensure_hook_handover(hook_text):
     raw_lines = [l.strip().rstrip(".!? ") for l in h.split("\n") if l.strip()]
     sentences = []
     for l in raw_lines:
-        s_parts = [s.strip().rstrip(".!? ") for s in re.split(r'(?<=[.!?])\s+', l) if s.strip()]
+        l_clean = re.sub(r'(?i)^(?:line\s*\d+[\s:.-]*|\d+[\s:.-]+)', '', l).strip()
+        l_clean = re.sub(r'^\d+([A-Za-z])', r'\1', l_clean).strip()
+        s_parts = [s.strip().rstrip(".!? ") for s in re.split(r'(?<=[.!?])\s+', l_clean) if s.strip()]
         sentences.extend(s_parts)
 
     # Filter out leftover single words or accidental Zoro mentions
@@ -863,6 +872,9 @@ def ensure_hook_handover(hook_text):
     else:
         line1 = "Most creators waste dozens of hours every week on manual busywork that software should solve"
         line2 = "This new AI breakthrough automates the entire workflow locally in seconds with zero coding"
+
+    line1 = re.sub(r'^\d+([A-Za-z])', r'\1', line1).strip()
+    line2 = re.sub(r'^\d+([A-Za-z])', r'\1', line2).strip()
 
     final_hook = f"{line1}.\n{line2}.\nNow my AI employee Zoro will show you how."
     return final_hook
@@ -2415,9 +2427,9 @@ def deliver_production_package(title, details, source_url="", source_name="", vi
             f"🌐 *SOURCE:* {src_link}\n"
             f"📰 *HEADLINE:* {title}\n"
             f"🎨 *CAROUSEL STYLE:* `{chosen_style.upper()}`\n\n"
-            f"🎯 *YOUR HOOK (Google Vids Avatar):*\n_{pkg.get('hook', '')}_\n\n"
+            f"🎯 *YOUR HOOK (Google Vids Avatar):*\n{pkg.get('hook', '')}\n\n"
             f"🤖 *ZORO BODY SCRIPT (ELI12):*\n{pkg.get('body', '')}\n\n"
-            f"📢 *YOUR CTA (Google Vids Avatar):*\n_{pkg.get('cta', '')}_\n\n"
+            f"📢 *YOUR CTA (Google Vids Avatar):*\n{pkg.get('cta', '')}\n\n"
             f"🎥 *AUTOMATED B-ROLL SCENE LIST & AI PROMPTS:*\n{pkg.get('b_roll', '')}\n\n"
             f"🎧 *ZORO's audio track is attached below!*"
         )
@@ -2709,9 +2721,9 @@ def telegram_listener():
                         f"{viral_block}"
                         f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
                         f"🎨 *Carousel Style:* `{style.upper()}`\n\n"
-                        f"🎯 *YOUR HOOK (Google Vids Avatar):*\n_{pkg['hook']}_\n\n"
+                        f"🎯 *YOUR HOOK (Google Vids Avatar):*\n{pkg['hook']}\n\n"
                         f"🤖 *ZORO BODY SCRIPT (ELI12):*\n{pkg['body']}\n\n"
-                        f"📢 *YOUR CTA (Google Vids Avatar):*\n_{pkg['cta']}_\n\n"
+                        f"📢 *YOUR CTA (Google Vids Avatar):*\n{pkg['cta']}\n\n"
                         f"🎥 *AUTOMATED B-ROLL SCENE LIST & AI PROMPTS:*\n{pkg['b_roll']}\n\n"
                         f"🎧 *ZORO's audio track is attached below!*"
                     )
