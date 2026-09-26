@@ -1708,15 +1708,57 @@ def split_sentence_into_two_parts(sentence):
     return [p1, p2]
 
 
+HIGHLIGHT_KEYWORDS = {
+    "zoro", "employee", "jayant's", "jayant", "works",
+    "fifty", "50", "pages", "homework", "boring", "reading",
+    "cursor", "invisible", "robot", "buddy", "five", "5", "seconds", "answers",
+    "three", "3", "hours", "tedious", "twenty", "20",
+    "whatsapp", "message", "already", "today", "ai", "automate", "blueprint"
+}
+
 def split_script_into_parts(script_text):
-    sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', script_text) if s.strip()]
-    parts = []
-    for sentence in sentences:
-        two_parts = split_sentence_into_two_parts(sentence)
-        for p in two_parts:
-            if p.strip():
-                parts.append(p.strip())
-    return parts
+    """
+    Splits the script into natural, punchy visual segments matching B-roll scenes.
+    Sentences with >= 7 words are cleanly split at natural midpoint conjunctions or punctuation.
+    Short punchy sentences (< 7 words) are preserved as cohesive, complete thoughts.
+    """
+    raw_sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', script_text) if s.strip()]
+    segments = []
+    
+    for s in raw_sentences:
+        words = s.split()
+        if len(words) < 7:
+            segments.append(s)
+            continue
+            
+        mid_char = len(s) // 2
+        candidates = []
+        for m in re.finditer(r'[,;\—\-]', s):
+            pos = m.start()
+            if 0.25 * len(s) <= pos <= 0.75 * len(s):
+                candidates.append((abs(pos - mid_char), pos, pos + 1))
+                
+        if not candidates:
+            for m in re.finditer(r'\b(and|but|because|so|while|when|which|who|like|that|into)\b', s, re.IGNORECASE):
+                pos = m.start()
+                if 0.25 * len(s) <= pos <= 0.75 * len(s):
+                    candidates.append((abs(pos - mid_char), pos, pos))
+
+        if candidates:
+            candidates.sort(key=lambda x: x[0])
+            _, s_start, s_end = candidates[0]
+            p1 = s[:s_start].strip().rstrip(',;-')
+            p2 = s[s_end:].strip().lstrip(',;-')
+            if p1 and p2:
+                segments.append(p1)
+                segments.append(p2)
+                continue
+
+        mid = len(words) // 2
+        segments.append(" ".join(words[:mid]))
+        segments.append(" ".join(words[mid:]))
+        
+    return segments
 
 
 def get_audio_duration(audio_path):
@@ -1762,57 +1804,13 @@ def calculate_segment_timestamps(parts, total_duration):
     return segments
 
 
-def request_agnes_video(prompt, duration_sec):
+def render_kinetic_subtitled_frame(base_img_path, text, output_frame_path):
     """
-    Attempts to generate video clip via Agnes AI Video API (agnes-video-2.5-flash).
-    Falls back gracefully if rate-limited (429) or queue is full (503).
-    """
-    keys = [k for k in AGNES_KEYS if k]
-    for k in keys:
-        try:
-            headers = {"Authorization": f"Bearer {k}", "Content-Type": "application/json"}
-            payload = {
-                "model": "agnes-video-2.5-flash",
-                "prompt": prompt,
-                "seconds": str(max(3, min(10, round(duration_sec)))),
-                "mode": "text",
-                "size": "720P",
-                "aspect_ratio": "9:16"
-            }
-            r = requests.post("https://apihub.agnes-ai.com/v1/videos", headers=headers, json=payload, timeout=5)
-            if r.status_code in (200, 201):
-                res_data = r.json()
-                task_id = res_data.get("id") or res_data.get("video_id") or res_data.get("data", {}).get("id")
-                video_url = res_data.get("video_url") or res_data.get("url") or res_data.get("data", {}).get("url")
-                
-                if video_url and video_url.startswith("http"):
-                    clip_resp = requests.get(video_url, timeout=20)
-                    if clip_resp.status_code == 200 and len(clip_resp.content) > 10000:
-                        return clip_resp.content
-
-                if task_id:
-                    for _ in range(5):
-                        time.sleep(2)
-                        poll_r = requests.get(f"https://apihub.agnes-ai.com/v1/videos/{task_id}", headers=headers, timeout=6)
-                        if poll_r.status_code == 200:
-                            p_data = poll_r.json()
-                            status = p_data.get("status") or p_data.get("data", {}).get("status")
-                            url = p_data.get("video_url") or p_data.get("url") or p_data.get("data", {}).get("url")
-                            if status in ("completed", "succeeded") and url:
-                                dl_r = requests.get(url, timeout=20)
-                                if dl_r.status_code == 200 and len(dl_r.content) > 10000:
-                                    return dl_r.content
-                            elif status in ("failed", "error"):
-                                break
-        except Exception as e:
-            print(f"[Agnes Video Warning]: {e}")
-    return None
-
-
-def create_subtitled_motion_clip(segment, base_img_path, output_clip_path):
-    """
-    Creates an animated 720x1280 (9:16) video clip with smooth zoompan motion
-    and burned-in glassmorphism subtitles timed exactly to the segment duration.
+    Renders high-retention Alex Hormozi style subtitles:
+    - Bold punchy typography
+    - Neon yellow highlight pop on action keywords
+    - Frosted glass badge with electric cyan outline
+    - Subtle cinematic bottom vignette
     """
     target_w, target_h = 720, 1280
     base_img = Image.open(base_img_path).convert('RGB')
@@ -1824,91 +1822,142 @@ def create_subtitled_motion_clip(segment, base_img_path, output_clip_path):
     top = (new_h - target_h) // 2
     frame = scaled_img.crop((left, top, left + target_w, top + target_h))
 
-    # Dark gradient overlay for bottom third
-    overlay = Image.new('RGBA', (target_w, target_h), (0, 0, 0, 0))
-    ov_draw = ImageDraw.Draw(overlay)
-    ov_draw.rectangle([0, target_h - 320, target_w, target_h], fill=(0, 0, 0, 140))
+    # Dark gradient at the bottom 380px for high readability
+    vignette = Image.new('RGBA', (target_w, target_h), (0, 0, 0, 0))
+    v_draw = ImageDraw.Draw(vignette)
+    for y in range(target_h - 380, target_h):
+        alpha = int(190 * ((y - (target_h - 380)) / 380.0) ** 1.3)
+        v_draw.line([(0, y), (target_w, y)], fill=(5, 10, 20, alpha))
+    frame = Image.alpha_composite(frame.convert('RGBA'), vignette).convert('RGB')
 
-    # Glassmorphism pill badge for subtitle
-    pill_w, pill_h = target_w - 60, 110
-    pill_x = 30
-    pill_y = target_h - 220
-    ov_draw.rounded_rectangle(
-        [pill_x, pill_y, pill_x + pill_w, pill_y + pill_h],
-        radius=22, fill=(15, 23, 42, 230), outline=(56, 189, 248, 220), width=2
-    )
-
-    frame = Image.alpha_composite(frame.convert('RGBA'), overlay).convert('RGB')
-
-    # Subtitle typography
-    try:
-        font = ImageFont.truetype('arial.ttf', 28)
-    except Exception:
+    font_candidates = [
+        "C:/Windows/Fonts/ariblk.ttf",
+        "C:/Windows/Fonts/impact.ttf",
+        "C:/Windows/Fonts/arialbd.ttf",
+        "arial.ttf"
+    ]
+    font = None
+    for fc in font_candidates:
+        if os.path.exists(fc):
+            try:
+                font = ImageFont.truetype(fc, 34)
+                break
+            except Exception:
+                pass
+    if font is None:
         font = ImageFont.load_default()
 
-    draw_final = ImageDraw.Draw(frame)
-    text = segment['text']
-    
     words = text.split()
     lines = []
     curr_line = []
+    max_line_w = target_w - 100
+    dummy_draw = ImageDraw.Draw(frame)
+
     for w in words:
         test_line = " ".join(curr_line + [w])
-        bbox = draw_final.textbbox((0, 0), test_line, font=font)
-        if bbox[2] - bbox[0] > pill_w - 40:
+        bbox = dummy_draw.textbbox((0, 0), test_line, font=font)
+        if bbox[2] - bbox[0] > max_line_w:
             if curr_line:
-                lines.append(" ".join(curr_line))
+                lines.append(curr_line)
                 curr_line = [w]
             else:
-                lines.append(w)
+                lines.append([w])
                 curr_line = []
         else:
             curr_line.append(w)
     if curr_line:
-        lines.append(" ".join(curr_line))
+        lines.append(curr_line)
 
-    line_h = 34
+    line_h = 44
     total_text_h = len(lines) * line_h
-    start_y = pill_y + (pill_h - total_text_h) // 2
-    for l_idx, line in enumerate(lines[:2]):
-        l_bbox = draw_final.textbbox((0, 0), line, font=font)
-        lw = l_bbox[2] - l_bbox[0]
-        lx = pill_x + (pill_w - lw) // 2
-        ly = start_y + l_idx * line_h
-        draw_final.text((lx, ly), line, font=font, fill=(255, 255, 255))
+    pill_padding_x = 36
+    pill_padding_y = 20
+    
+    max_measured_w = 0
+    for line_words in lines:
+        line_str = " ".join(line_words)
+        bbox = dummy_draw.textbbox((0, 0), line_str, font=font)
+        max_measured_w = max(max_measured_w, bbox[2] - bbox[0])
 
-    temp_frame_path = output_clip_path.replace(".mp4", "_frame.png")
-    frame.save(temp_frame_path)
+    pill_w = min(target_w - 60, max_measured_w + pill_padding_x * 2)
+    pill_h = total_text_h + pill_padding_y * 2
+    pill_x = (target_w - pill_w) // 2
+    pill_y = target_h - 240 - (pill_h // 2)
 
-    duration = max(0.5, segment['duration'])
+    # Frosted glass pill badge
+    pill_overlay = Image.new('RGBA', (target_w, target_h), (0, 0, 0, 0))
+    p_draw = ImageDraw.Draw(pill_overlay)
+    p_draw.rounded_rectangle(
+        [pill_x, pill_y, pill_x + pill_w, pill_y + pill_h],
+        radius=26,
+        fill=(10, 15, 30, 230),
+        outline=(0, 242, 254, 220), # Electric Cyan
+        width=2
+    )
+    frame = Image.alpha_composite(frame.convert('RGBA'), pill_overlay).convert('RGB')
+
+    # Draw words with color pop
+    draw = ImageDraw.Draw(frame)
+    start_y = pill_y + pill_padding_y
+    for l_idx, line_words in enumerate(lines[:2]):
+        line_str = " ".join(line_words)
+        line_bbox = draw.textbbox((0, 0), line_str, font=font)
+        current_x = (target_w - (line_bbox[2] - line_bbox[0])) // 2
+        line_y = start_y + l_idx * line_h
+
+        for w_idx, w in enumerate(line_words):
+            clean_w = re.sub(r'[^a-zA-Z0-9\']', '', w).lower()
+            color = (255, 230, 0) if clean_w in HIGHLIGHT_KEYWORDS else (255, 255, 255)
+
+            draw.text((current_x + 2, line_y + 2), w, font=font, fill=(0, 0, 0, 220))
+            draw.text((current_x, line_y), w, font=font, fill=color)
+
+            w_space = w + (" " if w_idx < len(line_words) - 1 else "")
+            w_bbox = draw.textbbox((0, 0), w_space, font=font)
+            current_x += (w_bbox[2] - w_bbox[0])
+
+    frame.save(output_frame_path)
+    return output_frame_path
+
+
+def create_motion_clip(frame_img_path, output_clip_path, duration, motion_type=0):
+    """
+    Renders dynamic cinematic camera movement:
+    0: Smooth Zoom-In (1.0 -> 1.14)
+    1: Smooth Zoom-Out (1.14 -> 1.0)
+    2: Subtle Pan Right
+    3: Subtle Pan Left
+    """
     fps = 30
-    total_frames = int(duration * fps)
+    total_frames = max(15, int(duration * fps))
 
-    # Subtle cinematic push-in
-    vf = f"zoompan=z='min(zoom+0.0006,1.08)':d={total_frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=720x1280:fps={fps}"
+    if motion_type % 4 == 0:
+        vf = f"zoompan=z='min(zoom+0.0008,1.14)':d={total_frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=720x1280:fps={fps}"
+    elif motion_type % 4 == 1:
+        vf = f"zoompan=z='max(1.14-0.0008*on,1.0)':d={total_frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=720x1280:fps={fps}"
+    elif motion_type % 4 == 2:
+        vf = f"zoompan=z=1.08:x='if(lte(on,1),(iw-iw/zoom)/2,min(x+0.6,iw-iw/zoom))':y='ih/2-(ih/zoom/2)':d={total_frames}:s=720x1280:fps={fps}"
+    else:
+        vf = f"zoompan=z=1.08:x='if(lte(on,1),(iw-iw/zoom)/2,max(x-0.6,0))':y='ih/2-(ih/zoom/2)':d={total_frames}:s=720x1280:fps={fps}"
 
     cmd = [
-        'ffmpeg', '-y', '-loop', '1', '-i', temp_frame_path,
+        'ffmpeg', '-y', '-loop', '1', '-i', frame_img_path,
         '-vf', vf,
         '-c:v', 'libx264', '-t', str(duration), '-pix_fmt', 'yuv420p',
         output_clip_path
     ]
     subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    if os.path.exists(temp_frame_path):
-        try:
-            os.remove(temp_frame_path)
-        except Exception:
-            pass
     return os.path.exists(output_clip_path)
 
 
 def generate_full_zoro_video(body_text, audio_path, topic_title="", topic_details=""):
     """
-    Autonomous Video Pipeline:
-    1. Splits script into 2 parts per sentence.
-    2. Calculates sub-second timestamps synchronized with Zoro voice track.
-    3. Generates Agnes Video clips for each part (with automated subtitled motion fallback).
-    4. Assembles the final 9:16 vertical video and muxes the audio track.
+    9/10 Autonomous Video Reel Pipeline:
+    1. Splits script into natural, cohesive B-roll segments.
+    2. Calculates sub-second timestamps synchronized with Gemini Flash voice track.
+    3. Maps each segment directly to thematic, contextual visual B-roll scenes (Zero clay face).
+    4. Renders kinetic viral subtitles with electric yellow highlights.
+    5. Applies alternating cinematic camera motion and assembles H.264/AAC vertical reel.
     """
     if not audio_path or not os.path.exists(audio_path):
         print("[VIDEO ENGINE]: Cannot generate video, audio track missing.")
@@ -1920,7 +1969,7 @@ def generate_full_zoro_video(body_text, audio_path, topic_title="", topic_detail
         os.makedirs(temp_dir, exist_ok=True)
         final_video_path = os.path.join(OUTPUT_DIR, f"zoro_video_{timestamp}.mp4")
 
-        # Step 1: Split into 2 parts per sentence
+        # Step 1: Split into natural cohesive segments
         parts = split_script_into_parts(body_text)
         if not parts:
             return None
@@ -1930,46 +1979,32 @@ def generate_full_zoro_video(body_text, audio_path, topic_title="", topic_detail
         segments = calculate_segment_timestamps(parts, total_duration)
         print(f"[VIDEO ENGINE]: {len(segments)} segments calculated for {total_duration:.2f}s audio.")
 
-        # Pool of available 3D clay backdrops
-        clay_pool = glob.glob(os.path.join(CAROUSEL_DIR, "clay_*.png")) + glob.glob(os.path.join(OUTPUT_DIR, "clay_*.png")) + [
-            os.path.join(OUTPUT_DIR, "test_agnes.png"),
-            "test_agnes.png",
-            "test_bg.png"
-        ]
-        clay_pool = [c for c in clay_pool if os.path.exists(c)]
-        if not clay_pool:
-            ph_path = os.path.join(temp_dir, "default_clay.png")
-            Image.new("RGB", (720, 1280), (15, 23, 42)).save(ph_path)
-            clay_pool = [ph_path]
+        # Pool of pristine contextual B-roll assets
+        broll_dir = os.path.join(BASE_DIR if 'BASE_DIR' in globals() else ".", "assets", "broll")
+        if not os.path.exists(broll_dir):
+            broll_dir = os.path.join("hf_space", "assets", "broll")
+            
+        broll_pool = sorted(glob.glob(os.path.join(broll_dir, "broll_*.png")))
+        if not broll_pool:
+            broll_pool = glob.glob(os.path.join(OUTPUT_DIR, "*.png")) + ["test_bg.png"]
+        broll_pool = [b for b in broll_pool if os.path.exists(b)]
+        if not broll_pool:
+            ph_path = os.path.join(temp_dir, "default_bg.png")
+            Image.new("RGB", (720, 1280), (10, 15, 30)).save(ph_path)
+            broll_pool = [ph_path]
 
         clip_paths = []
-        agnes_available = True
-        for s in segments:
-            clip_path = os.path.join(temp_dir, f"clip_{s['index']:02d}.mp4")
-            
-            # 1. Try Agnes Video API (with circuit breaker)
-            if agnes_available:
-                agnes_prompt = (
-                    f"3D clay animation character Zoro in tech lab, {s['text']}, "
-                    f"warm studio lighting, 8k resolution, cinematic claymation, 9:16 vertical video"
-                )
-                video_bytes = request_agnes_video(agnes_prompt, s['duration'])
-                if video_bytes:
-                    with open(clip_path, "wb") as f_clip:
-                        f_clip.write(video_bytes)
-                    print(f"[VIDEO ENGINE]: Clip {s['index']+1}/{len(segments)} generated via Agnes Video!")
-                else:
-                    agnes_available = False
-                    print(f"[VIDEO ENGINE]: Agnes Video unavailable/rate-limited. Activating cinematic animated scene engine...")
-            
-            # 2. Fallback to subtitled cinematic motion clip
-            if not os.path.exists(clip_path) or os.path.getsize(clip_path) < 1000:
-                base_img = clay_pool[s['index'] % len(clay_pool)]
-                create_subtitled_motion_clip(s, base_img, clip_path)
-                print(f"[VIDEO ENGINE]: Clip {s['index']+1}/{len(segments)} rendered ({s['duration']}s): {s['text'][:35]}...")
+        for idx, s in enumerate(segments):
+            broll_img = broll_pool[idx % len(broll_pool)]
+            frame_path = os.path.join(temp_dir, f"frame_{idx:02d}.png")
+            clip_path = os.path.join(temp_dir, f"clip_{idx:02d}.mp4")
 
+            render_kinetic_subtitled_frame(broll_img, s['text'], frame_path)
+            create_motion_clip(frame_path, clip_path, s['duration'], motion_type=idx)
+            
             if os.path.exists(clip_path) and os.path.getsize(clip_path) > 1000:
                 clip_paths.append(clip_path)
+                print(f"[VIDEO ENGINE]: Clip {idx+1}/{len(segments)} rendered ({s['duration']}s) -> {os.path.basename(broll_img)}")
 
         if not clip_paths:
             print("[VIDEO ENGINE]: No clips could be generated.")
