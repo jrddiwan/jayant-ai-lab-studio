@@ -221,7 +221,7 @@ class QuotaManager:
 
 
 # ─── RADAR DISPATCH GOVERNOR (PREVENTS NOTIFICATION OVERLOAD) ───
-MIN_RADAR_COOLDOWN_SECONDS = 9000  # 2.5 hours (150 minutes) minimum between automated dispatches
+MIN_RADAR_COOLDOWN_SECONDS = 7200  # 2 hours minimum between automated dispatches
 MAX_DAILY_RADAR_DISPATCHES = 4     # Maximum 4 automated studio packages per day
 
 class RadarGovernor:
@@ -1323,29 +1323,25 @@ Return JSON:
 # ─── EXECUTIVE QUALITY GATE (GROQ 120B / GEMINI) ───
 def evaluate_news_worth(title, summary=""):
     """
-    Evaluates whether an item covers a genuine, actionable AI tool or breakthrough.
-    Suppresses podcast banter, vague gossip, and non-actionable fluff.
+    Evaluates whether an item covers a genuine, actionable AI tool, model, framework, or breakthrough.
+    Suppresses podcast banter, vague gossip, funding news with no tool, and non-actionable fluff.
     """
-    eval_prompt = f"""You are the Executive Producer for Jayant's AI Lab. You screen incoming AI news for a
-daily short-form video series. Be strict — most items should be rejected.
+    eval_prompt = f"""You are the Executive Producer for Jayant's AI Lab. You screen incoming AI news for our
+daily high-signal studio (video scripts, Instagram carousels, LinkedIn post, and blog article).
+We feature real AI tools, models, frameworks, workflow automations, and practical technical breakthroughs.
 
 TITLE: {title}
 SUMMARY: {summary}
 
-Decide using this test, in order:
-1. Does this describe a specific tool, model, framework, or workflow that a business
-   owner or solo creator could start using within 24 hours?
-2. Is there a concrete "how it works" or "what it does," not just funding news,
-   personnel changes, opinion pieces, or benchmarks with no usable product?
-3. Would a demo or walkthrough of this be genuinely new to someone who already
-   follows AI news casually?
-
-If ANY of the three fails, reject.
+Decide using these criteria:
+1. Is this a genuine AI development, model release, open-source tool/repo, framework, or practical workflow?
+2. Does it offer actionable value or educational insight to creators, developers, or professionals?
+3. REJECT only if it is: non-AI gossip/drama, corporate funding with zero product details, routine podcast banter, or spam.
 
 OUTPUT FORMAT — reply with exactly one line, nothing else:
 REJECT: <5-10 word reason>
 OR
-APPROVE: <Tool Name> | <one-line reason it clears all 3 checks>
+APPROVE: <Tool/Topic Name> | <one-line reason it qualifies>
 
 Do not explain your reasoning outside the single output line. Do not use markdown.
 """
@@ -1359,15 +1355,15 @@ Do not explain your reasoning outside the single output line. Do not use markdow
     return False, "Evaluation timeout or rejected by default"
 
 
-# ─── LAYER 2: 90% VIRAL ENGAGEMENT PREDICTOR GATE ───
-VIRAL_SCORE_THRESHOLD = 90  # Strict >=90% probability of viral breakout required
+# ─── LAYER 2: VIRAL ENGAGEMENT PREDICTOR GATE (TOP-TIER HIGH SIGNAL) ───
+VIRAL_SCORE_THRESHOLD = 75  # Top 15-20% high-signal viral content gate (quality curated)
 
 def evaluate_viral_potential(title, details="", source=""):
     """
-    Evaluates whether an approved story has a >= 90% probability of viral breakout and mass audience engagement.
+    Evaluates whether an approved story has strong virality and mass audience engagement potential.
     Evaluates against 5 Viral Pillars (0-20 points each, 100 total):
       1. Shock / Wow Factor (0-20): Counter-intuitive, breakthrough or "magic" capability that stops the scroll.
-      2. Mass Audience Relatability & Utility (0-20): Solves a real problem for solo creators, business owners, or everyday knowledge workers. (Severely penalizes developer-only Python/CUDA scripts).
+      2. Mass Audience Relatability & Utility (0-20): Solves a real problem for solo creators, business owners, or everyday knowledge workers.
       3. Visual Demo Saliency (0-20): Can be visually proven in a 15-30s video or high-contrast 7-slide carousel.
       4. Urgency & FOMO (0-20): High stakes—ignoring it means falling behind in business/productivity.
       5. Actionability & Stealability (0-20): Immediate zero/low-cost barrier to test right now.
@@ -1376,10 +1372,9 @@ def evaluate_viral_potential(title, details="", source=""):
       (is_viral: bool, score: int, reason: str, viral_angle: str)
     """
     viral_prompt = f"""You are the Head of Viral Content & Audience Engagement for Jayant's AI Lab.
-Your job is to rigorously evaluate AI news items and PREDICT whether a short-form video (Reel/Short) or Instagram Carousel on this story has a 90%+ probability of exploding in engagement and going viral.
+Your job is to rigorously evaluate AI news items and PREDICT whether a short-form video (Reel/Short) or Instagram Carousel on this story will generate strong audience engagement and virality.
 
-Be ruthlessly selective. Out of 100 tech news stories, only 2 or 3 are true 90%+ viral hits.
-Most tech stories are boring incremental updates, minor library patches, enterprise PR, or developer-only tools that get zero engagement from normal people.
+Be selective: prioritize impactful AI breakthroughs, useful creator tools, and shocking capabilities. Filter out boring minor library bumps and dry corporate PR.
 
 TOPIC TITLE: {title}
 SOURCE / CONTEXT: {source}
@@ -1387,15 +1382,15 @@ DETAILS: {details}
 
 Evaluate the story across the 5 Viral Pillars (0-20 points each):
 1. WOW FACTOR / SHOCK VALUE (0-20): Does it feel like magic or sci-fi? Does it make someone stop scrolling immediately?
-2. MASS BUSINESS & CREATOR RELATABILITY (0-20): Can a regular business owner, solo creator, student, or non-technical professional use it to save hours or make money? (If it requires Python/Docker/CUDA, max score 5).
-3. VISUAL DEMO SALIENCY (0-20): Can you show a mind-blowing before/after or visual result in 15 seconds on screen?
+2. MASS BUSINESS & CREATOR RELATABILITY (0-20): Can a regular business owner, solo creator, student, or professional use it to save hours or make money?
+3. VISUAL DEMO SALIENCY (0-20): Can you show a clear before/after, dashboard, or visual proof on screen?
 4. URGENCY & FOMO (0-20): Does not knowing this make the viewer feel like they are falling behind?
 5. STEALABILITY / ACTIONABILITY (0-20): Can the viewer try this tool or workflow right now on their laptop or phone for free/cheap?
 
 SCORING CRITERIA:
-- 0 to 69: BORING / NICHE / FLUFF. Will fail on social media.
-- 70 to 89: SOLID TECH NEWS, but lacks mainstream breakout virality. Do not dispatch.
-- 90 to 100: ULTRA-VIRAL BREAKOUT HIT. Universal appeal, shocking capability, instant visual proof, immediate utility.
+- 0 to 59: LOW ENGAGEMENT / NICHE. Will fail on social media.
+- 60 to 74: SOLID TECH NEWS. Informative, but lacks scroll-stopping hook.
+- 75 to 100: HIGH VIRAL POTENTIAL. Strong audience hook, practical application, or exciting AI breakthrough.
 
 THRESHOLD: Minimum {VIRAL_SCORE_THRESHOLD}/100 required to approve.
 
@@ -1937,8 +1932,25 @@ def fetch_tech_news():
                     l_el = entry.find("link") if entry.find("link") is not None else entry.find("{http://www.w3.org/2005/Atom}link")
                     title = t_el.text.strip() if t_el is not None and t_el.text else ""
                     link = l_el.text.strip() if l_el is not None and l_el.text else (l_el.attrib.get("href", "") if l_el is not None else "")
+                    
+                    # Extract summary/description for accurate context
+                    d_el = entry.find("description")
+                    if d_el is None:
+                        d_el = entry.find("{http://www.w3.org/2005/Atom}summary")
+                    if d_el is None:
+                        d_el = entry.find("{http://www.w3.org/2005/Atom}content")
+                    raw_desc = d_el.text.strip() if d_el is not None and d_el.text else ""
+                    clean_desc = re.sub(r'<[^>]+>', ' ', raw_desc)
+                    clean_desc = re.sub(r'\s+', ' ', clean_desc).strip()[:500]
+
                     if title:
-                        items.append({"source": name, "title": title, "url": link, "type": "tech_news"})
+                        items.append({
+                            "source": name,
+                            "title": title,
+                            "url": link,
+                            "summary": clean_desc,
+                            "type": "tech_news"
+                        })
         except Exception:
             pass
     return items
@@ -1959,8 +1971,20 @@ def fetch_reddit():
                     l_el = entry.find("{http://www.w3.org/2005/Atom}link")
                     title = t_el.text.strip() if t_el is not None and t_el.text else ""
                     link = l_el.attrib.get("href", "") if l_el is not None else ""
+                    
+                    c_el = entry.find("{http://www.w3.org/2005/Atom}content")
+                    raw_c = c_el.text.strip() if c_el is not None and c_el.text else ""
+                    clean_c = re.sub(r'<[^>]+>', ' ', raw_c)
+                    clean_c = re.sub(r'\s+', ' ', clean_c).strip()[:500]
+
                     if title:
-                        items.append({"source": f"Reddit r/{sub}", "title": title, "url": link, "type": "reddit"})
+                        items.append({
+                            "source": f"Reddit r/{sub}",
+                            "title": title,
+                            "url": link,
+                            "summary": clean_c,
+                            "type": "reddit"
+                        })
         except Exception:
             pass
     return items
@@ -1988,10 +2012,12 @@ def fetch_huggingface():
                 if is_verified or likes >= 12 or downloads >= 50:
                     pipeline = m.get("pipeline_tag", "")
                     clean_pipeline = f" ({pipeline.replace('-', ' ').title()})" if pipeline else ""
+                    summary = f"New AI model released on Hugging Face: {mid}. Task: {pipeline or 'General LLM/Vision'}. Community engagement: {likes} likes, {downloads} downloads."
                     items.append({
                         "source": "Hugging Face Hub",
                         "title": f"{mid}{clean_pipeline} Released",
                         "url": f"https://huggingface.co/{mid}",
+                        "summary": summary,
                         "type": "huggingface"
                     })
     except Exception as e:
@@ -2007,10 +2033,12 @@ def fetch_github():
         r = requests.get(url, headers={"User-Agent": "JayantAILab/1.0"}, timeout=8)
         if r.status_code == 200:
             for repo in r.json().get("items", []):
+                desc = repo.get('description', '') or ''
                 items.append({
                     "source": "GitHub Trending",
-                    "title": f"Repo: {repo.get('full_name')} ({repo.get('description', '')[:70]})",
+                    "title": f"Repo: {repo.get('full_name')} ({desc[:70]})",
                     "url": repo.get("html_url"),
+                    "summary": f"Open-source repository {repo.get('full_name')}: {desc}. Stars: {repo.get('stargazers_count', 0)}.",
                     "type": "github"
                 })
     except Exception:
@@ -2035,8 +2063,18 @@ def fetch_x_twitter():
             for item in root.findall(".//item")[:6]:
                 title = item.find("title").text if item.find("title") is not None else ""
                 link = item.find("link").text if item.find("link") is not None else ""
+                d_el = item.find("description")
+                raw_desc = d_el.text.strip() if d_el is not None and d_el.text else ""
+                clean_desc = re.sub(r'<[^>]+>', ' ', raw_desc)
+                clean_desc = re.sub(r'\s+', ' ', clean_desc).strip()[:400]
                 if title:
-                    items.append({"source": "X / Twitter Radar", "title": title, "url": link, "type": "x_twitter"})
+                    items.append({
+                        "source": "X / Twitter Radar",
+                        "title": title,
+                        "url": link,
+                        "summary": clean_desc,
+                        "type": "x_twitter"
+                    })
     except Exception:
         pass
     return items
@@ -2166,8 +2204,10 @@ def check_youtube_uploads():
                         seen_topics[vid_id] = {"title": title, "channel": channel_name, "processed": True}
                         save_memory()
 
+                        yt_context = f"Video tutorial / demonstration published by AI YouTuber {channel_name}: {video_url}"
+
                         # Layer 1: Technical Usability Gate
-                        is_worthy, reason = evaluate_news_worth(title)
+                        is_worthy, reason = evaluate_news_worth(title, summary=yt_context)
                         if not is_worthy:
                             RECENT_FEED.insert(0, {
                                 "time": datetime.now(timezone.utc).strftime("%H:%M:%S"),
@@ -2182,10 +2222,10 @@ def check_youtube_uploads():
                             print(f"[RADAR SUPPRESSED - NOT USABLE]: {title} -> {reason}")
                             continue
 
-                        # Layer 2: 90% Viral Engagement Prediction Gate
+                        # Layer 2: Viral Engagement Prediction Gate
                         is_viral, v_score, v_reason, v_angle = evaluate_viral_potential(
                             title,
-                            details=f"Covered by {channel_name} on YouTube: {video_url}",
+                            details=yt_context,
                             source=f"YouTube ({channel_name})"
                         )
                         if not is_viral:
@@ -2408,11 +2448,12 @@ def check_all_radar_sources():
         title = item.get("title", "")
         source = item.get("source", "")
         item_type = item.get("type", "news")
+        summary = item.get("summary", "")
         seen_topics[url] = {"title": title, "source": source, "type": item_type, "date": datetime.now(timezone.utc).isoformat()}
         save_memory()
 
         # Layer 1: Technical Usability Gate
-        is_worthy, reason = evaluate_news_worth(title)
+        is_worthy, reason = evaluate_news_worth(title, summary=summary)
         if not is_worthy:
             RECENT_FEED.insert(0, {
                 "time": datetime.now(timezone.utc).strftime("%H:%M:%S"),
@@ -2427,10 +2468,11 @@ def check_all_radar_sources():
             print(f"[RADAR HIT SUPPRESSED - NOT USABLE]: [{source}] {title} -> {reason}")
             continue
 
-        # Layer 2: 90% Viral Engagement Prediction Gate
+        # Layer 2: Viral Engagement Prediction Gate
+        details_text = summary if summary else f"Discovered on {source}: {url}"
         is_viral, v_score, v_reason, v_angle = evaluate_viral_potential(
             title,
-            details=f"Discovered on {source}: {url}",
+            details=details_text,
             source=source
         )
         if not is_viral:
@@ -2480,7 +2522,7 @@ def check_all_radar_sources():
 
         deliver_production_package(
             title,
-            f"Discovered on {source}: {url}",
+            details_text,
             source_url=url,
             source_name=source,
             viral_score=v_score,
