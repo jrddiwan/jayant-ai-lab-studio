@@ -710,22 +710,45 @@ def render_instagram_carousel(topic_title, topic_details, style="editorial"):
     if chosen_style == "editorial":
         system_prompt = (
             "You are the chief design and content director for Jayant's AI Lab (@jayantsailab). "
-            "Generate a structured 7-slide viral Instagram carousel modeled after top tech creators (@theautomationguy.ai, Rowan Cheung, Ruben Hassid). "
-            "Every slide must have high information density, crisp typography, and actionable value. Return ONLY valid JSON."
+            "You generate structured JSON for a 7-slide Instagram carousel in the visual style of "
+            "top tech creators. Output ONLY valid JSON — no markdown fences, no commentary, no "
+            "trailing text before or after the JSON object. If you are unsure a field fits the "
+            "schema, still include it with your best value; never omit a required field."
         )
         user_prompt = f"""TOPIC: {topic_title}
 DETAILS: {topic_details}
 
-Generate all 7 slides in this exact narrative sequence:
-- Slide 1 (slideType: 'hero'): Arresting hook headline split into titlePrefix, titleOrange (accent phrase), titleSuffix. Subtitle pill. Terminal box with 4 verified active items. Kraft sticky note with handwriting tone.
-- Slide 2 (slideType: 'org_chart'): System Architecture & Orchestration. Leader orchestrator card + 4 department/fleet cards (01 to 04 with titles & descriptions). Sticky note.
-- Slide 3 (slideType: 'grid_cards'): 6 Specialist Fleet items (01 to 06) with catchy uppercase tag, title, and 1-sentence actionable description. Sticky note.
-- Slide 4 (slideType: 'workflows'): 4 Practical Execution Prompts (e.g., '01. Launch feature sprint', '02. Code audit') with 3-4 bullet tasks each. Sticky note.
-- Slide 5 (slideType: 'benchmark'): The Cold Numbers. Side-by-side comparison: Old Manual Way (e.g. 4 Days, high retainers) vs Jayant's AI Lab Way (e.g. 35 Sec, $0 marginal cost). Bottom telemetry ROI highlight. Sticky note.
-- Slide 6 (slideType: 'workflows'): 4 Production Business Use Cases (real day-to-day enterprise/builder deployments). Sticky note.
-- Slide 7 (slideType: 'cta_final'): The Transformation. Bold headline ('Same Team. A More Capable You.'), clear value proposition, large button text ('Save This Carousel & Follow @jayantsailab'), 3 pills, and quote sign-off. Sticky note.
+Generate exactly 7 slides in this sequence. Every slide needs high information
+density — no filler sentences, no restating the slide title in the body text.
 
-Return JSON strictly matching this schema:
+1. slideType "hero": titlePrefix, titleOrange (the punchy accent phrase, 2-4 words),
+   titleSuffix, a subtitle pill (under 8 words), a terminal box with 4 short
+   verified-status items relevant to this specific topic (not generic), and a
+   sticky note in a casual handwritten tone (under 12 words).
+2. slideType "org_chart": one leader/orchestrator card, then 4 department cards
+   (numbered 01-04) each with a title and a one-sentence description specific to
+   how THIS tool's pipeline actually works. Sticky note.
+3. slideType "grid_cards": 6 items (01-06), each with an uppercase 2-3 word tag,
+   a title, and one actionable sentence — what a viewer could literally go do.
+   Sticky note.
+4. slideType "workflows": 4 practical prompts a viewer could copy-paste today
+   (e.g. "Launch a feature sprint"), each with 3-4 concrete bullet tasks. Sticky
+   note.
+5. slideType "benchmark": one side-by-side comparison — Old Manual Way vs.
+   Jayant's AI Lab Way — with a specific time and cost figure on each side
+   (plausible for this topic, not a stock number), plus one bottom-line ROI
+   highlight. Sticky note.
+6. slideType "workflows": 4 real day-to-day business use cases for this
+   specific tool (not generic AI use cases). Sticky note.
+7. slideType "cta_final": headline "Same Team. A More Capable You.", one clear
+   value-proposition sentence, button text "Save This Carousel & Follow
+   @jayantsailab", 3 short pills, and a one-line quote sign-off.
+
+Every slide's content must be specific to {topic_title} — reject any content you
+generate that would still make sense if you swapped in a different topic, and
+regenerate it before including it in your output.
+
+Return a single JSON object strictly matching this schema:
 {{
   "categoryTag": "SHORT CATEGORY (e.g. ● OPEN SOURCE • GITHUB, ● AUTONOMOUS WORKFLOW, ● LLM BENCHMARK)",
   "slides": [
@@ -1041,16 +1064,28 @@ def evaluate_news_worth(title, summary=""):
     Evaluates whether an item covers a genuine, actionable AI tool or breakthrough.
     Suppresses podcast banter, vague gossip, and non-actionable fluff.
     """
-    eval_prompt = f"""You are the Executive Producer for Jayant's AI Lab.
-Title: {title}
-Summary: {summary}
+    eval_prompt = f"""You are the Executive Producer for Jayant's AI Lab. You screen incoming AI news for a
+daily short-form video series. Be strict — most items should be rejected.
 
-Determine if this covers an actionable new AI tool, framework, model release, or practical automation that businesses or creators can use immediately.
-If it is generic gossip, routine company politics, or vague opinions, reply strictly with:
-REJECT: [Reason]
+TITLE: {title}
+SUMMARY: {summary}
 
-If it showcases a genuine tool, model, or workflow worthy of a dedicated breakdown, reply strictly with:
-APPROVE: [Tool Name] | [One-line core reason]
+Decide using this test, in order:
+1. Does this describe a specific tool, model, framework, or workflow that a business
+   owner or solo creator could start using within 24 hours?
+2. Is there a concrete "how it works" or "what it does," not just funding news,
+   personnel changes, opinion pieces, or benchmarks with no usable product?
+3. Would a demo or walkthrough of this be genuinely new to someone who already
+   follows AI news casually?
+
+If ANY of the three fails, reject.
+
+OUTPUT FORMAT — reply with exactly one line, nothing else:
+REJECT: <5-10 word reason>
+OR
+APPROVE: <Tool Name> | <one-line reason it clears all 3 checks>
+
+Do not explain your reasoning outside the single output line. Do not use markdown.
 """
     out = call_llm_with_failover(eval_prompt, temperature=0.2, timeout=20)
     if out:
@@ -1197,88 +1232,95 @@ def generate_full_studio_package(topic_title, topic_details, source_url="", caro
     ]
     selected_cta = random.choice(cta_frameworks)
 
-    prompt = f"""You are the chief viral scriptwriter and content director for Jayant's AI Lab (@jayantsailab).
-Jayant is an independent AI engineer and agency founder in South Delhi, India. He builds real autonomous agent pipelines for clients.
-He speaks with sharp, energetic, high-conviction tech authority. He is NOT a PR spokesperson for OpenAI, Meta, or Google. He breaks down their releases with an operator's critical lens.
+    prompt = f"""You are the Chief Scriptwriter & Creative Director for Jayant's AI Lab (@jayantsailab)
+in South Delhi. You are producing a complete multi-platform content package for one
+AI breakthrough. Follow every constraint exactly — this output goes straight into
+production with no human editing pass.
 
-Topic: {topic_title}
-Details: {topic_details}
-Selected Hook Framework: {selected_hook}
-Selected Storytelling Structure: {selected_story_structure}
-Selected Call To Action: {selected_cta}
+TOPIC: {topic_title}
+DETAILS: {topic_details}
+HOOK FRAMEWORK TO USE: {selected_hook}
+STORY STRUCTURE TO USE: {selected_story_structure}
+CTA STRATEGY TO USE: {selected_cta}
 
-CRITICAL FORMATTING & SCRIPT SPECIFICATIONS:
+Produce the following 7 sections in this exact order, each starting with its bracketed
+label on its own line.
 
 [HOOK]
-* STRICT LENGTH: Exactly 12 to 22 words total (4 to 6 seconds speaking time for Google Vids Avatar).
-* DO NOT summarize the headline. DO NOT repeat the whole title.
-* Deliver an immediate, contrarian pattern interrupt from Jayant's builder perspective in South Delhi.
-* MANDATORY HANDOVER REQUIREMENT:
-  The hook MUST ALWAYS conclude with Jayant handing over to Zoro!
-  You can vary the style, but it must clearly introduce the handover. Examples:
-  - "...Now my AI employee Zoro will tell you about it."
-  - "...Now my AI employee Zoro will break down the exact architecture."
-  - "...Now my AI employee Zoro will show you how we deploy this in production."
-  - "...Now my AI employee Zoro will walk you through the entire benchmark."
+- 12 to 22 words total. Count before you finalize.
+- Do not restate the headline. Open with a contrarian or surprising claim from
+  Jayant's builder point of view.
+- Must end with a handover to Zoro. Vary the phrasing — do not reuse a stock line
+  verbatim across topics. The handover must name Zoro and imply he'll explain the
+  mechanics next.
 
 [ZORO_BODY]
-* STRICT LENGTH LIMIT: Strictly under 30 seconds spoken audio! Exactly 60 to 75 words TOTAL. If it is longer than 75 words, it is rejected.
-* TEACH TO A SCHOOL KID: Write as if you are explaining this exciting tech breakthrough to a 12-year-old school kid! Keep it fun, simple, and crystal clear.
-* HOW TO SOUND TECHNICAL WITHOUT JARGON: Explain the actual mechanics of what the tool does using everyday physical analogies (like an invisible robot helper, a magical homework notebook, or an autopilot clone).
-* FORBIDDEN WORDS: NEVER use engineer or corporate words like "deterministic routing", "tokens", "latency", "VRAM", "API moats", "sub-agent", "schemas", "infrastructure", "optimization".
-* MANDATORY DYNAMIC OPENING: Zoro MUST introduce himself as Jayant's AI employee, with fresh natural energy every time! Examples:
-  - "Zoro here, Jayant's AI employee in South Delhi..."
-  - "I am Zoro, Jayant's AI employee at the Lab..."
-  - "Zoro on deck, Jayant's AI employee. Here is how this works..."
-  - "This is Zoro, Jayant's AI employee. Check this out..."
-  - "Hey, I am Zoro, Jayant's AI employee at the Lab..."
-* 3-PART 30-SECOND STRUCTURE:
-  1. Dynamic Intro & The Pain: (e.g., "Imagine having 50 pages of boring homework to read...")
-  2. The Magic Tech Solution: (e.g., "This new AI is like an invisible robot buddy that reads the whole book in five seconds and explains it simply...")
-  3. The Real Result: (e.g., "It turns hours of chores into 20 seconds. If you can text on WhatsApp, you can use this today!")
-* Write a continuous spoken monologue with zero stage directions. Exactly 60 to 75 words!
+- Exactly 60 to 75 words. Count before you finalize — if it's outside this range,
+  rewrite it, don't just trim the end.
+- Opens with Zoro introducing himself as Jayant's AI employee, in a fresh original
+  phrasing each time (do not copy a template line word-for-word).
+- Explains the mechanism using one everyday physical analogy — something a
+  12-year-old has directly experienced (a homework notebook, a helper who reads
+  fast, an autopilot). The analogy must map to what the tool ACTUALLY does, not
+  a generic "it's smart" comparison.
+- Structure: (1) name the boring/slow task this replaces, (2) the analogy for how
+  the tool does it, (3) the concrete outcome in time or effort saved.
+- Banned words (reject and rewrite if any appear): deterministic, routing, tokens,
+  latency, VRAM, API moat, sub-agent, schema, infrastructure, optimize/optimization,
+  leverage, delve, testament, beacon, tapestry, landscape, revolutionize,
+  game-changer, unlock, navigate, elevate, harness, moreover.
+- No em dashes (— or --). No stage directions, no parentheticals, no quotation marks
+  around the monologue itself.
 
 [B_ROLL_LIST]
-* 3 to 4 specific visual cues with timestamps [00:08 - 00:20] and AI video generation prompts for Kling/Luma/Runway.
+- 3 to 4 entries. Each entry: a timestamp range in the video (e.g. [00:08-00:20]),
+  a one-line description of what's on screen, and a literal prompt written for
+  Kling/Luma/Runway (subject, action, camera movement, lighting — no dialogue).
 
 [CTA]
-* Exactly 1 punchy sentence for Google Vids Avatar (e.g., "Save this video for your next build sprint, drop a comment with your questions, and follow @jayantsailab.")
+- One sentence only. Must ask for a specific action (save, comment, follow) — not
+  a vague "check this out."
 
 [TWEET]
-* STRICT LENGTH: Exactly 140 to 240 characters (MUST FIT in a standard tweet).
-* VOICE: Simple, high-conviction builder perspective. Zero company PR.
-* ABSOLUTE BAN ON 'BIO': NEVER mention 'in bio', 'link in bio', or 'check bio'. There is nothing in the bio.
-* Example:
-  "Stop paying people to manually copy-paste data.
-  This new setup automates the entire chore in under 20 seconds.
-  Zero coding needed. Work smarter, not harder."
+- 140 to 240 characters. Count before you finalize.
+- Plain builder voice, no corporate framing, no hashtags unless genuinely useful.
+- Never mention "bio" in any form.
 
 [LINKEDIN]
-* STRICT LENGTH: Complete 160 to 240 word high-insight founder breakdown in simple English. NEVER OUTPUT JUST A LINK.
-* Format with clean spacing and line breaks:
-  - Line 1: Relatable problem founders and non-coders face.
-  - The Everyday Headache: Why manual work is burning payroll.
-  - The 3-Step Simple System:
-      1. Collect Data (Instant web search / input)
-      2. Automated Processing (AI generates the draft in 15 seconds)
-      3. Quality Review (Spot-check and approve)
-  - The Cold Numbers: Hours saved per week (e.g. 10+ hours saved).
-  - Closing CTA: "Save this post for your team, and drop a comment below with your thoughts." (NEVER mention 'in bio')
+- 160 to 240 words. Count before you finalize.
+- Line 1: a problem a founder or non-coder actually has, in their words, not yours.
+- Then: why the manual version of this wastes paid hours (be specific, not "time
+  consuming").
+- Then: the 3-step system framed as (1) cut research time, (2) automate the
+  repetitive part, (3) a human quality check before anything ships.
+- Then: one concrete number for hours saved per week — must be plausible for
+  this specific tool, not a stock "10+ hours."
+- Close: ask to save the post and comment. Never mention "bio."
+- No raw URLs. No markdown formatting characters.
 
 [CAROUSEL]
-Slide 1: High-Impact Curiosity / Contrarian Title Hook
-Slide 2: The Bottleneck (The Old Slow Way vs The Agent Way)
-Slide 3: The Architecture (How it works under the hood - simple analogy)
-Slide 4: Step-by-Step Blueprint (Input -> Prompt / Model -> Automated Output)
-Slide 5: Quantifiable ROI (Hours saved, cost reduction, or speedup)
-Slide 6: Dynamic CTA (Aligned with the selected CTA framework, saving post & following @jayantsailab)
+Provide the 6 slide contents in order — each 1-2 lines, ready to drop into a
+template:
+1. Contrarian title hook
+2. The old slow way vs. the agent way (one line each)
+3. How it works under the hood, in one plain-English analogy
+4. Input → Prompt/Model → Output, as a 3-step blueprint
+5. One quantifiable ROI number (hours saved, cost delta, or speedup multiple)
+6. CTA line for saving/following @jayantsailab
 
-STRICT WRITING RULES:
-1. ABSOLUTE BAN ON EM DASHES: NEVER use em dashes ('—' or '--'). Use standard commas, periods, or clean line breaks.
-2. ABSOLUTE BAN ON AI BUZZWORDS: NEVER use 'delve', 'testament', 'beacon', 'tapestry', 'landscape', 'revolutionize', 'game-changer', 'unlock', 'navigate', 'elevate', 'harness', 'moreover', 'furthermore', 'in today\\'s fast-paced world', 'buckle up', 'stop scrolling', 'without further ado'.
-3. NO PHONE NUMBERS: Strictly forbidden (+91 78800 56262, 7880056262, wa.me). Direct to comments or DM.
-4. BRAND IDENTITY: Strictly 'Jayant\\'s AI Lab', handle '@jayantsailab', avatar badge 'JL'.
-5. ABSOLUTE BAN ON 'BIO': NEVER mention 'in bio', 'link in bio', 'check bio', or 'bio' anywhere in the output. There is nothing in the bio.
+GLOBAL RULES (apply to every section above):
+- No em dashes anywhere.
+- Never use: delve, testament, beacon, tapestry, landscape, revolutionize,
+  game-changer, unlock, navigate, elevate, harness, moreover.
+- No phone numbers, ever.
+- Brand is always "Jayant's AI Lab", handle always "@jayantsailab" — never
+  abbreviate or alter.
+- Never mention "in bio," "link in bio," or "check bio" — there is no bio link.
+
+Before finalizing your response, silently re-check: HOOK word count, ZORO_BODY word
+count and banned-word list, TWEET character count, LINKEDIN word count, and the
+em-dash ban across all sections. Fix anything that fails, then output the final
+package only — no notes about what you checked.
 """
     # Generate via Chief Scriptwriter Engine using resilient multi-tier cascade
     raw_text = call_llm_with_failover(prompt, temperature=0.6, timeout=35)
@@ -1414,29 +1456,32 @@ def audit_and_enhance_content(pkg, topic_title, topic_details):
         reason = f"{word_count} words (must be 60-75 words / under 30s)" if (word_count > 80 or word_count < 55) else f"contained techno-jargon: {has_jargon}"
         issues.append(f"Zoro body non-compliant ({reason})")
         dynamic_intro = random.choice(ZORO_DYNAMIC_INTROS)
-        elevation_prompt = f"""You are the Chief Quality Monitor for Jayant's AI Lab.
-The current draft for Zoro's body script is non-compliant ({reason}).
+        elevation_prompt = f"""You are the Chief Quality Monitor for Jayant's AI Lab. A draft script failed
+validation. Rewrite it from scratch — do not patch the existing draft.
+
 TOPIC: {topic_title}
 DETAILS: {topic_details}
-CURRENT DRAFT: {body}
+FAILURE REASON: {reason}
+REJECTED DRAFT (for context only, do not reuse its phrasing): {body}
 
-Elevate this to a 9.9/10 viral creator-style script explained so simply that a 12-year-old school kid can instantly understand it.
+Write a new monologue that a 12-year-old could follow on first listen.
 
-CRITICAL HARD CONSTRAINTS:
-1. AUDIO DURATION LIMIT: MUST BE STRICTLY UNDER 30 SECONDS OF SPOKEN AUDIO.
-   - That means STRICTLY 60 TO 75 WORDS TOTAL.
-   - If your response is over 75 words, the audio will fail and be rejected!
-2. DYNAMIC INTRO: Start with: "{dynamic_intro}"
-3. TEACH LIKE TO A SCHOOL KID:
-   - Use fun, relatable analogies (e.g., an invisible robot helper doing your 50 pages of boring homework, or a cheat code for chores).
-   - Zero techno-babble: NEVER say token velocity, deterministic, VRAM, API moats, latency, vector embeddings, or corporate buzzwords.
-4. STRUCTURE (within 60-75 words):
-   - School-Kid Pain: The boring chore everyone hates doing.
-   - School-Kid Analogy: How this tool acts like an invisible robot buddy doing it in seconds.
-   - Punchy Zero-Barrier Finish: If you can text on WhatsApp, you can use this today.
-5. Spoken, energetic English. NO em dashes, NO robotic phrases.
+HARD CONSTRAINTS:
+1. Exactly 60 to 75 words. Count before responding. This is the #1 reason drafts
+   get rejected — check it twice.
+2. Open with: "{dynamic_intro}" — then continue in the same energetic voice.
+3. One real-experience analogy (homework, a helper who reads fast for you, an
+   autopilot) that maps to what this tool actually does — not a generic
+   "it's smart" comparison.
+4. Never use: token, velocity, deterministic, VRAM, API moat, latency, vector,
+   embedding, infrastructure, optimize, or any corporate/engineering term.
+5. Structure in exactly this order: the boring task everyone hates → the analogy
+   for how the tool replaces it → the concrete result in time/effort saved,
+   closing on "if you can text on WhatsApp, you can use this today" or an
+   equivalent zero-barrier line.
+6. No em dashes. No quotation marks. No stage directions or brackets.
 
-Return ONLY the final monologue text (60 to 75 words) without quotes or extra commentary.
+Return only the final monologue text — no preamble, no word count, no notes.
 """
         elevated_body = call_llm_with_failover(elevation_prompt, temperature=0.5, timeout=30)
         if elevated_body:
