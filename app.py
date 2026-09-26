@@ -443,9 +443,59 @@ def generate_agnes_image(prompt, save_path):
     return False
 
 
+# ─── CLOUDFLARE WORKERS AI NEURON SAFETY GOVERNOR (10,000 NEURONS/DAY CAP) ───
+CF_NEURON_TRACKER_FILE = "cf_neuron_tracker.json"
+MAX_DAILY_CF_NEURONS = 9000  # 10% safety cushion under the 10,000 hard limit
+ESTIMATED_NEURONS_PER_SDXL_IMAGE = 350
+
+
+class CloudflareNeuronGovernor:
+    """Safeguards Cloudflare Workers AI free tier 10,000 Neurons/day cap per account."""
+    @staticmethod
+    def _load():
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        if os.path.exists(CF_NEURON_TRACKER_FILE):
+            try:
+                with open(CF_NEURON_TRACKER_FILE, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    if data.get("date") == today:
+                        return data
+            except Exception:
+                pass
+        return {"date": today, "usage": {}}
+
+    @staticmethod
+    def _save(data):
+        try:
+            with open(CF_NEURON_TRACKER_FILE, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
+        except Exception as e:
+            print(f"Error saving CF neuron tracker: {e}")
+
+    @classmethod
+    def can_generate(cls, account_id):
+        data = cls._load()
+        used = data["usage"].get(account_id, 0)
+        return (used + ESTIMATED_NEURONS_PER_SDXL_IMAGE) <= MAX_DAILY_CF_NEURONS
+
+    @classmethod
+    def record_generation(cls, account_id):
+        data = cls._load()
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        if data.get("date") != today:
+            data = {"date": today, "usage": {}}
+        used = data["usage"].get(account_id, 0) + ESTIMATED_NEURONS_PER_SDXL_IMAGE
+        data["usage"][account_id] = used
+        cls._save(data)
+        print(f"[CF NEURON GOVERNOR]: Account ...{account_id[-6:]} used ~{used}/{MAX_DAILY_CF_NEURONS} daily Neurons")
+
+
 def generate_cloudflare_image(prompt):
-    """Generates photorealistic system concept & architecture cards using Cloudflare Workers AI (rotating Account 1 & 2)."""
+    """Generates photorealistic system concept & architecture cards using Cloudflare Workers AI (rotating Account 1 & 2 with Neuron safety)."""
     for account, token in CF_POOL.get_all_ordered():
+        if not CloudflareNeuronGovernor.can_generate(account):
+            print(f"[CF NEURON GOVERNOR]: Account ...{account[-6:]} approaching daily neuron cap (~9,000 Neurons). Checking next account...")
+            continue
         try:
             cf_url = f"https://api.cloudflare.com/client/v4/accounts/{account}/ai/run/@cf/bytedance/stable-diffusion-xl-lightning"
             r = requests.post(
@@ -455,6 +505,7 @@ def generate_cloudflare_image(prompt):
                 timeout=20
             )
             if r.status_code == 200 and r.content:
+                CloudflareNeuronGovernor.record_generation(account)
                 print(f"[Visual Triad]: Cloudflare Workers AI SDXL Concept Card generated ({len(r.content)} bytes)")
                 return r.content
         except Exception as e:
@@ -530,39 +581,48 @@ def clean_json_response(text):
     return None
 
 
-def _try_openrouter(key, prompt, system_prompt="", json_mode=False, temperature=0.6, timeout=35):
-    try:
-        msgs = []
-        if system_prompt:
-            msgs.append({"role": "system", "content": system_prompt})
-        msgs.append({"role": "user", "content": prompt})
-        payload = {
-            "model": "deepseek/deepseek-chat",
-            "messages": msgs,
-            "temperature": temperature
-        }
-        if json_mode:
-            payload["response_format"] = {"type": "json_object"}
-        res = requests.post(
-            "https://openrouter.ai/api/v1/chat/completions",
-            headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-            json=payload,
-            timeout=timeout
-        )
-        if res.status_code == 200:
-            txt = res.json()["choices"][0]["message"]["content"]
+OPENROUTER_FREE_MODELS = [
+    "openrouter/free",
+    "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "nvidia/nemotron-3.5-lightning:free"
+]
+
+
+def _try_openrouter(key, prompt, system_prompt="", json_mode=False, temperature=0.6, timeout=35, model=None):
+    models_to_try = [model] if model else OPENROUTER_FREE_MODELS
+    for m in models_to_try:
+        try:
+            msgs = []
+            if system_prompt:
+                msgs.append({"role": "system", "content": system_prompt})
+            msgs.append({"role": "user", "content": prompt})
+            payload = {
+                "model": m,
+                "messages": msgs,
+                "temperature": temperature
+            }
             if json_mode:
-                parsed = clean_json_response(txt)
-                if parsed is not None:
-                    print(f"[Cascade SUCCESS]: OpenRouter Key ...{key[-4:]} (DeepSeek V3, JSON)")
-                    return parsed
+                payload["response_format"] = {"type": "json_object"}
+            res = requests.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+                json=payload,
+                timeout=timeout
+            )
+            if res.status_code == 200:
+                txt = res.json()["choices"][0]["message"]["content"]
+                if json_mode:
+                    parsed = clean_json_response(txt)
+                    if parsed is not None:
+                        print(f"[Cascade SUCCESS]: OpenRouter Key ...{key[-4:]} ({m}, JSON)")
+                        return parsed
+                else:
+                    print(f"[Cascade SUCCESS]: OpenRouter Key ...{key[-4:]} ({m})")
+                    return txt
             else:
-                print(f"[Cascade SUCCESS]: OpenRouter Key ...{key[-4:]} (DeepSeek V3)")
-                return txt
-        else:
-            print(f"[Cascade Warn]: OpenRouter Key ...{key[-4:]} status {res.status_code}: {res.text[:80]}")
-    except Exception as e:
-        print(f"[Cascade Error]: OpenRouter Key ...{key[-4:]}: {e}")
+                print(f"[Cascade Warn]: OpenRouter Key ...{key[-4:]} ({m}) status {res.status_code}: {res.text[:80]}")
+        except Exception as e:
+            print(f"[Cascade Error]: OpenRouter Key ...{key[-4:]} ({m}): {e}")
     return None
 
 
@@ -590,7 +650,7 @@ def _try_gemini(key, model_name, prompt, system_prompt="", json_mode=False, time
     return None
 
 
-def _try_groq(prompt, system_prompt="", json_mode=False, temperature=0.6, timeout=35):
+def _try_groq(prompt, system_prompt="", json_mode=False, temperature=0.6, timeout=35, model="openai/gpt-oss-120b"):
     if not GROQ_API_KEY:
         return None
     try:
@@ -599,7 +659,7 @@ def _try_groq(prompt, system_prompt="", json_mode=False, temperature=0.6, timeou
             msgs.append({"role": "system", "content": system_prompt})
         msgs.append({"role": "user", "content": prompt})
         payload = {
-            "model": "openai/gpt-oss-120b",
+            "model": model,
             "messages": msgs,
             "temperature": temperature
         }
@@ -616,39 +676,47 @@ def _try_groq(prompt, system_prompt="", json_mode=False, temperature=0.6, timeou
             if json_mode:
                 parsed = clean_json_response(txt)
                 if parsed is not None:
-                    print("[Cascade SUCCESS]: Groq 120B (JSON)")
+                    print(f"[Cascade SUCCESS]: Groq ({model}, JSON)")
                     return parsed
             else:
-                print("[Cascade SUCCESS]: Groq 120B")
+                print(f"[Cascade SUCCESS]: Groq ({model})")
                 return txt
         else:
-            print(f"[Cascade Warn]: Groq status {res.status_code}: {res.text[:80]}")
+            print(f"[Cascade Warn]: Groq ({model}) status {res.status_code}: {res.text[:80]}")
     except Exception as e:
-        print(f"[Cascade Error]: Groq: {e}")
+        print(f"[Cascade Error]: Groq ({model}): {e}")
     return None
 
 
 def call_llm_with_failover(prompt, system_prompt="", json_mode=False, temperature=0.6, timeout=35, preferred=None):
     """
     Robust multi-provider, multi-key failover cascade with specialized provider preference:
-    - preferred="groq": Groq 120B -> Gemini Pool -> OpenRouter Pool
-    - preferred="gemini": Gemini Pool (Flash Lite -> Flash 3.8 -> Flash 3.6) -> OpenRouter Pool -> Groq
-    - preferred="openrouter" (default): OpenRouter Pool (DeepSeek V3) -> Gemini Pool -> Groq
+    - preferred="groq" / "groq_120b": Groq 120B (1K RPD) -> Groq 20B (1K RPD) -> Gemini Pool -> OpenRouter Free Pool
+    - preferred="groq_20b": Groq 20B (1K RPD) -> Groq 120B -> Gemini Pool -> OpenRouter Free Pool
+    - preferred="gemini": Gemini Pool (Flash Lite -> Flash 3.8 -> Flash 3.6) -> OpenRouter Free Pool -> Groq 120B
+    - preferred="openrouter" (default): OpenRouter Free Pool (nemotron / free) -> Gemini Pool -> Groq 120B
     Uses thread-safe RoundRobinPool rotation across all keys to ensure 100% daily quota utilization.
     """
     pref = (preferred or "openrouter").lower()
 
-    if pref == "groq":
-        # 1. Groq (High daily limit 14,400)
-        res = _try_groq(prompt, system_prompt, json_mode, temperature, timeout)
+    if pref in ["groq", "groq_20b", "groq_120b"]:
+        groq_primary = "openai/gpt-oss-20b" if pref == "groq_20b" else "openai/gpt-oss-120b"
+        groq_secondary = "openai/gpt-oss-120b" if pref == "groq_20b" else "openai/gpt-oss-20b"
+
+        # 1. Groq Primary Model
+        res = _try_groq(prompt, system_prompt, json_mode, temperature, timeout, model=groq_primary)
         if res is not None:
             return res
-        # 2. Gemini Pool
+        # 2. Groq Secondary Model
+        res = _try_groq(prompt, system_prompt, json_mode, temperature, timeout, model=groq_secondary)
+        if res is not None:
+            return res
+        # 3. Gemini Pool
         for key in GEMINI_POOL.get_all_ordered():
             res = _try_gemini(key, "gemini-3.5-flash-lite", prompt, system_prompt, json_mode, timeout)
             if res is not None:
                 return res
-        # 3. OpenRouter Pool
+        # 4. OpenRouter Free Pool
         for key in OPENROUTER_POOL.get_all_ordered():
             res = _try_openrouter(key, prompt, system_prompt, json_mode, temperature, timeout)
             if res is not None:
@@ -668,18 +736,21 @@ def call_llm_with_failover(prompt, system_prompt="", json_mode=False, temperatur
             res = _try_gemini(key, "gemini-3.6-flash", prompt, system_prompt, json_mode, timeout)
             if res is not None:
                 return res
-        # 2. OpenRouter Pool
+        # 2. OpenRouter Free Pool
         for key in OPENROUTER_POOL.get_all_ordered():
             res = _try_openrouter(key, prompt, system_prompt, json_mode, temperature, timeout)
             if res is not None:
                 return res
-        # 3. Groq
-        res = _try_groq(prompt, system_prompt, json_mode, temperature, timeout)
+        # 3. Groq 120B / 20B
+        res = _try_groq(prompt, system_prompt, json_mode, temperature, timeout, model="openai/gpt-oss-120b")
+        if res is not None:
+            return res
+        res = _try_groq(prompt, system_prompt, json_mode, temperature, timeout, model="openai/gpt-oss-20b")
         if res is not None:
             return res
 
     else:  # pref == "openrouter" or fallback
-        # 1. OpenRouter Pool (DeepSeek V3)
+        # 1. OpenRouter Free Pool
         for key in OPENROUTER_POOL.get_all_ordered():
             res = _try_openrouter(key, prompt, system_prompt, json_mode, temperature, timeout)
             if res is not None:
@@ -697,8 +768,11 @@ def call_llm_with_failover(prompt, system_prompt="", json_mode=False, temperatur
             res = _try_gemini(key, "gemini-3.6-flash", prompt, system_prompt, json_mode, timeout)
             if res is not None:
                 return res
-        # 3. Groq
-        res = _try_groq(prompt, system_prompt, json_mode, temperature, timeout)
+        # 3. Groq 120B / 20B
+        res = _try_groq(prompt, system_prompt, json_mode, temperature, timeout, model="openai/gpt-oss-120b")
+        if res is not None:
+            return res
+        res = _try_groq(prompt, system_prompt, json_mode, temperature, timeout, model="openai/gpt-oss-20b")
         if res is not None:
             return res
 
@@ -1275,7 +1349,7 @@ APPROVE: <Tool Name> | <one-line reason it clears all 3 checks>
 
 Do not explain your reasoning outside the single output line. Do not use markdown.
 """
-    out = call_llm_with_failover(eval_prompt, temperature=0.2, timeout=20, preferred="groq")
+    out = call_llm_with_failover(eval_prompt, temperature=0.2, timeout=20, preferred="groq_20b")
     if out:
         out = out.strip()
         if out.startswith("APPROVE"):
@@ -2264,6 +2338,36 @@ def deliver_production_package(title, details, source_url="", source_name="", vi
     except Exception as e:
         print(f"[Social Bot Dispatch Error]: {e}")
 
+    # 4. Autonomous Blogger Deep-Dive Article Publishing (via Email)
+    def _async_blogger_publish():
+        try:
+            from blogger_publisher import generate_blogger_article_html, publish_to_blogger
+            print(f"[BLOGGER]: Generating deep-dive SEO article via Groq 120B for '{title}'...")
+            html_art = generate_blogger_article_html(
+                title,
+                topic_details=details,
+                source_url=source_url,
+                call_llm_func=call_llm_with_failover
+            )
+            img_paths = [pkg.get("clay_path")] if pkg.get("clay_path") else []
+            img_bytes_list = []
+            if pkg.get("cf_image_bytes"):
+                img_bytes_list.append(pkg.get("cf_image_bytes"))
+            if pkg.get("flux_image_bytes"):
+                img_bytes_list.append(pkg.get("flux_image_bytes"))
+
+            pub_ok, pub_msg = publish_to_blogger(title, html_art, image_paths=img_paths, image_bytes_list=img_bytes_list)
+            if pub_ok:
+                send_tg_message(
+                    TARGET_CHAT_ID,
+                    f"📝 *Blogger Article Published Live!*\n📰 *Title:* {title[:60]}\n🌐 Published via Blogger Post-by-Email Gateway with full SEO breakdown & visuals.",
+                    bot_token=TELEGRAM_BOT_TOKEN_SOCIAL
+                )
+        except Exception as be:
+            print(f"[BLOGGER PUBLISH WARN]: {be}")
+
+    threading.Thread(target=_async_blogger_publish, daemon=True).start()
+
 
 LAST_DISPATCHED_TYPE = None
 
@@ -2419,6 +2523,27 @@ def telegram_listener():
                         send_tg_message(chat_id, "👋 Hello Jayant! Master Studio Engine is active 24/7. Send any AI link, topic, or command anytime!")
                         continue
 
+                    if text.startswith("/blog "):
+                        blog_topic = text[6:].strip()
+                        send_tg_message(chat_id, f"📝 *Drafting & Publishing deep-dive SEO article to Blogger via Groq 120B for: '{blog_topic}'...*", bot_token=TELEGRAM_BOT_TOKEN_SOCIAL)
+                        try:
+                            from blogger_publisher import generate_blogger_article_html, publish_to_blogger
+                            html_art = generate_blogger_article_html(
+                                blog_topic,
+                                topic_details="Jayant On-Demand Blogger Request",
+                                call_llm_func=call_llm_with_failover
+                            )
+                            cf_card = generate_cloudflare_image(f"Photorealistic system architecture concept for {blog_topic[:60]}")
+                            img_b_list = [cf_card] if cf_card else []
+                            pub_ok, pub_msg = publish_to_blogger(blog_topic, html_art, image_bytes_list=img_b_list)
+                            if pub_ok:
+                                send_tg_message(chat_id, f"✅ *Blogger Article Published Live!*\n📰 *Title:* {blog_topic}\n🚀 Check your blog on Blogger.", bot_token=TELEGRAM_BOT_TOKEN_SOCIAL)
+                            else:
+                                send_tg_message(chat_id, f"ℹ️ *Blogger Article Generated & Saved!*\nResult: `{pub_msg}`\n(Note: Set `BLOGGER_POST_EMAIL` & `SMTP_PASS` in .env to enable instant email dispatch)", bot_token=TELEGRAM_BOT_TOKEN_SOCIAL)
+                        except Exception as e:
+                            send_tg_message(chat_id, f"❌ *Blogger Generation Error:* {e}", bot_token=TELEGRAM_BOT_TOKEN_SOCIAL)
+                        continue
+
                     # Allow on-demand style command: e.g., "/editorial <Topic>" or "/cyber <Topic>"
                     style = "editorial"
                     for s_key in ["editorial", "cyber", "minimal", "matrix", "tweet"]:
@@ -2493,6 +2618,22 @@ def telegram_listener():
                             caption=f"⚡ *Visual Asset #3: Dark-Mode Cyber Proof Card (HF FLUX.1)*\n📌 *For X / Twitter:* {text[:60]}\n🛡️ *Engine:* Hugging Face FLUX.1 Schnell",
                             bot_token=TELEGRAM_BOT_TOKEN_SOCIAL
                         )
+
+                    # Also publish deep-dive article to Blogger asynchronously
+                    def _async_manual_blogger(req_title, req_pkg):
+                        try:
+                            from blogger_publisher import generate_blogger_article_html, publish_to_blogger
+                            html_art = generate_blogger_article_html(req_title, topic_details="On-Demand Studio Package", call_llm_func=call_llm_with_failover)
+                            img_p = [req_pkg.get("clay_path")] if req_pkg.get("clay_path") else []
+                            img_b = []
+                            if req_pkg.get("cf_image_bytes"):
+                                img_b.append(req_pkg.get("cf_image_bytes"))
+                            if req_pkg.get("flux_image_bytes"):
+                                img_b.append(req_pkg.get("flux_image_bytes"))
+                            publish_to_blogger(req_title, html_art, image_paths=img_p, image_bytes_list=img_b)
+                        except Exception as e:
+                            print(f"[BLOGGER ERROR]: {e}")
+                    threading.Thread(target=_async_manual_blogger, args=(text, pkg), daemon=True).start()
 
         except Exception as e:
             print(f"Error in TG listener: {e}")

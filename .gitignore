@@ -13,3 +13,6 @@ __pycache__/
 test_*.py
 send_*.py
 scratch/
+blogger_outputs/
+cf_neuron_tracker.json
+radar_governor.json
