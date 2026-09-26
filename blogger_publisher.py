@@ -15,11 +15,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-BLOGGER_POST_EMAIL = os.getenv("BLOGGER_POST_EMAIL", "")
+BLOGGER_POST_EMAIL = os.getenv("BLOGGER_POST_EMAIL", "jrddiwan.jrdd@blogger.com")
 SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USER = os.getenv("SMTP_USER", os.getenv("EMAIL_USER", "jrddiwan@gmail.com"))
-SMTP_PASS = os.getenv("SMTP_PASS", os.getenv("EMAIL_PASS", ""))
+SMTP_PASS = os.getenv("SMTP_PASS", os.getenv("EMAIL_PASS", "pgbgoxarvfbogsii"))
 
 BLOGGER_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "blogger_outputs"))
 os.makedirs(BLOGGER_DIR, exist_ok=True)
