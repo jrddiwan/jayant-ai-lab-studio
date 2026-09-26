@@ -1,32 +1,48 @@
 /* ================================================================
    JAYANT'S AI LAB — WIDE MODERN TECH EDITORIAL THEME (1080px)
-   Fills desktop screens comfortably with generous reading width,
-   removes desert photo banner, and eliminates awkward side margins.
+   Completely removes Contempo's 284px desktop left-sidebar padding,
+   centers all content, and expands post cards to fill the screen.
    Paste into: Blogger Dashboard -> Theme -> Customize -> Advanced -> Add CSS
    ================================================================ */
 
 :root {
-  --primary-accent: #00c853;       /* Emerald Green */
+  --primary-accent: #00c853;
   --primary-accent-hover: #00e676;
-  --bg-color: #ffffff;
-  --text-main: #111827;            /* Deep Slate */
-  --text-muted: #64748b;           /* Slate 500 */
-  --card-border: #e2e8f0;          /* Crisp 1px border */
+  --bg-color: #f8fafc;
+  --text-main: #111827;
+  --text-muted: #64748b;
+  --card-border: #e2e8f0;
   --code-bg: #0d1117;
   --code-text: #00ffaa;
-  --max-article-width: 1080px;     /* Widescreen optimal width */
+  --max-article-width: 1080px;
 }
 
 /* 1. Global Reset & Clean Background */
 body {
-  background-color: #f8fafc !important;
+  background-color: var(--bg-color) !important;
   background-image: none !important;
   color: var(--text-main) !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif !important;
   -webkit-font-smoothing: antialiased !important;
 }
 
-/* 2. Kill Contempo Desert Photo Banner & Fix Overlaps */
+/* 2. KILL CONTEMPO 284px DESKTOP LEFT-SIDE GAP (Critical Fix) */
+@media screen and (min-width: 1200px) {
+  body, .page, .page_body, .centered, .centered-bottom, .centered-top, .bg-photo-container {
+    padding-left: 0 !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+}
+
+.page_body {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  margin: 0 auto !important;
+  width: 100% !important;
+}
+
+/* 3. Kill Contempo Desert Photo Banner & Broken Overlaps */
 .bg-photo-container, .bg-photo, .bg-photo-overlay, .centered-top-placeholder {
   display: none !important;
   height: 0 !important;
@@ -49,7 +65,7 @@ body {
   transform: none !important;
 }
 
-/* 3. Site Header (Full Width Clean Branding) */
+/* 4. Wide Site Header */
 .header-widget, .header-inner, .BlogHeader {
   text-align: center !important;
   padding: 40px 0 25px 0 !important;
@@ -74,7 +90,7 @@ body {
   font-weight: 400 !important;
 }
 
-/* 4. Wide, Balanced Post Card (Fills Screen Comfortably) */
+/* 5. Wide, Balanced Post Card (Centered, No Left Gap) */
 .post-outer, .post, article {
   background: #ffffff !important;
   border: 1px solid var(--card-border) !important;
@@ -95,7 +111,7 @@ body {
   color: #1f2937 !important;
 }
 
-/* 5. Clean Post Title */
+/* 6. Clean Post Title */
 .post-title, .post-title a, h2.post-title, h1.post-title {
   color: #0f172a !important;
   font-weight: 800 !important;
@@ -111,7 +127,7 @@ body {
   color: var(--primary-accent) !important;
 }
 
-/* 6. Typography & Headings */
+/* 7. Typography & Headings */
 .post-body h2 {
   font-size: 26px !important;
   font-weight: 700 !important;
@@ -136,7 +152,7 @@ body {
 .post-body ul, .post-body ol { padding-left: 28px !important; margin-bottom: 24px !important; }
 .post-body li { margin-bottom: 10px !important; }
 
-/* 7. Code Blocks (Dark Terminal) */
+/* 8. Code Blocks (Dark Terminal) */
 .post-body pre {
   background: var(--code-bg) !important;
   color: var(--code-text) !important;
@@ -150,7 +166,7 @@ body {
   margin: 28px 0 !important;
 }
 
-/* 8. Callouts */
+/* 9. Callouts */
 .post-body blockquote {
   border-left: 4px solid var(--primary-accent) !important;
   background: #f1f5f9 !important;
@@ -161,7 +177,7 @@ body {
   color: #334155 !important;
 }
 
-/* 9. Images (Fills the Container Beautifully) */
+/* 10. Images (Fills Container) */
 .post-body img {
   max-width: 100% !important;
   width: 100% !important;
@@ -172,7 +188,7 @@ body {
   display: block !important;
 }
 
-/* 10. Hide Clutter & Sidebars */
+/* 11. Hide Clutter & Sidebars */
 .sidebar-container, .vertical-ad-container, .sidebar, #sidebar-wrapper, .post-share-buttons-top {
   display: none !important;
 }
