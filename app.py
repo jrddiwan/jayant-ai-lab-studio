@@ -2400,11 +2400,8 @@ Return only the final monologue text — no preamble, no word count, no notes.
     print(f"[QUALITY MONITOR AGENT]: Synthesizing Zoro audio for final approved script ({len(body.split())} words)...")
     audio_path = synthesize_zoro_voice(body)
 
-    # 8. Generate Synchronized Zoro Video (Agnes Video + Subtitled Motion Scenes)
+    # 8. Video Generation Removed per workflow direction (focusing on high-fidelity audio, scripts, carousels, and articles)
     video_path = None
-    if audio_path and os.path.exists(audio_path):
-        print(f"[VIDEO ENGINE]: Synthesizing full synchronized video for Zoro...")
-        video_path = generate_full_zoro_video(body, audio_path, topic_title, topic_details)
 
     pkg["hook"] = hook
     pkg["body"] = body
@@ -2847,11 +2844,9 @@ def deliver_production_package(title, details, source_url="", source_name="", vi
             f"🤖 *ZORO BODY SCRIPT (ELI12):*\n{pkg.get('body', '')}\n\n"
             f"📢 *YOUR CTA (Google Vids Avatar):*\n{pkg.get('cta', '')}\n\n"
             f"🎥 *AUTOMATED B-ROLL SCENE LIST & AI PROMPTS:*\n{pkg.get('b_roll', '')}\n\n"
-            f"🎬 *ZORO's synchronized video and audio track are attached below!*"
+            f"🎙️ *ZORO's synchronized voiceover audio is attached below!*"
         )
         send_tg_message(TARGET_CHAT_ID, video_msg, bot_token=TELEGRAM_BOT_TOKEN_VIDEO)
-        if pkg.get('video_path') and os.path.exists(pkg['video_path']):
-            send_tg_video(TARGET_CHAT_ID, pkg['video_path'], caption=f"🎬 ZORO Synchronized Video ({ZORO_VOICE} • South Delhi Cadence)", bot_token=TELEGRAM_BOT_TOKEN_VIDEO)
         if pkg.get('audio_path') and os.path.exists(pkg['audio_path']):
             send_tg_audio(TARGET_CHAT_ID, pkg['audio_path'], caption=f"🎙️ ZORO Audio ({ZORO_VOICE} • South Delhi Cadence)", bot_token=TELEGRAM_BOT_TOKEN_VIDEO)
     except Exception as e:
@@ -3156,11 +3151,9 @@ def telegram_listener():
                         f"🤖 *ZORO BODY SCRIPT (ELI12):*\n{pkg['body']}\n\n"
                         f"📢 *YOUR CTA (Google Vids Avatar):*\n{pkg['cta']}\n\n"
                         f"🎥 *AUTOMATED B-ROLL SCENE LIST & AI PROMPTS:*\n{pkg['b_roll']}\n\n"
-                        f"🎬 *ZORO's synchronized video and audio track are attached below!*"
+                        f"🎙️ *ZORO's synchronized voiceover audio is attached below!*"
                     )
                     send_tg_message(chat_id, video_msg, bot_token=TELEGRAM_BOT_TOKEN_VIDEO)
-                    if pkg.get('video_path') and os.path.exists(pkg['video_path']):
-                        send_tg_video(chat_id, pkg['video_path'], caption=f"🎬 ZORO Synchronized Video ({ZORO_VOICE} • South Delhi Cadence)", bot_token=TELEGRAM_BOT_TOKEN_VIDEO)
                     if pkg.get('audio_path') and os.path.exists(pkg['audio_path']):
                         send_tg_audio(chat_id, pkg['audio_path'], caption=f"🎙️ ZORO Audio ({ZORO_VOICE} • South Delhi Cadence)", bot_token=TELEGRAM_BOT_TOKEN_VIDEO)
 
