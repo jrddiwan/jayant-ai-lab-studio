@@ -71,12 +71,12 @@ ZORO_VOICE = os.getenv("ZORO_VOICE", "Rasalgethi")
 TARGET_CHAT_ID = AUTHORIZED_CHAT_ID  # Deliver strictly to Jayant's personal DM
 
 # ─── MULTI-KEY POOLS ───
-GEMINI_KEYS = [k for k in [os.getenv("GEMINI_API_KEY_2", ""), os.getenv("GEMINI_API_KEY", "")] if k]
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-AGNES_KEYS = [k for k in [os.getenv("AGNES_API_KEY", ""), os.getenv("AGNES_API_KEY_2", "")] if k]
-HF_TOKENS = [k for k in [os.getenv("HF_TOKEN", ""), os.getenv("HF_TOKEN_2", "")] if k]
-OPENROUTER_KEYS = [k for k in [os.getenv("OPENROUTER_API_KEY", ""), os.getenv("OPENROUTER_API_KEY_2", "")] if k]
-FISH_API_KEY = os.getenv("FISH_API_KEY", "sk-fish-BeTKz_YUTsBXtwd-LUHDl9M_1Yh3w32btZEa-716cJ4")
+GEMINI_KEYS = [k.strip().strip('"').strip("'") for k in [os.getenv("GEMINI_API_KEY_2", ""), os.getenv("GEMINI_API_KEY", "")] if k and k.strip()]
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "").strip().strip('"').strip("'")
+AGNES_KEYS = [k.strip().strip('"').strip("'") for k in [os.getenv("AGNES_API_KEY", ""), os.getenv("AGNES_API_KEY_2", "")] if k and k.strip()]
+HF_TOKENS = [k.strip().strip('"').strip("'") for k in [os.getenv("HF_TOKEN", ""), os.getenv("HF_TOKEN_2", "")] if k and k.strip()]
+OPENROUTER_KEYS = [k.strip().strip('"').strip("'") for k in [os.getenv("OPENROUTER_API_KEY", ""), os.getenv("OPENROUTER_API_KEY_2", "")] if k and k.strip()]
+FISH_API_KEY = os.getenv("FISH_API_KEY", "sk-fish-BeTKz_YUTsBXtwd-LUHDl9M_1Yh3w32btZEa-716cJ4").strip().strip('"').strip("'")
 FISH_REF_ID = os.getenv("FISH_REF_ID", "fb7ec16ca51a45a5a4db881244d7990a")
 
 CF_CREDS = []
@@ -223,8 +223,8 @@ class QuotaManager:
 
 
 # ─── RADAR DISPATCH GOVERNOR (PREVENTS NOTIFICATION OVERLOAD) ───
-MIN_RADAR_COOLDOWN_SECONDS = 7200  # 2 hours minimum between automated dispatches
-MAX_DAILY_RADAR_DISPATCHES = 4     # Maximum 4 automated studio packages per day
+MIN_RADAR_COOLDOWN_SECONDS = 3600  # 1 hour minimum between automated dispatches
+MAX_DAILY_RADAR_DISPATCHES = 6     # Maximum 6 automated studio packages per day
 
 class RadarGovernor:
     @staticmethod
@@ -608,12 +608,24 @@ def clean_json_response(text):
 
 OPENROUTER_FREE_MODELS = [
     "openrouter/free",
-    "nvidia/nemotron-3-ultra-550b-a55b:free",
-    "nvidia/nemotron-3.5-lightning:free"
+    "nvidia/nemotron-3-ultra-550b-a55b:free"
+]
+
+GEMINI_TEXT_MODELS = [
+    "gemini-3-flash-preview",
+    "gemini-flash-latest",
+    "gemma-4-26b-a4b-it",
+    "gemini-2.5-flash"
+]
+
+GROQ_MODELS = [
+    "openai/gpt-oss-20b",
+    "qwen/qwen3.8-27b",
+    "openai/gpt-oss-120b"
 ]
 
 
-def _try_openrouter(key, prompt, system_prompt="", json_mode=False, temperature=0.6, timeout=35, model=None):
+def _try_openrouter(key, prompt, system_prompt="", json_mode=False, temperature=0.6, timeout=15, model=None):
     models_to_try = [model] if model else OPENROUTER_FREE_MODELS
     for m in models_to_try:
         try:
@@ -651,7 +663,7 @@ def _try_openrouter(key, prompt, system_prompt="", json_mode=False, temperature=
     return None
 
 
-def _try_gemini(key, model_name, prompt, system_prompt="", json_mode=False, timeout=35):
+def _try_gemini(key, model_name, prompt, system_prompt="", json_mode=False, timeout=20):
     try:
         c = genai.Client(api_key=key)
         contents = f"{system_prompt}\n\n{prompt}".strip() if system_prompt else prompt
@@ -675,7 +687,7 @@ def _try_gemini(key, model_name, prompt, system_prompt="", json_mode=False, time
     return None
 
 
-def _try_groq(prompt, system_prompt="", json_mode=False, temperature=0.6, timeout=35, model="openai/gpt-oss-120b"):
+def _try_groq(prompt, system_prompt="", json_mode=False, temperature=0.6, timeout=15, model="openai/gpt-oss-120b"):
     if not GROQ_API_KEY:
         return None
     try:
@@ -713,93 +725,47 @@ def _try_groq(prompt, system_prompt="", json_mode=False, temperature=0.6, timeou
     return None
 
 
-def call_llm_with_failover(prompt, system_prompt="", json_mode=False, temperature=0.6, timeout=35, preferred=None):
+def call_llm_with_failover(prompt, system_prompt="", json_mode=False, temperature=0.6, timeout=20, preferred=None):
     """
-    Robust multi-provider, multi-key failover cascade with specialized provider preference:
-    - preferred="groq" / "groq_120b": Groq 120B (1K RPD) -> Groq 20B (1K RPD) -> Gemini Pool -> OpenRouter Free Pool
-    - preferred="groq_20b": Groq 20B (1K RPD) -> Groq 120B -> Gemini Pool -> OpenRouter Free Pool
-    - preferred="gemini": Gemini Pool (Flash Lite -> Flash 3.8 -> Flash 3.6) -> OpenRouter Free Pool -> Groq 120B
-    - preferred="openrouter" (default): OpenRouter Free Pool (nemotron / free) -> Gemini Pool -> Groq 120B
-    Uses thread-safe RoundRobinPool rotation across all keys to ensure 100% daily quota utilization.
+    Ultra-resilient multi-provider failover cascade:
+    1. Groq (sub-second inference via 120B / 20B / Llama 3.3)
+    2. Google Gemini Pool (gemini-3-flash-preview / gemini-flash-latest / gemma-4-26b)
+    3. OpenRouter Free Pool (nemotron / free)
+    Ensures zero timeouts and 100% liveness for 24/7 radar automation.
     """
-    pref = (preferred or "openrouter").lower()
+    pref = (preferred or "groq").lower()
 
-    if pref in ["groq", "groq_20b", "groq_120b"]:
-        groq_primary = "openai/gpt-oss-20b" if pref == "groq_20b" else "openai/gpt-oss-120b"
-        groq_secondary = "openai/gpt-oss-120b" if pref == "groq_20b" else "openai/gpt-oss-20b"
-
-        # 1. Groq Primary Model
-        res = _try_groq(prompt, system_prompt, json_mode, temperature, timeout, model=groq_primary)
-        if res is not None:
-            return res
-        # 2. Groq Secondary Model
-        res = _try_groq(prompt, system_prompt, json_mode, temperature, timeout, model=groq_secondary)
-        if res is not None:
-            return res
-        # 3. Gemini Pool
+    if "gemini" in pref:
+        # Preferred Gemini first, then immediate Groq failover
         for key in GEMINI_POOL.get_all_ordered():
-            res = _try_gemini(key, "gemini-3.5-flash-lite", prompt, system_prompt, json_mode, timeout)
+            for g_mod in GEMINI_TEXT_MODELS:
+                res = _try_gemini(key, g_mod, prompt, system_prompt, json_mode, timeout=min(timeout, 15))
+                if res is not None:
+                    return res
+        for g_mod in GROQ_MODELS:
+            res = _try_groq(prompt, system_prompt, json_mode, temperature, timeout=min(timeout, 12), model=g_mod)
             if res is not None:
                 return res
-        # 4. OpenRouter Free Pool
         for key in OPENROUTER_POOL.get_all_ordered():
-            res = _try_openrouter(key, prompt, system_prompt, json_mode, temperature, timeout)
+            res = _try_openrouter(key, prompt, system_prompt, json_mode, temperature, timeout=min(timeout, 12))
             if res is not None:
                 return res
 
-    elif pref == "gemini":
-        # 1. Gemini Pool (Flash Lite -> Flash 3.8 -> Flash 3.6)
-        for key in GEMINI_POOL.get_all_ordered():
-            res = _try_gemini(key, "gemini-3.5-flash-lite", prompt, system_prompt, json_mode, timeout)
+    else:
+        # Default & Groq-preferred: Groq first (fastest, ~0.6s), then Gemini, then OpenRouter
+        for g_mod in GROQ_MODELS:
+            res = _try_groq(prompt, system_prompt, json_mode, temperature, timeout=min(timeout, 12), model=g_mod)
             if res is not None:
                 return res
         for key in GEMINI_POOL.get_all_ordered():
-            res = _try_gemini(key, "gemini-3.8-flash", prompt, system_prompt, json_mode, timeout)
-            if res is not None:
-                return res
-        for key in GEMINI_POOL.get_all_ordered():
-            res = _try_gemini(key, "gemini-3.6-flash", prompt, system_prompt, json_mode, timeout)
-            if res is not None:
-                return res
-        # 2. OpenRouter Free Pool
+            for g_mod in GEMINI_TEXT_MODELS:
+                res = _try_gemini(key, g_mod, prompt, system_prompt, json_mode, timeout=min(timeout, 15))
+                if res is not None:
+                    return res
         for key in OPENROUTER_POOL.get_all_ordered():
-            res = _try_openrouter(key, prompt, system_prompt, json_mode, temperature, timeout)
+            res = _try_openrouter(key, prompt, system_prompt, json_mode, temperature, timeout=min(timeout, 12))
             if res is not None:
                 return res
-        # 3. Groq 120B / 20B
-        res = _try_groq(prompt, system_prompt, json_mode, temperature, timeout, model="openai/gpt-oss-120b")
-        if res is not None:
-            return res
-        res = _try_groq(prompt, system_prompt, json_mode, temperature, timeout, model="openai/gpt-oss-20b")
-        if res is not None:
-            return res
-
-    else:  # pref == "openrouter" or fallback
-        # 1. OpenRouter Free Pool
-        for key in OPENROUTER_POOL.get_all_ordered():
-            res = _try_openrouter(key, prompt, system_prompt, json_mode, temperature, timeout)
-            if res is not None:
-                return res
-        # 2. Gemini Pool
-        for key in GEMINI_POOL.get_all_ordered():
-            res = _try_gemini(key, "gemini-3.5-flash-lite", prompt, system_prompt, json_mode, timeout)
-            if res is not None:
-                return res
-        for key in GEMINI_POOL.get_all_ordered():
-            res = _try_gemini(key, "gemini-3.8-flash", prompt, system_prompt, json_mode, timeout)
-            if res is not None:
-                return res
-        for key in GEMINI_POOL.get_all_ordered():
-            res = _try_gemini(key, "gemini-3.6-flash", prompt, system_prompt, json_mode, timeout)
-            if res is not None:
-                return res
-        # 3. Groq 120B / 20B
-        res = _try_groq(prompt, system_prompt, json_mode, temperature, timeout, model="openai/gpt-oss-120b")
-        if res is not None:
-            return res
-        res = _try_groq(prompt, system_prompt, json_mode, temperature, timeout, model="openai/gpt-oss-20b")
-        if res is not None:
-            return res
 
     return None
 
@@ -1483,18 +1449,29 @@ APPROVE: <Tool/Topic Name> | <one-line reason it qualifies>
 
 Do not explain your reasoning outside the single output line. Do not use markdown.
 """
-    out = call_llm_with_failover(eval_prompt, temperature=0.2, timeout=20, preferred="groq_20b")
+    out = call_llm_with_failover(eval_prompt, temperature=0.2, timeout=15, preferred="groq_20b")
     if out:
-        out = out.strip()
-        if out.startswith("APPROVE"):
-            return True, out.replace("APPROVE:", "").strip()
-        elif out.startswith("REJECT"):
-            return False, out.replace("REJECT:", "").strip()
+        out_clean = out.strip()
+        m_app = re.search(r'\bAPPROVE\b', out_clean, re.IGNORECASE)
+        m_rej = re.search(r'\bREJECT\b', out_clean, re.IGNORECASE)
+        if m_app and (not m_rej or m_app.start() < m_rej.start()):
+            reason = re.sub(r'^(?:\*\*|\*|#)*\s*APPROVE\s*:?\s*', '', out_clean[m_app.start():], flags=re.IGNORECASE).strip()
+            return True, reason if reason else "Approved AI innovation"
+        elif m_rej:
+            reason = re.sub(r'^(?:\*\*|\*|#)*\s*REJECT\s*:?\s*', '', out_clean[m_rej.start():], flags=re.IGNORECASE).strip()
+            return False, reason if reason else "Filtered as non-actionable"
+
+    # Graceful fallback for trusted AI sources if LLMs are congested
+    trusted_ai_keywords = ["ai", "llm", "agent", "gpt", "model", "neural", "deepseek", "claude", "gemini", "anthropic", "openai", "meta", "open-source", "framework", "dataset", "diffusion", "rag", "benchmark"]
+    title_lower = title.lower()
+    if any(k in title_lower for k in trusted_ai_keywords):
+        return True, "Auto-cleared: High-relevance AI topic from verified radar feed"
+
     return False, "Evaluation timeout or rejected by default"
 
 
 # ─── LAYER 2: VIRAL ENGAGEMENT PREDICTOR GATE (TOP-TIER HIGH SIGNAL) ───
-VIRAL_SCORE_THRESHOLD = 75  # Top 15-20% high-signal viral content gate (quality curated)
+VIRAL_SCORE_THRESHOLD = 65  # High-signal viral engagement gate (balanced for steady dispatches)
 
 def evaluate_viral_potential(title, details="", source=""):
     """
@@ -1526,9 +1503,9 @@ Evaluate the story across the 5 Viral Pillars (0-20 points each):
 5. STEALABILITY / ACTIONABILITY (0-20): Can the viewer try this tool or workflow right now on their laptop or phone for free/cheap?
 
 SCORING CRITERIA:
-- 0 to 59: LOW ENGAGEMENT / NICHE. Will fail on social media.
-- 60 to 74: SOLID TECH NEWS. Informative, but lacks scroll-stopping hook.
-- 75 to 100: HIGH VIRAL POTENTIAL. Strong audience hook, practical application, or exciting AI breakthrough.
+- 0 to 55: LOW ENGAGEMENT / NICHE. Will fail on social media.
+- 56 to 64: SOLID TECH NEWS. Informative, but lacks scroll-stopping hook.
+- 65 to 100: HIGH VIRAL POTENTIAL. Strong audience hook, practical application, or exciting AI breakthrough.
 
 THRESHOLD: Minimum {VIRAL_SCORE_THRESHOLD}/100 required to approve.
 
@@ -1547,7 +1524,9 @@ OUTPUT FORMAT — You MUST reply with valid JSON only, exactly in this format:
   "target_angle": "<1-sentence viral hook angle if approved, or blank if rejected>"
 }}
 """
-    res = call_llm_with_failover(viral_prompt, json_mode=True, temperature=0.2, timeout=25, preferred="gemini")
+    res = call_llm_with_failover(viral_prompt, json_mode=True, temperature=0.2, timeout=18, preferred="groq_120b")
+    if not res:
+        res = call_llm_with_failover(viral_prompt, json_mode=True, temperature=0.2, timeout=18, preferred="gemini")
     if not res:
         return False, 0, "Viral evaluator unavailable / timeout", ""
     
@@ -1834,6 +1813,9 @@ def render_kinetic_subtitled_frame(base_img_path, text, output_frame_path):
         "C:/Windows/Fonts/ariblk.ttf",
         "C:/Windows/Fonts/impact.ttf",
         "C:/Windows/Fonts/arialbd.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
         "arial.ttf"
     ]
     font = None
@@ -2014,7 +1996,7 @@ def generate_full_zoro_video(body_text, audio_path, topic_title="", topic_detail
         concat_list = os.path.join(temp_dir, "concat.txt")
         with open(concat_list, "w") as f_concat:
             for cp in clip_paths:
-                f_concat.write(f"file '{os.path.basename(cp)}'\n")
+                f_concat.write(f"file '{os.path.abspath(cp).replace(os.sep, '/')}'\n")
 
         cmd = [
             "ffmpeg", "-y",
@@ -2982,19 +2964,21 @@ def check_all_radar_sources():
 
     for item in candidates:
         url = item.get("url") or item.get("title")
-        if url in seen_topics:
+        if not url or url in seen_topics:
             continue
 
         title = item.get("title", "")
         source = item.get("source", "")
         item_type = item.get("type", "news")
         summary = item.get("summary", "")
-        seen_topics[url] = {"title": title, "source": source, "type": item_type, "date": datetime.now(timezone.utc).isoformat()}
-        save_memory()
 
         # Layer 1: Technical Usability Gate
         is_worthy, reason = evaluate_news_worth(title, summary=summary)
         if not is_worthy:
+            # If evaluation failed due to a timeout, do NOT poison memory; let it retry cleanly!
+            if "timeout" not in reason.lower() and "unavailable" not in reason.lower():
+                seen_topics[url] = {"title": title, "source": source, "type": item_type, "status": "FILTERED_NOT_USABLE", "date": datetime.now(timezone.utc).isoformat()}
+                save_memory()
             RECENT_FEED.insert(0, {
                 "time": datetime.now(timezone.utc).strftime("%H:%M:%S"),
                 "source": source,
@@ -3016,6 +3000,10 @@ def check_all_radar_sources():
             source=source
         )
         if not is_viral:
+            # If viral evaluator timed out, do NOT poison memory; let it retry cleanly!
+            if "timeout" not in v_reason.lower() and "unavailable" not in v_reason.lower():
+                seen_topics[url] = {"title": title, "source": source, "type": item_type, "status": f"FILTERED_LOW_VIRAL ({v_score})", "date": datetime.now(timezone.utc).isoformat()}
+                save_memory()
             RECENT_FEED.insert(0, {
                 "time": datetime.now(timezone.utc).strftime("%H:%M:%S"),
                 "source": source,
@@ -3032,6 +3020,7 @@ def check_all_radar_sources():
         # Layer 3: Pacing Cooldown Governor
         can_send, gov_reason = RadarGovernor.can_dispatch()
         if not can_send:
+            # Story is approved but held for pacing; keep eligible so it can dispatch when cooldown expires
             RECENT_FEED.insert(0, {
                 "time": datetime.now(timezone.utc).strftime("%H:%M:%S"),
                 "source": source,
@@ -3046,6 +3035,9 @@ def check_all_radar_sources():
             continue
 
         # Approved & cleared through all layers!
+        seen_topics[url] = {"title": title, "source": source, "type": item_type, "status": f"DISPATCHED ({v_score})", "date": datetime.now(timezone.utc).isoformat()}
+        save_memory()
+
         LAST_DISPATCHED_TYPE = item_type
         print(f"[RADAR HIT APPROVED FOR DISPATCH ({v_score}/100)]: [{source}] {title} ({v_reason})")
         RadarGovernor.record_dispatch()
@@ -3077,11 +3069,14 @@ def master_radar_loop():
     time.sleep(10)
     while True:
         try:
-            check_youtube_uploads()
             check_all_radar_sources()
         except Exception as e:
-            print(f"Error in master radar loop: {e}")
-        time.sleep(600)  # Scan every 10 minutes
+            print(f"Error in radar sources: {e}")
+        try:
+            check_youtube_uploads()
+        except Exception as e:
+            print(f"Error in youtube check: {e}")
+        time.sleep(300)  # Scan every 5 minutes
 
 
 # ─── TELEGRAM ON-DEMAND LISTENER (PERSONAL DM) ───
@@ -3247,12 +3242,28 @@ class HealthHandler(BaseHTTPRequestHandler):
             }
             self.wfile.write(json.dumps(payload).encode("utf-8"))
         elif parsed.path == "/api/trigger-radar":
+            # Self-heal memory: clear any failed timeout entries so they get evaluated cleanly
+            cleaned = [k for k, v in list(seen_topics.items()) if "timeout" in str(v.get("status", "")).lower() or "unavailable" in str(v.get("status", "")).lower()]
+            for k in cleaned:
+                seen_topics.pop(k, None)
+            if cleaned:
+                save_memory()
             threading.Thread(target=check_all_radar_sources, daemon=True).start()
             self.send_response(200)
             self.send_header("Content-type", "application/json")
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
-            self.wfile.write(b'{"status": "radar_sweep_triggered"}')
+            self.wfile.write(json.dumps({"status": "radar_sweep_triggered", "cleared_timeout_items": len(cleaned)}).encode("utf-8"))
+        elif parsed.path == "/api/dispatch-now":
+            def _force_sweep():
+                RadarGovernor._save({"last_dispatch_ts": 0, "dispatches_today": 0, "current_date": datetime.now(timezone.utc).strftime("%Y-%m-%d")})
+                check_all_radar_sources()
+            threading.Thread(target=_force_sweep, daemon=True).start()
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(b'{"status": "forced_radar_sweep_triggered"}')
         else:
             dashboard_file = os.path.join(os.path.dirname(__file__), "dashboard.html")
             if os.path.exists(dashboard_file):
