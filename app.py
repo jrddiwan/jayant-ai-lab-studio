@@ -2090,6 +2090,101 @@ HOOK FRAMEWORK TO USE: {selected_hook}
 STORY STRUCTURE TO USE: {selected_story_structure}
 CTA STRATEGY TO USE: {selected_cta}
 
+================================================================================
+GOLD-STANDARD PRODUCTION BENCHMARKS (MODEL YOUR OUTPUT AFTER THESE EXACT SAMPLES)
+================================================================================
+
+--- SAMPLE 1: Hardware & Low-Spec Local Model ---
+[HOOK]
+Running an 8-billion parameter model on a 2017 laptop with 8GB RAM sounds impossible.
+This new quantization method lets you run frontier reasoning locally with zero cloud subscriptions.
+Now my AI employee Zoro will show you how.
+
+[ZORO_BODY]
+Zoro here, Jayant's AI employee in South Delhi. Think of regular AI models like trying to stuff a whole library into a school backpack. It crushes your computer. This new method compresses the books into pocket cheat sheets without losing a single fact. You get instant answers locally without paying monthly fees or leaking private company data. If you can install WhatsApp, you can run this on your old PC today.
+
+[CTA]
+Save this setup for your next hardware build and drop your laptop specs in the comments below.
+Follow @jayantsailab for battle-tested autonomous AI blueprints you can deploy today.
+
+--- SAMPLE 2: Autonomous Agent & Agency Replacement ---
+[HOOK]
+Stop paying agencies $3,000 every month for manual social and research busywork.
+One autonomous open-source agent can scrape, analyze, and draft your entire weekly content in 90 seconds.
+Now my AI employee Zoro will break down the real workflow.
+
+[ZORO_BODY]
+I am Zoro, Jayant's AI employee at the Lab. Imagine hiring ten superfast interns whose only job is reading every trending article, highlighting the gold nuggets, and organizing them into neat folders while you sleep. That is what this agent does. It replaces twelve hours of painful copying and pasting with one single click. If you can type a text message, you can automate this today.
+
+[CTA]
+Save this architecture for your team's workflow and comment your slowest manual task below.
+Follow @jayantsailab for battle-tested autonomous AI blueprints you can deploy today.
+
+--- SAMPLE 3: Autonomous Coding Agent & Vibe Coding ---
+[HOOK]
+You no longer need six months of coding bootcamps to build a working software product.
+This new autonomous developer agent turns a two-minute voice note into a fully functioning web application with payments.
+Now my AI employee Zoro will show you how.
+
+[ZORO_BODY]
+Zoro on deck, Jayant's AI employee. Think of coding like writing sheet music for an entire orchestra. Normally, you must learn every instrument. This tool is like humming a melody into a microphone, and a master orchestra instantly plays the symphony back to you with zero errors. It turns weeks of painful bug-hunting into a ten-minute sprint. You can start building from your phone right now.
+
+[CTA]
+Save this prompt stack for your next product launch and drop your app idea in the comments.
+Follow @jayantsailab for battle-tested autonomous AI blueprints you can deploy today.
+
+--- SAMPLE 4: Model Launch & Frontier Benchmark Crusher ---
+[HOOK]
+The closed AI labs just lost their monopoly on frontier intelligence.
+This new open-weights model matches the best closed proprietary systems while running at one-tenth of the computing cost.
+Now my AI employee Zoro will break down the real workflow.
+
+[ZORO_BODY]
+This is Zoro, Jayant's AI employee at the Lab. Closed AI companies want you to believe intelligence requires billions in electricity. This new model proves that smart architecture beats brute force every single time. It is like replacing a gas-guzzling semi-truck with a lightning-fast electric scooter that carries the exact same cargo. You get frontier reasoning for pennies. Deploy it in your terminal before everyone else catches on.
+
+[CTA]
+Save this benchmark comparison for your tech stack and drop your favorite model in the comments.
+Follow @jayantsailab for battle-tested autonomous AI blueprints you can deploy today.
+
+--- SAMPLE 5: Operations & Document Automation ---
+[HOOK]
+Finance teams are still wasting forty hours a month manually typing invoice numbers into spreadsheets.
+This new vision-language pipeline parses hundreds of messy receipts and reconciles bank statements in under three seconds.
+Now my AI employee Zoro will show you how.
+
+[ZORO_BODY]
+Hey, I am Zoro, Jayant's AI employee in South Delhi. Think of auditing receipts like digging through a massive box of scrambled puzzle pieces. This tool works like a laser scanner that reads twenty crumpled receipts at once and snaps them straight into your accounting books with zero typos. It turns three days of painful month-end panic into a thirty-second coffee break. You can test it today.
+
+[CTA]
+Save this operational blueprint for your finance team and comment your biggest back-office headache below.
+Follow @jayantsailab for battle-tested autonomous AI blueprints you can deploy today.
+
+--- GOLD-STANDARD TWEET SAMPLES (STRICT <= 240 CHARS, BUILDER VOICE): ---
+1. "Running 30B reasoning models on an 8GB laptop used to be a fantasy.\n\nA new quantization breakthrough makes it reality. Zero cloud APIs. Zero privacy leaks. Zero monthly fees.\n\nThe moat is no longer hardware. It is knowing which local tools to run."
+2. "Stop hiring $3k/mo agencies for tasks an autonomous script solves in 90 seconds.\n\nWe just tested a deterministic agent that scrapes, filters, and drafts a week of research before breakfast.\n\nThe future of work is 1 human with 10 sovereign loops."
+3. "Closed AI labs spent billions building walled gardens.\n\nToday, an open-weights release matched their frontier benchmarks at 10% of the inference cost.\n\nOpen-source is not just catching up. It is setting the pace."
+
+--- GOLD-STANDARD LINKEDIN SAMPLE (HIGH-INSIGHT 3-STEP SYSTEM, REAL HOURS SAVED): ---
+"Most business owners know they should use AI, but get overwhelmed by technical jargon.
+
+The truth? You don't need complex code. You just need simple systems that eliminate boring busywork.
+
+Here is how everyday teams are automating this workflow right now:
+
+1. Rapid Ingestion: Turn hours of manual reading and data gathering into 3 structured bullet points.
+2. Autonomous Execution: Route repetitive drafting and summarization to local models running in seconds.
+3. Verification Pass: Human-in-the-loop review to ensure 100% accuracy before anything ships.
+
+The payoff? Saving 12+ hours every single week without adding payroll.
+
+If you can send a message on WhatsApp, you already have the skills to run this.
+
+Save this post to test this workflow with your team, and drop your thoughts in the comments below."
+
+================================================================================
+YOUR INSTRUCTIONS FOR THIS PACKAGE:
+================================================================================
+
 Produce the following 7 sections in this exact order, each starting with its bracketed
 label on its own line.
 
@@ -2170,8 +2265,8 @@ count and banned-word list, TWEET character count, LINKEDIN word count, and the
 em-dash ban across all sections. Fix anything that fails, then output the final
 package only — no notes about what you checked.
 """
-    # Generate via Chief Scriptwriter Engine using resilient multi-tier cascade
-    raw_text = call_llm_with_failover(prompt, temperature=0.6, timeout=35, preferred="openrouter")
+    # Generate via Chief Scriptwriter Engine using Groq sub-second failover cascade
+    raw_text = call_llm_with_failover(prompt, temperature=0.5, timeout=25, preferred="groq")
 
     def extract_tag(tag, text):
         if not text:
@@ -2345,12 +2440,12 @@ HARD CONSTRAINTS:
 
 Return only the final monologue text — no preamble, no word count, no notes.
 """
-        elevated_body = call_llm_with_failover(elevation_prompt, temperature=0.5, timeout=30, preferred="openrouter")
+        elevated_body = call_llm_with_failover(elevation_prompt, temperature=0.5, timeout=20, preferred="groq")
         if elevated_body:
             body = humanize_text(elevated_body)
             body = ensure_zoro_intro(body)
 
-    # 4. Tweet Check (<= 250 chars, Jayant's founder voice, ELI12 creator style, ZERO BIO)
+    # 4. Tweet Check (<= 240 chars, Jayant's founder voice, ELI12 creator style, ZERO BIO)
     clean_topic = topic_title.split(" - ")[0].split(". ")[0].strip()
     tweet = re.sub(r'(?i)\s*(?:full\s+)?(?:breakdown|tutorial|blueprint|guide|link)?\s*(?:in|check)\s+(?:the\s+)?bio\.?', '', tweet).strip()
     tweet = re.sub(r'(?i)\s*link\s+in\s+bio\.?', '', tweet).strip()
@@ -2358,13 +2453,35 @@ Return only the final monologue text — no preamble, no word count, no notes.
     tweet_has_pr = any(pr in tweet.lower() for pr in ["thrilled to announce", "we are pleased", "proud to introduce", "please welcome"])
     tweet_has_bio = any(b in tweet.lower() for b in ["in bio", "link in bio", "check bio", "in the bio"])
 
-    if len(tweet) > 250 or tweet_has_jargon or tweet_has_pr or tweet_has_bio:
+    if len(tweet) > 245 or len(tweet) < 60 or tweet_has_jargon or tweet_has_pr or tweet_has_bio:
         issues.append(f"Tweet non-compliant (length: {len(tweet)}, jargon: {tweet_has_jargon}, pr: {tweet_has_pr}, bio: {tweet_has_bio})")
-        tweet = (
-            f"Stop wasting 3 hours every day on repetitive tasks.\n\n"
-            f"The new setup for {clean_topic[:42]} does the heavy lifting in 20 seconds.\n\n"
-            f"Zero coding needed. Work smarter, not harder."
-        )
+        tweet_prompt = f"""You are the Chief Quality Editor for Jayant's AI Lab (@jayantsailab).
+Rewrite this tweet about '{topic_title}' to be high-impact, punchy, and under 240 characters total.
+Topic Context: {topic_details}
+Original Draft: {tweet}
+
+Gold-Standard Exemplar:
+"Running 30B reasoning models on an 8GB laptop used to be a fantasy.
+
+A new quantization breakthrough makes it reality. Zero cloud APIs. Zero privacy leaks. Zero monthly fees.
+
+The moat is no longer hardware. It is knowing which local tools to run."
+
+Constraints:
+- Strict under 240 characters total.
+- Plain builder voice. High conviction.
+- Zero buzzwords (delve, tapestry, revolutionize).
+- No raw URLs, no 'in bio'.
+Output ONLY the final tweet text."""
+        elevated_tweet = call_llm_with_failover(tweet_prompt, temperature=0.5, timeout=12, preferred="groq")
+        if elevated_tweet and len(elevated_tweet.strip()) <= 245:
+            tweet = humanize_text(elevated_tweet.strip())
+        else:
+            tweet = (
+                f"The breakthrough in {clean_topic[:45]} just changed the game.\n\n"
+                f"Runs locally with zero cloud subscriptions and zero privacy leaks.\n\n"
+                f"Work smarter, not harder."
+            )
         if len(tweet) > 250:
             tweet = tweet[:247] + "..."
 
@@ -2374,19 +2491,45 @@ Return only the final monologue text — no preamble, no word count, no notes.
     linkedin_has_jargon = any(j in linkedin.lower() for j in ["deterministic routing", "api moats", "token velocity", "execution latency"])
     linkedin_has_bio = any(b in linkedin.lower() for b in ["in bio", "link in bio"])
 
-    if len(linkedin.split()) < 90 or "http" in linkedin[:40] or "1." not in linkedin or linkedin_has_jargon or linkedin_has_bio:
-        issues.append("LinkedIn post non-compliant (length/jargon/bio)")
-        linkedin = (
-            f"Most business owners know they should use AI, but get overwhelmed by technical jargon.\n\n"
-            f"The truth? You don't need complex code. You just need simple systems that eliminate boring busywork.\n\n"
-            f"{clean_topic} is a game changer for normal workflows.\n\n"
-            f"Here is how everyday teams are using this right now:\n"
-            f"1. Cut Research Time: Turn hours of reading into 3 clear action points.\n"
-            f"2. Automate Daily Tasks: Draft emails and routine summaries in 15 seconds.\n"
-            f"3. Eliminate Busywork: Free up 10+ hours every week to focus on growing the business.\n\n"
-            f"If you can send a message on WhatsApp, you already have the skills to run this.\n\n"
-            f"Save this post to test this workflow with your team, and drop a comment below with your thoughts."
-        )
+    if len(linkedin.split()) < 110 or "http" in linkedin[:40] or "1." not in linkedin or linkedin_has_jargon or linkedin_has_bio:
+        issues.append("LinkedIn post non-compliant (length/structure/jargon)")
+        linkedin_prompt = f"""You are the Chief Editorial Director for Jayant's AI Lab (@jayantsailab).
+Rewrite this LinkedIn post about '{topic_title}' as a high-insight, 3-step breakdown post (160-230 words).
+Topic Context: {topic_details}
+Original Draft: {linkedin}
+
+Gold-Standard Structure:
+Line 1: A real problem a founder or non-technical business owner actually faces.
+Why manual processes burn payroll or hours.
+The 3-Step System:
+1. Rapid Ingestion: Concrete step explaining how data/input is captured for {clean_topic}.
+2. Autonomous Execution: Concrete step explaining what the AI executes in seconds.
+3. Verification Pass: Human-in-the-loop review before shipping.
+Quantifiable ROI: Concrete hours saved per week (e.g. 10-15 hrs/week).
+Closing: Zero-barrier reassurance + call to save post and comment.
+
+Constraints:
+- 160 to 230 words.
+- Zero corporate PR speak, zero AI buzzwords.
+- Never mention 'in bio' or 'link in bio'.
+- No raw URLs.
+Output ONLY the final LinkedIn post text."""
+        elevated_linkedin = call_llm_with_failover(linkedin_prompt, temperature=0.5, timeout=15, preferred="groq")
+        if elevated_linkedin and len(elevated_linkedin.split()) >= 120:
+            linkedin = humanize_text(elevated_linkedin.strip())
+        else:
+            linkedin = (
+                f"Most business owners know they should use AI, but get overwhelmed by technical jargon.\n\n"
+                f"The truth? You don't need complex code. You just need simple systems that eliminate boring busywork.\n\n"
+                f"{clean_topic} is a game changer for normal workflows.\n\n"
+                f"Here is how everyday teams are automating this workflow right now:\n\n"
+                f"1. Rapid Ingestion: Turn hours of manual reading and data gathering into 3 structured bullet points.\n"
+                f"2. Autonomous Execution: Route repetitive drafting and summarization to local models running in seconds.\n"
+                f"3. Verification Pass: Human-in-the-loop review to ensure 100% accuracy before anything ships.\n\n"
+                f"The payoff? Saving 12+ hours every single week without adding payroll.\n\n"
+                f"If you can send a message on WhatsApp, you already have the skills to run this.\n\n"
+                f"Save this post to test this workflow with your team, and drop your thoughts in the comments below."
+            )
 
     # 6. Safety & Humanizer Double Pass
     hook = ensure_hook_handover(hook)
@@ -2508,10 +2651,10 @@ def fetch_reddit():
 
 
 def fetch_huggingface():
-    """Monitors Hugging Face API for major model releases from top AI labs."""
+    """Monitors Hugging Face API for trending model releases and top AI lab launches."""
     items = []
     try:
-        url = "https://huggingface.co/api/models?sort=createdAt&direction=-1&limit=30"
+        url = "https://huggingface.co/api/models?sort=trendingScore&direction=-1&limit=35"
         r = requests.get(url, headers=COMMON_HEADERS, timeout=8)
         if r.status_code == 200:
             verified_orgs = [
@@ -2525,11 +2668,11 @@ def fetch_huggingface():
                 likes = m.get("likes", 0)
                 downloads = m.get("downloads", 0)
                 is_verified = any(mid_lower.startswith(org) for org in verified_orgs)
-                # Ignore random user experimental fine-tunes with zero traction
-                if is_verified or likes >= 12 or downloads >= 50:
+                # In trending view, models have proven community traction or verified lab pedigree
+                if is_verified or likes >= 8 or downloads >= 30:
                     pipeline = m.get("pipeline_tag", "")
                     clean_pipeline = f" ({pipeline.replace('-', ' ').title()})" if pipeline else ""
-                    summary = f"New AI model released on Hugging Face: {mid}. Task: {pipeline or 'General LLM/Vision'}. Community engagement: {likes} likes, {downloads} downloads."
+                    summary = f"Trending AI model release on Hugging Face: {mid}. Task: {pipeline or 'General LLM/Vision'}. Community engagement: {likes} likes, {downloads} downloads."
                     items.append({
                         "source": "Hugging Face Hub",
                         "title": f"{mid}{clean_pipeline} Released",
@@ -2571,7 +2714,7 @@ def fetch_x_twitter():
     @DeepSeek, @GoogleDeepMind, @xAI, @karpathy.
     """
     items = []
-    handles_query = "site:x.com (GoogleAI OR AIatMeta OR NVIDIAAI OR VaibhavSisinty OR opencode OR higgsfield_ai OR TheRundownAI OR FinanceYF5 OR GoogleAIStudio OR OpenAI OR AnthropicAI OR DeepSeek OR GoogleDeepMind OR xAI OR karpathy)"
+    handles_query = "site:x.com (GoogleAI OR AIatMeta OR NVIDIAAI OR VaibhavSisinty OR opencode OR higgsfield_ai OR TheRundownAI OR FinanceYF5 OR GoogleAIStudio OR OpenAI OR AnthropicAI OR DeepSeek OR GoogleDeepMind OR xAI OR karpathy) (launch OR release OR model OR benchmark OR announced OR open-source OR breakthrough)"
     try:
         url = f"https://news.google.com/rss/search?q={urllib.parse.quote(handles_query)}&hl=en-US&gl=US&ceid=US:en"
         r = requests.get(url, headers=COMMON_HEADERS, timeout=8)
@@ -2598,7 +2741,7 @@ def fetch_x_twitter():
 
 
 def fetch_news_apis():
-    """Queries Tavily, NewsAPI.org, SerpAPI, and Newsdata.io strictly respecting daily quotas."""
+    """Queries Tavily, NewsAPI.org, SerpAPI, and Newsdata.io strictly respecting daily quotas with rich summaries."""
     items = []
 
     # 1. Tavily AI Search (budgeted cap: 25/day)
@@ -2614,8 +2757,9 @@ def fetch_news_apis():
                 for res in r.json().get("results", [])[:3]:
                     title = res.get("title", "")
                     link = res.get("url", "")
+                    summary = res.get("content", "") or res.get("snippet", "")
                     if title:
-                        items.append({"source": "Tavily AI Search", "title": title, "url": link, "type": "api_news"})
+                        items.append({"source": "Tavily AI Search", "title": title, "url": link, "summary": summary[:500], "type": "api_news"})
         except Exception as e:
             print(f"Tavily fetch error: {e}")
 
@@ -2630,8 +2774,9 @@ def fetch_news_apis():
                     title = art.get("title", "")
                     link = art.get("url", "")
                     src = art.get("source", {}).get("name", "NewsAPI")
+                    summary = f"{art.get('description', '')} {art.get('content', '')}".strip()[:500]
                     if title:
-                        items.append({"source": f"NewsAPI ({src})", "title": title, "url": link, "type": "api_news"})
+                        items.append({"source": f"NewsAPI ({src})", "title": title, "url": link, "summary": summary, "type": "api_news"})
         except Exception as e:
             print(f"NewsAPI fetch error: {e}")
 
@@ -2646,8 +2791,9 @@ def fetch_news_apis():
                     title = res.get("title", "")
                     link = res.get("link", "")
                     src = res.get("source", {}).get("name", "Google News")
+                    summary = res.get("snippet", "")[:500]
                     if title:
-                        items.append({"source": f"SerpAPI ({src})", "title": title, "url": link, "type": "api_news"})
+                        items.append({"source": f"SerpAPI ({src})", "title": title, "url": link, "summary": summary, "type": "api_news"})
         except Exception as e:
             print(f"SerpAPI fetch error: {e}")
 
@@ -2662,147 +2808,172 @@ def fetch_news_apis():
                     title = res.get("title", "")
                     link = res.get("link", "")
                     src = res.get("source_id", "Newsdata")
+                    summary = res.get("description", "")[:500]
                     if title:
-                        items.append({"source": f"Newsdata ({src})", "title": title, "url": link, "type": "api_news"})
+                        items.append({"source": f"Newsdata ({src})", "title": title, "url": link, "summary": summary, "type": "api_news"})
         except Exception as e:
             print(f"Newsdata fetch error: {e}")
+
+    # 5. FreeNewsAPI.io (budgeted cap: 2500/day)
+    if FREENEWSAPI_API_KEY and QuotaManager.can_call("FREENEWSAPI"):
+        try:
+            QuotaManager.record_call("FREENEWSAPI")
+            url = f"https://api.freenewsapi.io/v1/news?q=artificial+intelligence&apikey={FREENEWSAPI_API_KEY}"
+            r = requests.get(url, timeout=10)
+            if r.status_code == 200:
+                for art in r.json().get("articles", [])[:3]:
+                    title = art.get("title", "")
+                    link = art.get("url", "")
+                    summary = art.get("description", "") or art.get("snippet", "")
+                    if title:
+                        items.append({"source": "FreeNewsAPI", "title": title, "url": link, "summary": summary[:500], "type": "api_news"})
+        except Exception:
+            pass
 
     return items
 
 
-# ─── YOUTUBE RADAR WITH PUBLICATION FILTER ───
+# ─── YOUTUBE RADAR WITH 48-HOUR FRESHNESS FILTER ───
 YOUTUBE_CHANNELS = [
     ("The AI Search", "UCIgnGlGkVRhd4qNFcEwLL4A"),
     ("Vaibhav Sisinty", "UClXAalunTPaX1YV185DWUeg"),
     ("Matt Wolfe", "UChpleBmo18P08aKCIgti38g"),
     ("AI Explained", "UCNJ1Ymd5yFuUPtn21xtRbbw"),
-    ("Matthew Berman", "UCzi5kcwU8aT4aLR7LcYhfWQ"),
+    ("Matthew Berman", "UCawZsQWqfGSbCI5yjkdVkTA"),
     ("Wes Roth", "UCqcbQf6yw5KzRoDDcZ_wBSw")
 ]
 
 
 def check_youtube_uploads():
-    """Scans channels for brand-new videos published strictly AFTER startup."""
-    global IS_INITIAL_BASELINE_DONE
+    """Scans verified AI creator channels for fresh uploads published within the last 48 hours."""
+    from datetime import timedelta
+    now_utc = datetime.now(timezone.utc)
+    cutoff_time = now_utc - timedelta(hours=48)
 
     for channel_name, cid in YOUTUBE_CHANNELS:
         try:
             feed_url = f"https://www.youtube.com/feeds/videos.xml?channel_id={cid}"
-            r = requests.get(feed_url, timeout=15)
+            r = requests.get(feed_url, headers=COMMON_HEADERS, timeout=12)
             if r.status_code == 200:
                 root = ET.fromstring(r.content)
                 entries = root.findall("{http://www.w3.org/2005/Atom}entry")
 
-                # Baseline seeding on startup: mark all existing videos as baseline seen
-                if not IS_INITIAL_BASELINE_DONE:
-                    for entry in entries:
-                        v_id = entry.find("{http://www.youtube.com/xml/schemas/2015}videoId").text
-                        seen_topics[v_id] = {"baseline": True}
-                    save_memory()
-                    continue
-
-                if entries:
-                    entry = entries[0]
-                    vid_id = entry.find("{http://www.youtube.com/xml/schemas/2015}videoId").text
-                    title = entry.find("{http://www.w3.org/2005/Atom}title").text
-                    published_str = entry.find("{http://www.w3.org/2005/Atom}published").text
+                for entry in entries[:3]:
+                    vid_el = entry.find("{http://www.youtube.com/xml/schemas/2015}videoId")
+                    t_el = entry.find("{http://www.w3.org/2005/Atom}title")
+                    p_el = entry.find("{http://www.w3.org/2005/Atom}published")
+                    if vid_el is None or t_el is None:
+                        continue
+                    vid_id = vid_el.text
+                    title = t_el.text.strip()
+                    published_str = p_el.text if p_el is not None else ""
                     video_url = f"https://www.youtube.com/watch?v={vid_id}"
 
-                    try:
-                        pub_dt = datetime.fromisoformat(published_str.replace("Z", "+00:00"))
-                        if pub_dt < AUTOMATION_START_TIME:
-                            seen_topics[vid_id] = {"skipped_old": True}
+                    # Skip if already processed in memory
+                    if vid_id in seen_topics:
+                        continue
+
+                    # Filter out videos older than 48 hours
+                    if published_str:
+                        try:
+                            pub_dt = datetime.fromisoformat(published_str.replace("Z", "+00:00"))
+                            if pub_dt < cutoff_time:
+                                seen_topics[vid_id] = {"skipped_old": True, "title": title}
+                                save_memory()
+                                continue
+                        except Exception:
+                            pass
+
+                    yt_context = f"Video demonstration and breakdown published by AI creator {channel_name}: '{title}'. Watch link: {video_url}"
+
+                    # Layer 1: Technical Usability Gate
+                    is_worthy, reason = evaluate_news_worth(title, summary=yt_context)
+                    if not is_worthy:
+                        if "timeout" not in reason.lower() and "unavailable" not in reason.lower():
+                            seen_topics[vid_id] = {"title": title, "channel": channel_name, "status": "FILTERED_NOT_USABLE", "date": now_utc.isoformat()}
                             save_memory()
-                            continue
-                    except Exception:
-                        pass
-
-                    if vid_id not in seen_topics:
-                        seen_topics[vid_id] = {"title": title, "channel": channel_name, "processed": True}
-                        save_memory()
-
-                        yt_context = f"Video tutorial / demonstration published by AI YouTuber {channel_name}: {video_url}"
-
-                        # Layer 1: Technical Usability Gate
-                        is_worthy, reason = evaluate_news_worth(title, summary=yt_context)
-                        if not is_worthy:
-                            RECENT_FEED.insert(0, {
-                                "time": datetime.now(timezone.utc).strftime("%H:%M:%S"),
-                                "source": f"YouTube ({channel_name})",
-                                "title": title,
-                                "url": video_url,
-                                "status": "FILTERED_NOT_USABLE",
-                                "reason": reason
-                            })
-                            if len(RECENT_FEED) > 40:
-                                RECENT_FEED.pop()
-                            print(f"[RADAR SUPPRESSED - NOT USABLE]: {title} -> {reason}")
-                            continue
-
-                        # Layer 2: Viral Engagement Prediction Gate
-                        is_viral, v_score, v_reason, v_angle = evaluate_viral_potential(
-                            title,
-                            details=yt_context,
-                            source=f"YouTube ({channel_name})"
-                        )
-                        if not is_viral:
-                            RECENT_FEED.insert(0, {
-                                "time": datetime.now(timezone.utc).strftime("%H:%M:%S"),
-                                "source": f"YouTube ({channel_name})",
-                                "title": title,
-                                "url": video_url,
-                                "status": f"FILTERED_LOW_VIRAL ({v_score}/100)",
-                                "reason": v_reason
-                            })
-                            if len(RECENT_FEED) > 40:
-                                RECENT_FEED.pop()
-                            print(f"[RADAR SUPPRESSED - LOW VIRAL ({v_score}/100)]: {title} -> {v_reason}")
-                            continue
-
-                        # Layer 3: Pacing Cooldown Governor
-                        can_send, gov_reason = RadarGovernor.can_dispatch()
-                        if not can_send:
-                            RECENT_FEED.insert(0, {
-                                "time": datetime.now(timezone.utc).strftime("%H:%M:%S"),
-                                "source": f"YouTube ({channel_name})",
-                                "title": title,
-                                "url": video_url,
-                                "status": f"HELD_COOLDOWN ({v_score}/100)",
-                                "reason": gov_reason
-                            })
-                            if len(RECENT_FEED) > 40:
-                                RECENT_FEED.pop()
-                            print(f"[RADAR HELD - COOLDOWN]: {title} ({gov_reason})")
-                            continue
-
-                        # Approved & cleared through all layers!
-                        print(f"[RADAR APPROVED FOR DISPATCH ({v_score}/100)]: {title} ({v_reason})")
-                        RadarGovernor.record_dispatch()
                         RECENT_FEED.insert(0, {
-                            "time": datetime.now(timezone.utc).strftime("%H:%M:%S"),
+                            "time": now_utc.strftime("%H:%M:%S"),
                             "source": f"YouTube ({channel_name})",
                             "title": title,
                             "url": video_url,
-                            "status": f"DISPATCHED_VIRAL ({v_score}/100)",
+                            "status": "FILTERED_NOT_USABLE",
+                            "reason": reason
+                        })
+                        if len(RECENT_FEED) > 40:
+                            RECENT_FEED.pop()
+                        print(f"[RADAR SUPPRESSED - NOT USABLE]: {title} -> {reason}")
+                        continue
+
+                    # Layer 2: Viral Engagement Prediction Gate
+                    is_viral, v_score, v_reason, v_angle = evaluate_viral_potential(
+                        title,
+                        details=yt_context,
+                        source=f"YouTube ({channel_name})"
+                    )
+                    if not is_viral:
+                        if "timeout" not in v_reason.lower() and "unavailable" not in v_reason.lower():
+                            seen_topics[vid_id] = {"title": title, "channel": channel_name, "status": f"FILTERED_LOW_VIRAL ({v_score})", "date": now_utc.isoformat()}
+                            save_memory()
+                        RECENT_FEED.insert(0, {
+                            "time": now_utc.strftime("%H:%M:%S"),
+                            "source": f"YouTube ({channel_name})",
+                            "title": title,
+                            "url": video_url,
+                            "status": f"FILTERED_LOW_VIRAL ({v_score}/100)",
                             "reason": v_reason
                         })
                         if len(RECENT_FEED) > 40:
                             RECENT_FEED.pop()
+                        print(f"[RADAR SUPPRESSED - LOW VIRAL ({v_score}/100)]: {title} -> {v_reason}")
+                        continue
 
-                        deliver_production_package(
-                            title,
-                            f"Covered by {channel_name} on YouTube: {video_url}",
-                            source_url=video_url,
-                            source_name=f"YouTube ({channel_name})",
-                            viral_score=v_score,
-                            viral_reason=v_reason,
-                            viral_angle=v_angle
-                        )
+                    # Layer 3: Pacing Cooldown Governor
+                    can_send, gov_reason = RadarGovernor.can_dispatch()
+                    if not can_send:
+                        RECENT_FEED.insert(0, {
+                            "time": now_utc.strftime("%H:%M:%S"),
+                            "source": f"YouTube ({channel_name})",
+                            "title": title,
+                            "url": video_url,
+                            "status": f"HELD_COOLDOWN ({v_score}/100)",
+                            "reason": gov_reason
+                        })
+                        if len(RECENT_FEED) > 40:
+                            RECENT_FEED.pop()
+                        print(f"[RADAR HELD - COOLDOWN]: {title} ({gov_reason})")
+                        continue
+
+                    # Approved & cleared through all layers!
+                    seen_topics[vid_id] = {"title": title, "channel": channel_name, "status": f"DISPATCHED ({v_score})", "date": now_utc.isoformat()}
+                    save_memory()
+
+                    print(f"[RADAR APPROVED FOR DISPATCH ({v_score}/100)]: {title} ({v_reason})")
+                    RadarGovernor.record_dispatch()
+                    RECENT_FEED.insert(0, {
+                        "time": now_utc.strftime("%H:%M:%S"),
+                        "source": f"YouTube ({channel_name})",
+                        "title": title,
+                        "url": video_url,
+                        "status": f"DISPATCHED_VIRAL ({v_score}/100)",
+                        "reason": v_reason
+                    })
+                    if len(RECENT_FEED) > 40:
+                        RECENT_FEED.pop()
+
+                    deliver_production_package(
+                        title,
+                        f"Covered by {channel_name} on YouTube: {video_url}",
+                        source_url=video_url,
+                        source_name=f"YouTube ({channel_name})",
+                        viral_score=v_score,
+                        viral_reason=v_reason,
+                        viral_angle=v_angle
+                    )
+                    return  # Dispatched 1 item, cleanly respect governor cooldown
 
         except Exception as e:
             print(f"Error checking YouTube channel {channel_name}: {e}")
-
-    IS_INITIAL_BASELINE_DONE = True
 
 
 # ─── MASTER RADAR AGGREGATOR & DISPATCHER ───
